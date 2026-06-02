@@ -137,34 +137,38 @@ export function ParticleUniversalAccount() {
     if (ua) refresh();
   }, [ua, refresh]);
 
-  // Demo: send 1 USDT on Avalanche, sourced from primary assets, signed via MetaMask (EIP-7702 style UX)
+  // UA v2 migration: only createTransferTransaction is supported right now.
+  // Withdraws 0.1 USDT (Arbitrum) from the UA back to the connected EOA.
   const sendDemoTx = useCallback(async () => {
-    if (!ua) return;
-    setBusy("Building transaction…");
+    if (!ua || !eoa) return;
+    setBusy("Building transfer…");
     setError(null);
     setStatus(null);
     try {
-      const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
-      const tx = await ua.createUniversalTransaction({
-        chainId: CHAIN_ID.AVALANCHE_MAINNET,
-        expectTokens: [{ type: SUPPORTED_TOKEN_TYPE.USDT, amount: "1" }],
-        transactions: [],
+      const { CHAIN_ID } = await loadSdk();
+      const tx = await ua.createTransferTransaction({
+        token: {
+          chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+          address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        },
+        amount: "0.1",
+        receiver: eoa,
       });
       setBusy("Awaiting MetaMask signature…");
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const signature = await signer.signMessage(tx.rootHash);
+      const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
       setBusy("Broadcasting…");
       const result = await ua.sendTransaction(tx, signature);
       setStatus(
         `Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`
       );
     } catch (e: any) {
-      setError(e?.message ?? "Transaction failed");
+      setError(e?.message ?? "Transfer failed");
     } finally {
       setBusy(null);
     }
-  }, [ua]);
+  }, [ua, eoa]);
 
   const totalUsd = useMemo(() => {
     if (!balance) return "—";
