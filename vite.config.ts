@@ -10,11 +10,11 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      alias: [
-        { find: /^node:buffer$/, replacement: bufferShim },
-        { find: /^buffer$/, replacement: bufferShim },
-        { find: /^node:crypto$/, replacement: cryptoShim },
-      ],
+      alias: {
+        "node:buffer": bufferShim,
+        buffer: bufferShim,
+        "node:crypto": cryptoShim,
+      },
     },
     optimizeDeps: {
       include: ["buffer", "eventemitter3"],
