@@ -137,34 +137,38 @@ export function ParticleUniversalAccount() {
     if (ua) refresh();
   }, [ua, refresh]);
 
-  // Demo: send 1 USDT on Avalanche, sourced from primary assets, signed via MetaMask (EIP-7702 style UX)
+  // UA v2 migration: only createTransferTransaction is supported right now.
+  // Withdraws 0.1 USDT (Arbitrum) from the UA back to the connected EOA.
   const sendDemoTx = useCallback(async () => {
-    if (!ua) return;
-    setBusy("Building transaction…");
+    if (!ua || !eoa) return;
+    setBusy("Building transfer…");
     setError(null);
     setStatus(null);
     try {
-      const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
-      const tx = await ua.createUniversalTransaction({
-        chainId: CHAIN_ID.AVALANCHE_MAINNET,
-        expectTokens: [{ type: SUPPORTED_TOKEN_TYPE.USDT, amount: "1" }],
-        transactions: [],
+      const { CHAIN_ID } = await loadSdk();
+      const tx = await ua.createTransferTransaction({
+        token: {
+          chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+          address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+        },
+        amount: "0.1",
+        receiver: eoa,
       });
       setBusy("Awaiting MetaMask signature…");
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const signature = await signer.signMessage(tx.rootHash);
+      const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
       setBusy("Broadcasting…");
       const result = await ua.sendTransaction(tx, signature);
       setStatus(
         `Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`
       );
     } catch (e: any) {
-      setError(e?.message ?? "Transaction failed");
+      setError(e?.message ?? "Transfer failed");
     } finally {
       setBusy(null);
     }
-  }, [ua]);
+  }, [ua, eoa]);
 
   const totalUsd = useMemo(() => {
     if (!balance) return "—";
@@ -278,29 +282,30 @@ export function ParticleUniversalAccount() {
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
               <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">
-                Demo Tx
+                Transfer
               </button>
               <button
                 className="px-4 py-1.5 text-sm rounded-md text-muted-foreground cursor-not-allowed"
                 disabled
+                title="Universal Accounts are migrating to V2 — only transfers are enabled."
               >
-                Withdraw
+                Swap (V2 soon)
               </button>
             </div>
 
             <div className="space-y-4">
-              <Field label="You receive">
+              <Field label="Withdraw">
                 <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
                     <div>
                       <div className="text-sm font-medium">USDT</div>
                       <div className="text-xs text-muted-foreground">
-                        Avalanche
+                        Arbitrum
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm font-medium">1.00</div>
+                  <div className="text-sm font-medium">0.10</div>
                 </div>
               </Field>
 
@@ -310,10 +315,10 @@ export function ParticleUniversalAccount() {
                 </div>
               </div>
 
-              <Field label="Pay with">
+              <Field label="To your EOA">
                 <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                  <div className="text-sm">Any primary asset</div>
-                  <div className="text-xs text-muted-foreground">auto-routed</div>
+                  <div className="text-sm font-mono">{short(eoa ?? "")}</div>
+                  <div className="text-xs text-muted-foreground">MetaMask</div>
                 </div>
               </Field>
 
