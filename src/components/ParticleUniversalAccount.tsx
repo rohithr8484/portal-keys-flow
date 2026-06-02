@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import {
-  UniversalAccount,
-  CHAIN_ID,
-  SUPPORTED_TOKEN_TYPE,
-} from "@particle-network/universal-account-sdk";
-import {
   PARTICLE_APP_ID,
   PARTICLE_CLIENT_KEY,
   PARTICLE_PROJECT_ID,
 } from "@/lib/particle-config";
+
+// Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
+type SdkModule = typeof import("@particle-network/universal-account-sdk");
+let sdkPromise: Promise<SdkModule> | null = null;
+function loadSdk() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("SDK is browser-only"));
+  }
+  if (!sdkPromise) {
+    sdkPromise = import("@particle-network/universal-account-sdk");
+  }
+  return sdkPromise;
+}
 
 type UAAddresses = {
   evmSmartAccount: string;
