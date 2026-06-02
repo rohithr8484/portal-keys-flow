@@ -6,6 +6,9 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    resolve: {
+      conditions: ["browser", "module", "import", "default"],
+    },
     plugins: [
       nodePolyfills({
         include: ["buffer", "crypto", "stream", "util", "events", "process"],
