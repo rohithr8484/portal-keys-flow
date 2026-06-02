@@ -28,6 +28,17 @@ type PrimaryBalance = {
   totalAmountInUSD: number;
 };
 
+type NetworkMode = "mainnet" | "testnet";
+
+// Arbitrum Sepolia — used for the testnet path (direct MetaMask, no UA).
+const ARB_SEPOLIA = {
+  chainIdHex: "0x66eee", // 421614
+  chainName: "Arbitrum Sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
+  blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+};
+
 declare global {
   interface Window {
     ethereum?: any;
@@ -57,6 +68,10 @@ function Copy({ value }: { value: string }) {
 }
 
 export function ParticleUniversalAccount() {
+  const [network, setNetwork] = useState<NetworkMode>(() => {
+    if (typeof window === "undefined") return "mainnet";
+    return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
+  });
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -67,6 +82,19 @@ export function ParticleUniversalAccount() {
   const [error, setError] = useState<string | null>(null);
 
   const missingAppId = !PARTICLE_APP_ID;
+  const isTestnet = network === "testnet";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ua_network", network);
+    }
+    // Reset UA-derived state when switching networks
+    setUa(null);
+    setAddresses(null);
+    setBalance(null);
+    setStatus(null);
+    setError(null);
+  }, [network]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -93,27 +121,28 @@ export function ParticleUniversalAccount() {
     setStatus(null);
   }, []);
 
-  // Initialize Universal Account when EOA is available
+  // Initialize Universal Account (mainnet only — Particle UA is mainnet-only)
   useEffect(() => {
-    if (!eoa || missingAppId) return;
+    if (!eoa || missingAppId || isTestnet) return;
     let cancelled = false;
-    loadSdk().then(({ UniversalAccount }) => {
-      if (cancelled) return;
-      const account = new UniversalAccount({
-        projectId: PARTICLE_PROJECT_ID,
-        projectClientKey: PARTICLE_CLIENT_KEY,
-        projectAppUuid: PARTICLE_APP_ID,
-        ownerAddress: eoa,
-        tradeConfig: { slippageBps: 100 },
-      });
-      setUa(account);
-    }).catch((e) => setError(e?.message ?? "Failed to load SDK"));
+    loadSdk()
+      .then(({ UniversalAccount }) => {
+        if (cancelled) return;
+        const account = new UniversalAccount({
+          projectId: PARTICLE_PROJECT_ID,
+          projectClientKey: PARTICLE_CLIENT_KEY,
+          projectAppUuid: PARTICLE_APP_ID,
+          ownerAddress: eoa,
+          tradeConfig: { slippageBps: 100 },
+        });
+        setUa(account);
+      })
+      .catch((e) => setError(e?.message ?? "Failed to load SDK"));
     return () => {
       cancelled = true;
     };
-  }, [eoa, missingAppId]);
+  }, [eoa, missingAppId, isTestnet]);
 
-  // Load addresses + balance
   const refresh = useCallback(async () => {
     if (!ua) return;
     setLoading(true);
@@ -137,9 +166,8 @@ export function ParticleUniversalAccount() {
     if (ua) refresh();
   }, [ua, refresh]);
 
-  // UA v2 migration: only createTransferTransaction is supported right now.
-  // Withdraws 0.1 USDT (Arbitrum) from the UA back to the connected EOA.
-  const sendDemoTx = useCallback(async () => {
+  // Mainnet path: UA transfer of 0.1 USDT on Arbitrum back to EOA
+  const sendMainnetTx = useCallback(async () => {
     if (!ua || !eoa) return;
     setBusy("Building transfer…");
     setError(null);
@@ -170,10 +198,57 @@ export function ParticleUniversalAccount() {
     }
   }, [ua, eoa]);
 
+  // Testnet path: direct MetaMask send of 0.0001 ETH on Arbitrum Sepolia
+  // (Particle Universal Accounts are mainnet-only, so testnet uses the raw EOA.)
+  const sendTestnetTx = useCallback(async () => {
+    if (!eoa) return;
+    setBusy("Switching to Arbitrum Sepolia…");
+    setError(null);
+    setStatus(null);
+    try {
+      if (!window.ethereum) throw new Error("MetaMask not detected");
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARB_SEPOLIA.chainIdHex }],
+        });
+      } catch (switchErr: any) {
+        if (switchErr?.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARB_SEPOLIA],
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+      setBusy("Awaiting MetaMask signature…");
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const tx = await signer.sendTransaction({
+        to: eoa,
+        value: ethers.parseEther("0.0001"),
+      });
+      setBusy("Broadcasting…");
+      const receipt = await tx.wait();
+      setStatus(
+        `Sent! View: ${ARB_SEPOLIA.blockExplorerUrls[0]}/tx/${receipt?.hash ?? tx.hash}`
+      );
+    } catch (e: any) {
+      setError(e?.message ?? "Testnet transfer failed");
+    } finally {
+      setBusy(null);
+    }
+  }, [eoa]);
+
+  const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
+
   const totalUsd = useMemo(() => {
     if (!balance) return "—";
     return `$${balance.totalAmountInUSD.toFixed(2)}`;
   }, [balance]);
+
+  const canSend = isTestnet ? !!eoa : !!ua;
 
   return (
     <div className="w-full max-w-5xl mx-auto px-6 py-12">
@@ -189,15 +264,48 @@ export function ParticleUniversalAccount() {
           One EOA, one balance, every chain. Sign with MetaMask — Particle's
           Universal Account routes funds across EVM and Solana.
         </p>
+
+        {/* Network toggle */}
+        <div className="mt-6 inline-flex rounded-lg border border-panel-border bg-panel/60 p-1">
+          {(["mainnet", "testnet"] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => setNetwork(n)}
+              className={`px-4 py-1.5 text-xs font-medium rounded-md transition ${
+                network === n
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {n === "mainnet" ? "Mainnet" : "Testnet"}
+            </button>
+          ))}
+        </div>
       </header>
 
-      {missingAppId && (
+      {missingAppId && !isTestnet && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
           <strong className="text-destructive-foreground">App ID missing.</strong>{" "}
-          The Universal Account SDK needs <code>projectAppUuid</code>. In the
-          Particle Dashboard, open your project → <em>Web App</em>, copy the
-          <code> App ID</code>, then set <code>VITE_PARTICLE_APP_ID</code> (or
-          edit <code>src/lib/particle-config.ts</code>).
+          Set <code>VITE_PARTICLE_APP_ID</code> or edit
+          <code> src/lib/particle-config.ts</code>.
+        </div>
+      )}
+
+      {isTestnet && (
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground">
+          <strong className="text-foreground">Testnet mode (Arbitrum Sepolia).</strong>{" "}
+          Particle Universal Accounts are mainnet-only, so testnet uses your
+          MetaMask EOA directly for a real on-chain transfer. Get test ETH from
+          the{" "}
+          <a
+            className="text-primary hover:underline"
+            href="https://faucet.quicknode.com/arbitrum/sepolia"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Arbitrum Sepolia faucet
+          </a>
+          .
         </div>
       )}
 
@@ -217,13 +325,11 @@ export function ParticleUniversalAccount() {
           >
             {loading ? "Connecting…" : "Connect MetaMask"}
           </button>
-          {error && (
-            <p className="mt-4 text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-          {/* Universal Account panel */}
+          {/* Account panel */}
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -231,7 +337,9 @@ export function ParticleUniversalAccount() {
                   <div className="size-3 rounded-sm bg-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">Universal Account</div>
+                  <div className="text-sm font-medium">
+                    {isTestnet ? "EOA (Testnet)" : "Universal Account"}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     Owner {short(eoa)}
                   </div>
@@ -245,37 +353,48 @@ export function ParticleUniversalAccount() {
               </button>
             </div>
 
-            <div className="space-y-3">
-              <AddressRow
-                label="EVM"
-                value={addresses?.evmSmartAccount ?? ""}
-                loading={loading && !addresses}
-              />
-              <AddressRow
-                label="SOL"
-                value={addresses?.solanaSmartAccount ?? ""}
-                loading={loading && !addresses}
-              />
-            </div>
+            {isTestnet ? (
+              <div className="space-y-3">
+                <AddressRow label="EOA" value={eoa ?? ""} loading={false} />
+                <div className="text-xs text-muted-foreground px-1">
+                  Network: Arbitrum Sepolia (421614)
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <AddressRow
+                    label="EVM"
+                    value={addresses?.evmSmartAccount ?? ""}
+                    loading={loading && !addresses}
+                  />
+                  <AddressRow
+                    label="SOL"
+                    value={addresses?.solanaSmartAccount ?? ""}
+                    loading={loading && !addresses}
+                  />
+                </div>
 
-            <div className="mt-6 rounded-xl border border-panel-border bg-background/40 p-5">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Wallet balance
-                </span>
-                <button
-                  onClick={refresh}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                  disabled={loading}
-                >
-                  {loading ? "…" : "↻"}
-                </button>
-              </div>
-              <div className="text-3xl font-semibold">{totalUsd}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                Aggregated across supported chains
-              </div>
-            </div>
+                <div className="mt-6 rounded-xl border border-panel-border bg-background/40 p-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Wallet balance
+                    </span>
+                    <button
+                      onClick={refresh}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      disabled={loading}
+                    >
+                      {loading ? "…" : "↻"}
+                    </button>
+                  </div>
+                  <div className="text-3xl font-semibold">{totalUsd}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Aggregated across supported chains
+                  </div>
+                </div>
+              </>
+            )}
           </section>
 
           {/* Action panel */}
@@ -287,25 +406,28 @@ export function ParticleUniversalAccount() {
               <button
                 className="px-4 py-1.5 text-sm rounded-md text-muted-foreground cursor-not-allowed"
                 disabled
-                title="Universal Accounts are migrating to V2 — only transfers are enabled."
               >
                 Swap (V2 soon)
               </button>
             </div>
 
             <div className="space-y-4">
-              <Field label="Withdraw">
+              <Field label={isTestnet ? "Send" : "Withdraw"}>
                 <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
                     <div>
-                      <div className="text-sm font-medium">USDT</div>
+                      <div className="text-sm font-medium">
+                        {isTestnet ? "ETH" : "USDT"}
+                      </div>
                       <div className="text-xs text-muted-foreground">
-                        Arbitrum
+                        {isTestnet ? "Arbitrum Sepolia" : "Arbitrum"}
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm font-medium">0.10</div>
+                  <div className="text-sm font-medium">
+                    {isTestnet ? "0.0001" : "0.10"}
+                  </div>
                 </div>
               </Field>
 
@@ -324,7 +446,7 @@ export function ParticleUniversalAccount() {
 
               <button
                 onClick={sendDemoTx}
-                disabled={!ua || !!busy}
+                disabled={!canSend || !!busy}
                 className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
               >
                 {busy ?? "Sign with MetaMask & Send"}
@@ -339,8 +461,9 @@ export function ParticleUniversalAccount() {
                 <p className="text-xs text-destructive break-all">{error}</p>
               )}
               <p className="text-[11px] text-muted-foreground text-center">
-                Signs <code>rootHash</code> with MetaMask, then submits via
-                Particle.
+                {isTestnet
+                  ? "Direct MetaMask transaction on Arbitrum Sepolia."
+                  : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
             </div>
           </section>
