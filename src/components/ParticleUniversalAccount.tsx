@@ -282,13 +282,14 @@ export function ParticleUniversalAccount() {
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
               <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">
-                Demo Tx
+                Transfer
               </button>
               <button
                 className="px-4 py-1.5 text-sm rounded-md text-muted-foreground cursor-not-allowed"
                 disabled
+                title="Universal Accounts are migrating to V2 — only transfers are enabled."
               >
-                Withdraw
+                Swap (V2 soon)
               </button>
             </div>
 
