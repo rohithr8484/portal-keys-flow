@@ -96,14 +96,21 @@ export function ParticleUniversalAccount() {
   // Initialize Universal Account when EOA is available
   useEffect(() => {
     if (!eoa || missingAppId) return;
-    const account = new UniversalAccount({
-      projectId: PARTICLE_PROJECT_ID,
-      projectClientKey: PARTICLE_CLIENT_KEY,
-      projectAppUuid: PARTICLE_APP_ID,
-      ownerAddress: eoa,
-      tradeConfig: { slippageBps: 100 },
-    });
-    setUa(account);
+    let cancelled = false;
+    loadSdk().then(({ UniversalAccount }) => {
+      if (cancelled) return;
+      const account = new UniversalAccount({
+        projectId: PARTICLE_PROJECT_ID,
+        projectClientKey: PARTICLE_CLIENT_KEY,
+        projectAppUuid: PARTICLE_APP_ID,
+        ownerAddress: eoa,
+        tradeConfig: { slippageBps: 100 },
+      });
+      setUa(account);
+    }).catch((e) => setError(e?.message ?? "Failed to load SDK"));
+    return () => {
+      cancelled = true;
+    };
   }, [eoa, missingAppId]);
 
   // Load addresses + balance
