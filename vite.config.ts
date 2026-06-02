@@ -1,5 +1,6 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import path from "node:path";
 
 export default defineConfig({
   tanstackStart: {
@@ -7,7 +8,11 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      conditions: ["browser", "module", "import", "default"],
+      alias: {
+        "rpc-websockets": path.resolve(
+          "./node_modules/rpc-websockets/dist/index.browser.mjs"
+        ),
+      },
     },
     plugins: [
       nodePolyfills({
