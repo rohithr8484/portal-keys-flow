@@ -87,6 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Lovable App" },
       { name: "twitter:description", content: "Universal Connect Wallet enables seamless web3 wallet integration for decentralized applications." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70ad2015-b070-4ba1-9eac-998972703feb/id-preview-542cf1a2--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app-1780416135367.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70ad2015-b070-4ba1-9eac-998972703feb/id-preview-542cf1a2--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app-1780416135367.png" },
     ],
     links: [
       {
