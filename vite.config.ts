@@ -6,9 +6,10 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      alias: {
-        buffer: "buffer/",
-      },
+      alias: [
+        { find: /^node:buffer$/, replacement: "buffer" },
+        { find: /^node:crypto$/, replacement: "crypto-browserify" },
+      ],
     },
     optimizeDeps: {
       include: ["buffer", "eventemitter3"],
