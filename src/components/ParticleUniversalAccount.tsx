@@ -50,7 +50,7 @@ function Copy({ value }: { value: string }) {
 
 export function ParticleUniversalAccount() {
   const [eoa, setEoa] = useState<string | null>(null);
-  const [ua, setUa] = useState<UniversalAccount | null>(null);
+  const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
   const [balance, setBalance] = useState<PrimaryBalance | null>(null);
   const [loading, setLoading] = useState(false);
