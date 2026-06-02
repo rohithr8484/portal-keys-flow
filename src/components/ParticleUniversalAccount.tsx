@@ -144,6 +144,7 @@ export function ParticleUniversalAccount() {
     setError(null);
     setStatus(null);
     try {
+      const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
       const tx = await ua.createUniversalTransaction({
         chainId: CHAIN_ID.AVALANCHE_MAINNET,
         expectTokens: [{ type: SUPPORTED_TOKEN_TYPE.USDT, amount: "1" }],
