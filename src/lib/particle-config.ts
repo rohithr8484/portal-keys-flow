@@ -6,4 +6,5 @@ export const PARTICLE_CLIENT_KEY = "c6COKe91FBlGjueefFMn4rfPreiZQCLV0Ar9InzY";
 // Server Key (DO NOT expose in production — kept here per setup notes):
 export const PARTICLE_SERVER_KEY = "senYlK4lqTNmDTRwqYqNv0Du0S931XLU4P32DBNh";
 export const PARTICLE_APP_ID =
-  (import.meta.env.VITE_PARTICLE_APP_ID as string | undefined) ?? "";
+  (import.meta.env.VITE_PARTICLE_APP_ID as string | undefined) ??
+  "f80ae2c9-3af3-4a4f-a350-5a69300ab900";
