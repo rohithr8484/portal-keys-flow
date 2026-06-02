@@ -1,29 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ParticleUniversalAccount } from "@/components/ParticleUniversalAccount";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Universal Accounts × MetaMask · Particle Network 7702" },
+      {
+        name: "description",
+        content:
+          "Connect MetaMask and use a Particle Network Universal Account (EIP-7702) to spend any token on any chain.",
+      },
+      { property: "og:title", content: "Universal Accounts × MetaMask" },
+      {
+        property: "og:description",
+        content:
+          "One EOA, one balance, every chain — powered by Particle Network Universal Accounts.",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="min-h-screen">
+      <ParticleUniversalAccount />
+    </main>
   );
 }
