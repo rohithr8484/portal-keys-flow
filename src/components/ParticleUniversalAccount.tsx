@@ -294,18 +294,18 @@ export function ParticleUniversalAccount() {
             </div>
 
             <div className="space-y-4">
-              <Field label="You receive">
+              <Field label="Withdraw">
                 <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
                     <div>
                       <div className="text-sm font-medium">USDT</div>
                       <div className="text-xs text-muted-foreground">
-                        Avalanche
+                        Arbitrum
                       </div>
                     </div>
                   </div>
-                  <div className="text-sm font-medium">1.00</div>
+                  <div className="text-sm font-medium">0.10</div>
                 </div>
               </Field>
 
@@ -315,10 +315,10 @@ export function ParticleUniversalAccount() {
                 </div>
               </div>
 
-              <Field label="Pay with">
+              <Field label="To your EOA">
                 <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                  <div className="text-sm">Any primary asset</div>
-                  <div className="text-xs text-muted-foreground">auto-routed</div>
+                  <div className="text-sm font-mono">{short(eoa ?? "")}</div>
+                  <div className="text-xs text-muted-foreground">MetaMask</div>
                 </div>
               </Field>
 
