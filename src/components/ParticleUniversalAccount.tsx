@@ -437,7 +437,7 @@ export function ParticleUniversalAccount() {
               <div className="space-y-3">
                 <AddressRow label="EOA" value={eoa ?? ""} loading={false} />
                 <div className="text-xs text-muted-foreground px-1">
-                  Network: Arbitrum Sepolia (421614)
+                  Network: {activeTestnet.label} ({activeTestnet.chainId})
                 </div>
               </div>
             ) : (
