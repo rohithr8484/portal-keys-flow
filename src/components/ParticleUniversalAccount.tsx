@@ -501,7 +501,7 @@ export function ParticleUniversalAccount() {
                         {isTestnet ? "ETH" : "USDT"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {isTestnet ? "Arbitrum Sepolia" : "Arbitrum"}
+                        {isTestnet ? activeTestnet.label : "Arbitrum"}
                       </div>
                     </div>
                   </div>
