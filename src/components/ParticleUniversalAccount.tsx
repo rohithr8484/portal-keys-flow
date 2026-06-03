@@ -542,7 +542,7 @@ export function ParticleUniversalAccount() {
               )}
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
-                  ? "Direct MetaMask transaction on Arbitrum Sepolia."
+                  ? `Direct MetaMask transaction on ${activeTestnet.label}.`
                   : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
             </div>
