@@ -29,14 +29,54 @@ type PrimaryBalance = {
 };
 
 type NetworkMode = "mainnet" | "testnet";
+type TestnetKey = "eth-sepolia" | "base-sepolia" | "arb-sepolia";
 
-// Arbitrum Sepolia — used for the testnet path (direct MetaMask, no UA).
-const ARB_SEPOLIA = {
-  chainIdHex: "0x66eee", // 421614
-  chainName: "Arbitrum Sepolia",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
-  blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+type TestnetConfig = {
+  key: TestnetKey;
+  label: string;
+  chainId: number;
+  chainIdHex: string;
+  chainName: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  rpcUrls: string[];
+  blockExplorerUrls: string[];
+  faucetUrl: string;
+};
+
+const TESTNETS: Record<TestnetKey, TestnetConfig> = {
+  "eth-sepolia": {
+    key: "eth-sepolia",
+    label: "Ethereum Sepolia",
+    chainId: 11155111,
+    chainIdHex: "0xaa36a7",
+    chainName: "Ethereum Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
+    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+    faucetUrl: "https://www.alchemy.com/faucets/ethereum-sepolia",
+  },
+  "base-sepolia": {
+    key: "base-sepolia",
+    label: "Base Sepolia",
+    chainId: 84532,
+    chainIdHex: "0x14a34",
+    chainName: "Base Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://sepolia.base.org"],
+    blockExplorerUrls: ["https://sepolia.basescan.org"],
+    faucetUrl: "https://www.alchemy.com/faucets/base-sepolia",
+  },
+  "arb-sepolia": {
+    key: "arb-sepolia",
+    label: "Arbitrum Sepolia",
+    chainId: 421614,
+    chainIdHex: "0x66eee",
+    chainName: "Arbitrum Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
+    blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+    faucetUrl: "https://faucet.quicknode.com/arbitrum/sepolia",
+  },
 };
 
 declare global {
