@@ -29,14 +29,54 @@ type PrimaryBalance = {
 };
 
 type NetworkMode = "mainnet" | "testnet";
+type TestnetKey = "eth-sepolia" | "base-sepolia" | "arb-sepolia";
 
-// Arbitrum Sepolia — used for the testnet path (direct MetaMask, no UA).
-const ARB_SEPOLIA = {
-  chainIdHex: "0x66eee", // 421614
-  chainName: "Arbitrum Sepolia",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
-  blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+type TestnetConfig = {
+  key: TestnetKey;
+  label: string;
+  chainId: number;
+  chainIdHex: string;
+  chainName: string;
+  nativeCurrency: { name: string; symbol: string; decimals: number };
+  rpcUrls: string[];
+  blockExplorerUrls: string[];
+  faucetUrl: string;
+};
+
+const TESTNETS: Record<TestnetKey, TestnetConfig> = {
+  "eth-sepolia": {
+    key: "eth-sepolia",
+    label: "Ethereum Sepolia",
+    chainId: 11155111,
+    chainIdHex: "0xaa36a7",
+    chainName: "Ethereum Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
+    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+    faucetUrl: "https://www.alchemy.com/faucets/ethereum-sepolia",
+  },
+  "base-sepolia": {
+    key: "base-sepolia",
+    label: "Base Sepolia",
+    chainId: 84532,
+    chainIdHex: "0x14a34",
+    chainName: "Base Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://sepolia.base.org"],
+    blockExplorerUrls: ["https://sepolia.basescan.org"],
+    faucetUrl: "https://www.alchemy.com/faucets/base-sepolia",
+  },
+  "arb-sepolia": {
+    key: "arb-sepolia",
+    label: "Arbitrum Sepolia",
+    chainId: 421614,
+    chainIdHex: "0x66eee",
+    chainName: "Arbitrum Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc"],
+    blockExplorerUrls: ["https://sepolia.arbiscan.io"],
+    faucetUrl: "https://faucet.quicknode.com/arbitrum/sepolia",
+  },
 };
 
 declare global {
@@ -72,6 +112,12 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return "mainnet";
     return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
   });
+  const [testnetKey, setTestnetKey] = useState<TestnetKey>(() => {
+    if (typeof window === "undefined") return "arb-sepolia";
+    return (
+      (localStorage.getItem("ua_testnet") as TestnetKey) || "arb-sepolia"
+    );
+  });
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -83,6 +129,7 @@ export function ParticleUniversalAccount() {
 
   const missingAppId = !PARTICLE_APP_ID;
   const isTestnet = network === "testnet";
+  const activeTestnet = TESTNETS[testnetKey];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -95,6 +142,12 @@ export function ParticleUniversalAccount() {
     setStatus(null);
     setError(null);
   }, [network]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ua_testnet", testnetKey);
+    }
+  }, [testnetKey]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -198,11 +251,12 @@ export function ParticleUniversalAccount() {
     }
   }, [ua, eoa]);
 
-  // Testnet path: direct MetaMask send of 0.0001 ETH on Arbitrum Sepolia
+  // Testnet path: direct MetaMask send of 0.0001 ETH on the selected testnet
   // (Particle Universal Accounts are mainnet-only, so testnet uses the raw EOA.)
   const sendTestnetTx = useCallback(async () => {
     if (!eoa) return;
-    setBusy("Switching to Arbitrum Sepolia…");
+    const cfg = activeTestnet;
+    setBusy(`Switching to ${cfg.label}…`);
     setError(null);
     setStatus(null);
     try {
@@ -210,13 +264,21 @@ export function ParticleUniversalAccount() {
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: ARB_SEPOLIA.chainIdHex }],
+          params: [{ chainId: cfg.chainIdHex }],
         });
       } catch (switchErr: any) {
         if (switchErr?.code === 4902) {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [ARB_SEPOLIA],
+            params: [
+              {
+                chainId: cfg.chainIdHex,
+                chainName: cfg.chainName,
+                nativeCurrency: cfg.nativeCurrency,
+                rpcUrls: cfg.rpcUrls,
+                blockExplorerUrls: cfg.blockExplorerUrls,
+              },
+            ],
           });
         } else {
           throw switchErr;
@@ -232,14 +294,14 @@ export function ParticleUniversalAccount() {
       setBusy("Broadcasting…");
       const receipt = await tx.wait();
       setStatus(
-        `Sent! View: ${ARB_SEPOLIA.blockExplorerUrls[0]}/tx/${receipt?.hash ?? tx.hash}`
+        `Sent! View: ${cfg.blockExplorerUrls[0]}/tx/${receipt?.hash ?? tx.hash}`
       );
     } catch (e: any) {
       setError(e?.message ?? "Testnet transfer failed");
     } finally {
       setBusy(null);
     }
-  }, [eoa]);
+  }, [eoa, activeTestnet]);
 
   const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
 
@@ -292,20 +354,38 @@ export function ParticleUniversalAccount() {
       )}
 
       {isTestnet && (
-        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground">
-          <strong className="text-foreground">Testnet mode (Arbitrum Sepolia).</strong>{" "}
-          Particle Universal Accounts are mainnet-only, so testnet uses your
-          MetaMask EOA directly for a real on-chain transfer. Get test ETH from
-          the{" "}
-          <a
-            className="text-primary hover:underline"
-            href="https://faucet.quicknode.com/arbitrum/sepolia"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Arbitrum Sepolia faucet
-          </a>
-          .
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
+          <div>
+            <strong className="text-foreground">Testnet mode.</strong>{" "}
+            Particle Universal Accounts are mainnet-only, so testnet uses your
+            MetaMask EOA directly for a real on-chain transfer.
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-foreground">Chain:</span>
+            <div className="inline-flex rounded-md border border-panel-border bg-background/40 p-1">
+              {(Object.keys(TESTNETS) as TestnetKey[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setTestnetKey(k)}
+                  className={`px-3 py-1 text-xs rounded transition ${
+                    testnetKey === k
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {TESTNETS[k].label}
+                </button>
+              ))}
+            </div>
+            <a
+              className="text-xs text-primary hover:underline ml-1"
+              href={activeTestnet.faucetUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get test ETH ↗
+            </a>
+          </div>
         </div>
       )}
 
@@ -357,7 +437,7 @@ export function ParticleUniversalAccount() {
               <div className="space-y-3">
                 <AddressRow label="EOA" value={eoa ?? ""} loading={false} />
                 <div className="text-xs text-muted-foreground px-1">
-                  Network: Arbitrum Sepolia (421614)
+                  Network: {activeTestnet.label} ({activeTestnet.chainId})
                 </div>
               </div>
             ) : (
@@ -421,7 +501,7 @@ export function ParticleUniversalAccount() {
                         {isTestnet ? "ETH" : "USDT"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {isTestnet ? "Arbitrum Sepolia" : "Arbitrum"}
+                        {isTestnet ? activeTestnet.label : "Arbitrum"}
                       </div>
                     </div>
                   </div>
@@ -462,7 +542,7 @@ export function ParticleUniversalAccount() {
               )}
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
-                  ? "Direct MetaMask transaction on Arbitrum Sepolia."
+                  ? `Direct MetaMask transaction on ${activeTestnet.label}.`
                   : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
             </div>
