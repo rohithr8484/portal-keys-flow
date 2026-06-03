@@ -251,11 +251,12 @@ export function ParticleUniversalAccount() {
     }
   }, [ua, eoa]);
 
-  // Testnet path: direct MetaMask send of 0.0001 ETH on Arbitrum Sepolia
+  // Testnet path: direct MetaMask send of 0.0001 ETH on the selected testnet
   // (Particle Universal Accounts are mainnet-only, so testnet uses the raw EOA.)
   const sendTestnetTx = useCallback(async () => {
     if (!eoa) return;
-    setBusy("Switching to Arbitrum Sepolia…");
+    const cfg = activeTestnet;
+    setBusy(`Switching to ${cfg.label}…`);
     setError(null);
     setStatus(null);
     try {
@@ -263,13 +264,21 @@ export function ParticleUniversalAccount() {
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: ARB_SEPOLIA.chainIdHex }],
+          params: [{ chainId: cfg.chainIdHex }],
         });
       } catch (switchErr: any) {
         if (switchErr?.code === 4902) {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [ARB_SEPOLIA],
+            params: [
+              {
+                chainId: cfg.chainIdHex,
+                chainName: cfg.chainName,
+                nativeCurrency: cfg.nativeCurrency,
+                rpcUrls: cfg.rpcUrls,
+                blockExplorerUrls: cfg.blockExplorerUrls,
+              },
+            ],
           });
         } else {
           throw switchErr;
@@ -285,14 +294,14 @@ export function ParticleUniversalAccount() {
       setBusy("Broadcasting…");
       const receipt = await tx.wait();
       setStatus(
-        `Sent! View: ${ARB_SEPOLIA.blockExplorerUrls[0]}/tx/${receipt?.hash ?? tx.hash}`
+        `Sent! View: ${cfg.blockExplorerUrls[0]}/tx/${receipt?.hash ?? tx.hash}`
       );
     } catch (e: any) {
       setError(e?.message ?? "Testnet transfer failed");
     } finally {
       setBusy(null);
     }
-  }, [eoa]);
+  }, [eoa, activeTestnet]);
 
   const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
 
