@@ -354,20 +354,38 @@ export function ParticleUniversalAccount() {
       )}
 
       {isTestnet && (
-        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground">
-          <strong className="text-foreground">Testnet mode (Arbitrum Sepolia).</strong>{" "}
-          Particle Universal Accounts are mainnet-only, so testnet uses your
-          MetaMask EOA directly for a real on-chain transfer. Get test ETH from
-          the{" "}
-          <a
-            className="text-primary hover:underline"
-            href="https://faucet.quicknode.com/arbitrum/sepolia"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Arbitrum Sepolia faucet
-          </a>
-          .
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
+          <div>
+            <strong className="text-foreground">Testnet mode.</strong>{" "}
+            Particle Universal Accounts are mainnet-only, so testnet uses your
+            MetaMask EOA directly for a real on-chain transfer.
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-foreground">Chain:</span>
+            <div className="inline-flex rounded-md border border-panel-border bg-background/40 p-1">
+              {(Object.keys(TESTNETS) as TestnetKey[]).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setTestnetKey(k)}
+                  className={`px-3 py-1 text-xs rounded transition ${
+                    testnetKey === k
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {TESTNETS[k].label}
+                </button>
+              ))}
+            </div>
+            <a
+              className="text-xs text-primary hover:underline ml-1"
+              href={activeTestnet.faucetUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get test ETH ↗
+            </a>
+          </div>
         </div>
       )}
 
