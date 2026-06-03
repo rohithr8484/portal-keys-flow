@@ -112,6 +112,12 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return "mainnet";
     return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
   });
+  const [testnetKey, setTestnetKey] = useState<TestnetKey>(() => {
+    if (typeof window === "undefined") return "arb-sepolia";
+    return (
+      (localStorage.getItem("ua_testnet") as TestnetKey) || "arb-sepolia"
+    );
+  });
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -123,6 +129,7 @@ export function ParticleUniversalAccount() {
 
   const missingAppId = !PARTICLE_APP_ID;
   const isTestnet = network === "testnet";
+  const activeTestnet = TESTNETS[testnetKey];
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -135,6 +142,12 @@ export function ParticleUniversalAccount() {
     setStatus(null);
     setError(null);
   }, [network]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ua_testnet", testnetKey);
+    }
+  }, [testnetKey]);
 
   const connect = useCallback(async () => {
     setError(null);
