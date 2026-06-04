@@ -126,10 +126,11 @@ async function sendIntent(
 ) {
   const sponsored = gasToken === "SPONSORED";
   const { intentClient, eoa } = await buildIntentClient(log, { sponsored });
-  log(`Smart account: ${intentClient.account.address}`);
+  const ic: any = intentClient;
+  log(`Smart account: ${ic.account.address}`);
   log("Fetching chain-abstracted balance (CAB)…");
   const { parseUnits, formatUnits } = await import("viem");
-  const cab = await intentClient.getCAB({
+  const cab = await ic.getCAB({
     networks: [arbitrum.id, base.id],
     tokenTickers: ["USDC"],
   });
@@ -137,7 +138,7 @@ async function sendIntent(
   log(`CAB USDC: ${formatUnits(have, 6)}`);
   if (have < parseUnits("0.1", 6)) {
     throw new Error(
-      `Insufficient USDC across chains. Deposit ≥ 0.1 USDC to ${intentClient.account.address} on Arbitrum/Base.`
+      `Insufficient USDC across chains. Deposit ≥ 0.1 USDC to ${ic.account.address} on Arbitrum/Base.`
     );
   }
 
