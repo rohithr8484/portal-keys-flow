@@ -179,18 +179,20 @@ export async function enableIntent(log: LogFn) {
   const deps = await loadDeps();
   const { intent, viem, createKernelAccount, createZeroDevPaymasterClient } = deps;
   const { createPublicClient, http, custom, createWalletClient } = viem;
-  const { KERNEL_V3_0, getEntryPoint } = deps;
+  const { getEntryPoint } = deps;
+  const { KERNEL_V3_0 } = await import("@zerodev/sdk/constants");
 
   const eth = getEthereum();
   const wallet = createWalletClient({ chain: arbitrum, transport: custom(eth) });
   const [addr] = await wallet.getAddresses();
   if (!addr) throw new Error("No EOA");
   const publicClient = createPublicClient({ chain: arbitrum, transport: http() });
+  const signerAcc: any = { ...(wallet.account as any), address: addr };
 
   const ecdsaValidator = await deps.toMultiChainECDSAValidator(
     publicClient as any,
     {
-      signer: { ...wallet.account, address: addr } as any,
+      signer: signerAcc,
       kernelVersion: KERNEL_V3_0 as any,
       entryPoint: getEntryPoint("0.7"),
     }
@@ -202,7 +204,7 @@ export async function enableIntent(log: LogFn) {
   });
   log(`V3.0 account: ${kernelAccount.address}`);
 
-  const intentClient = intent.createIntentClient({
+  const intentClient: any = intent.createIntentClient({
     account: kernelAccount,
     chain: arbitrum,
     bundlerTransport: http(ZERODEV_RPC_ARB, { timeout: TIMEOUT }),
@@ -234,11 +236,12 @@ export async function migrateToIntentExecutor(log: LogFn) {
   const [addr] = await wallet.getAddresses();
   if (!addr) throw new Error("No EOA");
   const publicClient = createPublicClient({ chain: arbitrum, transport: http() });
+  const signerAcc: any = { ...(wallet.account as any), address: addr };
 
   const ecdsaValidator = await deps.toMultiChainECDSAValidator(
     publicClient as any,
     {
-      signer: { ...wallet.account, address: addr } as any,
+      signer: signerAcc,
       kernelVersion: KERNEL_V3_2,
       entryPoint: getEntryPoint("0.7"),
     }
@@ -254,7 +257,7 @@ export async function migrateToIntentExecutor(log: LogFn) {
     chain: arbitrum,
     transport: http(ZERODEV_RPC_ARB, { timeout: TIMEOUT }),
   });
-  const intentClient = intent.createIntentClient({
+  const intentClient: any = intent.createIntentClient({
     account: kernelAccount,
     chain: arbitrum,
     bundlerTransport: http(ZERODEV_RPC_ARB, { timeout: TIMEOUT }),
@@ -265,26 +268,29 @@ export async function migrateToIntentExecutor(log: LogFn) {
 
   log("Sending no-op to trigger plugin migration…");
   const hash = await intentClient.sendUserOperation({
+    account: kernelAccount,
     callData: await kernelAccount.encodeCalls([
       { to: zeroAddress, value: BigInt(0), data: "0x" },
     ]),
-  });
+  } as any);
   const r = await intentClient.waitForUserOperationReceipt({ hash });
   log(`migrated · tx ${r.receipt.transactionHash}`);
 }
 
 export async function estimateIntentFee(log: LogFn) {
   const { intentClient } = await buildIntentClient(log);
-  const { parseUnits, formatUnits } = await import("viem");
+  const ic: any = intentClient;
+  const { parseUnits } = await import("viem");
   log("Estimating fee for 0.1 USDC → Base…");
-  const call = await buildTransferCall(intentClient.account.address);
-  const fee = await intentClient.estimateUserIntentFees({
+  const call = await buildTransferCall(ic.account.address);
+  const fee = await ic.estimateUserIntentFees({
     calls: [call],
     outputTokens: [
       { chainId: base.id, address: USDC_BASE, amount: parseUnits("0.1", 6) },
     ],
-  } as any);
+  });
   log(`Fee estimate: ${JSON.stringify(fee, (_k, v) =>
     typeof v === "bigint" ? v.toString() : v
   )}`);
 }
+
