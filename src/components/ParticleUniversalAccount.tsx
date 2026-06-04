@@ -77,13 +77,12 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return "mainnet";
     return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
   });
-  const [testnetMethod, setTestnetMethod] = useState<TestnetMethod>(() => {
-    if (typeof window === "undefined") return "zerodev-7702";
-    return (
-      (localStorage.getItem("ua_testnet_method") as TestnetMethod) ||
-      "zerodev-7702"
-    );
-  });
+  const [logs, setLogs] = useState<string[]>([]);
+  const appendLog = useCallback(
+    (m: string) => setLogs((l) => [...l, `${new Date().toLocaleTimeString()}  ${m}`]),
+    []
+  );
+
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
