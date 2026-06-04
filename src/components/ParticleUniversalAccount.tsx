@@ -29,7 +29,7 @@ type PrimaryBalance = {
 };
 
 type NetworkMode = "mainnet" | "testnet";
-type TestnetKey = "eth-sepolia" | "base-sepolia" | "arb-sepolia";
+type TestnetKey = "base-sepolia" | "arb-sepolia";
 
 type TestnetConfig = {
   key: TestnetKey;
@@ -44,17 +44,6 @@ type TestnetConfig = {
 };
 
 const TESTNETS: Record<TestnetKey, TestnetConfig> = {
-  "eth-sepolia": {
-    key: "eth-sepolia",
-    label: "Ethereum Sepolia",
-    chainId: 11155111,
-    chainIdHex: "0xaa36a7",
-    chainName: "Ethereum Sepolia",
-    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
-    blockExplorerUrls: ["https://sepolia.etherscan.io"],
-    faucetUrl: "https://www.alchemy.com/faucets/ethereum-sepolia",
-  },
   "base-sepolia": {
     key: "base-sepolia",
     label: "Base Sepolia",
@@ -482,12 +471,6 @@ export function ParticleUniversalAccount() {
             <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
               <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">
                 Transfer
-              </button>
-              <button
-                className="px-4 py-1.5 text-sm rounded-md text-muted-foreground cursor-not-allowed"
-                disabled
-              >
-                Swap (V2 soon)
               </button>
             </div>
 
