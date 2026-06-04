@@ -29,7 +29,7 @@ type PrimaryBalance = {
 };
 
 type NetworkMode = "mainnet" | "testnet";
-type TestnetMethod = "zerodev-7702" | "zerodev-particle";
+
 
 // ---------- Arbitrum Sepolia + ZeroDev config ----------
 const ARB_SEPOLIA = {
