@@ -110,14 +110,8 @@ export function ParticleUniversalAccount() {
     setError(null);
   }, [network]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("ua_testnet_method", testnetMethod);
-    }
-    setSmartAccountAddress(null);
-    setStatus(null);
-    setError(null);
-  }, [testnetMethod]);
+
+
 
   const connect = useCallback(async () => {
     setError(null);
