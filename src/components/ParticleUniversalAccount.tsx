@@ -462,27 +462,35 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
-  const sendTestnetTx =
-    testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
-  const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
+  const sendDemoTx = isTestnet ? sendZeroDev7702Tx : sendMainnetTx;
 
   const totalUsd = useMemo(() => {
     if (!balance) return "—";
     return `$${balance.totalAmountInUSD.toFixed(2)}`;
   }, [balance]);
 
-  // For ZeroDev+Particle path, login happens inside the send action,
-  // so the button is always enabled in testnet.
-  const canSend = isTestnet
-    ? testnetMethod === "zerodev-particle"
-      ? true
-      : !!eoa
-    : !!ua;
+  // Intent runner: wraps the intent helper and surfaces logs/errors in the UI.
+  const runIntent = useCallback(
+    (label: string, fn: (log: (m: string) => void) => Promise<unknown>) =>
+      async () => {
+        setBusy(label);
+        setError(null);
+        setStatus(null);
+        setLogs([]);
+        try {
+          await fn(appendLog);
+          setStatus(`${label} ✓`);
+        } catch (e: any) {
+          setError(e?.shortMessage || e?.message || `${label} failed`);
+        } finally {
+          setBusy(null);
+        }
+      },
+    [appendLog]
+  );
 
-  const methodLabel =
-    testnetMethod === "zerodev-7702"
-      ? "ZeroDev (EIP-7702)"
-      : "ZeroDev + Particle";
+  const canSend = !!eoa || !isTestnet ? !!eoa || !!ua : false;
+
 
   return (
     <div className="w-full max-w-5xl mx-auto px-6 py-12">
