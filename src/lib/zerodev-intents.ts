@@ -78,10 +78,11 @@ async function buildIntentClient(log: LogFn, opts: { sponsored?: boolean } = {})
   });
 
   log("Creating multi-chain ECDSA validator…");
+  const signerAcc: any = { ...(wallet.account as any), address: addr };
   const ecdsaValidator = await deps.toMultiChainECDSAValidator(
     publicClient as any,
     {
-      signer: { ...wallet.account, address: addr } as any,
+      signer: signerAcc,
       kernelVersion: KERNEL_V3_2,
       entryPoint: getEntryPoint("0.7"),
     }
