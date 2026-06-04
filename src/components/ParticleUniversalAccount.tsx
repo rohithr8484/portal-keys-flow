@@ -29,7 +29,7 @@ type PrimaryBalance = {
 };
 
 type NetworkMode = "mainnet" | "testnet";
-type TestnetMethod = "zerodev-7702" | "zerodev-particle";
+
 
 // ---------- Arbitrum Sepolia + ZeroDev config ----------
 const ARB_SEPOLIA = {
@@ -77,13 +77,12 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return "mainnet";
     return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
   });
-  const [testnetMethod, setTestnetMethod] = useState<TestnetMethod>(() => {
-    if (typeof window === "undefined") return "zerodev-7702";
-    return (
-      (localStorage.getItem("ua_testnet_method") as TestnetMethod) ||
-      "zerodev-7702"
-    );
-  });
+  const [logs, setLogs] = useState<string[]>([]);
+  const appendLog = useCallback(
+    (m: string) => setLogs((l) => [...l, `${new Date().toLocaleTimeString()}  ${m}`]),
+    []
+  );
+
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -111,14 +110,8 @@ export function ParticleUniversalAccount() {
     setError(null);
   }, [network]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("ua_testnet_method", testnetMethod);
-    }
-    setSmartAccountAddress(null);
-    setStatus(null);
-    setError(null);
-  }, [testnetMethod]);
+
+
 
   const connect = useCallback(async () => {
     setError(null);
@@ -287,11 +280,55 @@ export function ParticleUniversalAccount() {
       });
 
       setBusy("Signing EIP-7702 authorization in MetaMask…");
-      // Sign the authorization manually so we can surface MetaMask errors clearly.
-      const authorization = await walletClient.signAuthorization({
-        account: walletClient.account,
-        contractAddress: KERNEL_V3_3 as `0x${string}`,
+      // viem's walletClient.signAuthorization rejects json-rpc accounts
+      // ("Account type 'json-rpc' is not supported"). Try MetaMask's native
+      // wallet_signAuthorization RPC first, then fall back to viem.
+      let authorization: any;
+      const nonce = await publicClient.getTransactionCount({
+        address: eoa as `0x${string}`,
       });
+      try {
+        const raw = await (window.ethereum as any).request({
+          method: "wallet_signAuthorization",
+          params: [
+            {
+              chainId: `0x${ARB_SEPOLIA.chainId.toString(16)}`,
+              address: KERNEL_V3_3,
+              nonce: `0x${nonce.toString(16)}`,
+            },
+          ],
+        });
+        // MetaMask returns { yParity, r, s } (or v, r, s)
+        authorization = {
+          chainId: ARB_SEPOLIA.chainId,
+          address: KERNEL_V3_3 as `0x${string}`,
+          nonce,
+          yParity:
+            typeof raw.yParity !== "undefined"
+              ? Number(raw.yParity)
+              : Number(raw.v) - 27,
+          r: raw.r,
+          s: raw.s,
+        };
+      } catch (rpcErr: any) {
+        // Fallback to viem (will throw on json-rpc accounts, but try anyway
+        // — some wallets register as local accounts).
+        try {
+          authorization = await walletClient.signAuthorization({
+            account: walletClient.account,
+            contractAddress: KERNEL_V3_3 as `0x${string}`,
+          });
+        } catch (viemErr: any) {
+          const code = rpcErr?.code;
+          if (code === 4200 || code === -32601 || /not supported|unknown method|wallet_signAuthorization/i.test(rpcErr?.message || "")) {
+            throw new Error(
+              `Your MetaMask (likely v13.x) does not support EIP-7702 wallet_signAuthorization yet. Use the Particle path below, or update to a MetaMask build with 7702 support.`
+            );
+          }
+          throw rpcErr;
+        }
+      }
+
 
       setBusy("Building Kernel smart account…");
       const entryPoint = getEntryPoint("0.7");
@@ -469,27 +506,35 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
-  const sendTestnetTx =
-    testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
-  const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
+  const sendDemoTx = isTestnet ? sendZeroDev7702Tx : sendMainnetTx;
 
   const totalUsd = useMemo(() => {
     if (!balance) return "—";
     return `$${balance.totalAmountInUSD.toFixed(2)}`;
   }, [balance]);
 
-  // For ZeroDev+Particle path, login happens inside the send action,
-  // so the button is always enabled in testnet.
-  const canSend = isTestnet
-    ? testnetMethod === "zerodev-particle"
-      ? true
-      : !!eoa
-    : !!ua;
+  // Intent runner: wraps the intent helper and surfaces logs/errors in the UI.
+  const runIntent = useCallback(
+    (label: string, fn: (log: (m: string) => void) => Promise<unknown>) =>
+      async () => {
+        setBusy(label);
+        setError(null);
+        setStatus(null);
+        setLogs([]);
+        try {
+          await fn(appendLog);
+          setStatus(`${label} ✓`);
+        } catch (e: any) {
+          setError(e?.shortMessage || e?.message || `${label} failed`);
+        } finally {
+          setBusy(null);
+        }
+      },
+    [appendLog]
+  );
 
-  const methodLabel =
-    testnetMethod === "zerodev-7702"
-      ? "ZeroDev (EIP-7702)"
-      : "ZeroDev + Particle";
+  const canSend = !!eoa || !isTestnet ? !!eoa || !!ua : false;
+
 
   return (
     <div className="w-full max-w-5xl mx-auto px-6 py-12">
@@ -532,51 +577,23 @@ export function ParticleUniversalAccount() {
       )}
 
       {isTestnet && (
-        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-2">
           <div>
-            <strong className="text-foreground">Testnet mode — Arbitrum Sepolia.</strong>{" "}
-            Gasless UserOps via ZeroDev paymaster. Two signer paths:
+            <strong className="text-foreground">Testnet — Arbitrum Sepolia.</strong>{" "}
+            Both signer paths shown below. Intent buttons run on Arbitrum mainnet → Base (requires real USDC).
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-foreground">Method:</span>
-            <div className="inline-flex rounded-md border border-panel-border bg-background/40 p-1">
-              {(
-                [
-                  ["zerodev-7702", "ZeroDev (EIP-7702)"],
-                  ["zerodev-particle", "ZeroDev + Particle"],
-                ] as const
-              ).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setTestnetMethod(k)}
-                  className={`px-3 py-1 text-xs rounded transition ${
-                    testnetMethod === k
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <a
-              className="text-xs text-primary hover:underline ml-1"
-              href={ARB_SEPOLIA.faucet}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Get test ETH ↗
-            </a>
-          </div>
-          <div className="text-[11px]">
-            {testnetMethod === "zerodev-7702"
-              ? "Upgrades your MetaMask EOA into a Kernel V3.3 smart account via EIP-7702 signAuthorization. Requires MetaMask with 7702 support."
-              : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
-          </div>
+          <a
+            className="text-xs text-primary hover:underline"
+            href={ARB_SEPOLIA.faucet}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Get test ETH ↗
+          </a>
         </div>
       )}
 
-      {!eoa && !(isTestnet && testnetMethod === "zerodev-particle") ? (
+      {!eoa && !isTestnet ? (
         <div className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-10 text-center">
           <div className="mx-auto size-14 rounded-2xl bg-primary/15 flex items-center justify-center text-2xl mb-4">
             🦊
@@ -604,7 +621,7 @@ export function ParticleUniversalAccount() {
                 </div>
                 <div>
                   <div className="text-sm font-medium">
-                    {isTestnet ? methodLabel : "Universal Account"}
+                    {isTestnet ? "ZeroDev Testnet" : "Universal Account"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {isTestnet
@@ -625,9 +642,16 @@ export function ParticleUniversalAccount() {
 
             {isTestnet ? (
               <div className="space-y-3">
-                {eoa && (
-                  <AddressRow label="EOA" value={eoa} loading={false} />
+                {!eoa && (
+                  <button
+                    onClick={connect}
+                    disabled={loading}
+                    className="w-full rounded-xl bg-primary py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {loading ? "Connecting…" : "Connect MetaMask"}
+                  </button>
                 )}
+                {eoa && <AddressRow label="EOA" value={eoa} loading={false} />}
                 {smartAccountAddress && (
                   <AddressRow
                     label="SA"
@@ -638,6 +662,15 @@ export function ParticleUniversalAccount() {
                 <div className="text-xs text-muted-foreground px-1">
                   Bundler/Paymaster: ZeroDev (chain {ARB_SEPOLIA.chainId})
                 </div>
+                {logs.length > 0 && (
+                  <div className="mt-3 max-h-48 overflow-auto rounded-md border border-panel-border bg-background/40 p-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+                    {logs.map((l, i) => (
+                      <div key={i} className="break-all">
+                        {l}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -679,81 +712,133 @@ export function ParticleUniversalAccount() {
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
               <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">
-                Transfer
+                {isTestnet ? "Gasless UserOps" : "Transfer"}
               </button>
             </div>
 
-            <div className="space-y-4">
-              <Field label={isTestnet ? "Send" : "Withdraw"}>
-                <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
-                    <div>
-                      <div className="text-sm font-medium">
-                        {isTestnet ? "UserOp" : "USDT"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {isTestnet ? "Gasless · ZeroDev" : "Arbitrum"}
-                      </div>
-                    </div>
+            {isTestnet ? (
+              <div className="space-y-5">
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                    Signer paths
                   </div>
-                  <div className="text-sm font-medium">
-                    {isTestnet ? (testnetMethod === "zerodev-7702" ? "2 calls" : "1 call") : "0.10"}
+                  <div className="space-y-2">
+                    <button
+                      onClick={sendZeroDev7702Tx}
+                      disabled={!eoa || !!busy}
+                      className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                    >
+                      {busy === "Building" ? busy : "Upgrade EOA & send gasless UserOp"}
+                    </button>
+                    <button
+                      onClick={sendZeroDevParticleTx}
+                      disabled={!!busy}
+                      className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                    >
+                      Login with Particle & send gasless UserOp
+                    </button>
                   </div>
                 </div>
-              </Field>
 
-              {!isTestnet && (
-                <>
-                  <div className="flex justify-center">
-                    <div className="size-8 rounded-full border border-panel-border bg-background/60 flex items-center justify-center text-muted-foreground">
-                      ↓
-                    </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                    ZeroDev Intent (Arbitrum → Base, mainnet)
                   </div>
-                  <Field label="To your EOA">
-                    <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                      <div className="text-sm font-mono">{short(eoa ?? "")}</div>
-                      <div className="text-xs text-muted-foreground">MetaMask</div>
-                    </div>
-                  </Field>
-                </>
-              )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <IntentBtn label="Intent · Default gas" onClick={runIntent("Intent (default)", (l) => import("@/lib/zerodev-intents").then((m) => m.sendIntentDefault(l)))} disabled={!eoa || !!busy} />
+                    <IntentBtn label="Intent · Native ETH" onClick={runIntent("Intent (native)", (l) => import("@/lib/zerodev-intents").then((m) => m.sendIntentNative(l)))} disabled={!eoa || !!busy} />
+                    <IntentBtn label="Intent · Sponsored" onClick={runIntent("Intent (sponsored)", (l) => import("@/lib/zerodev-intents").then((m) => m.sendIntentSponsored(l)))} disabled={!eoa || !!busy} />
+                    <IntentBtn label="Estimate Fee" onClick={runIntent("Estimate fee", (l) => import("@/lib/zerodev-intents").then((m) => m.estimateIntentFee(l)))} disabled={!eoa || !!busy} />
+                    <IntentBtn label="Enable Intent (V3.0→V3.2)" onClick={runIntent("Enable intent", (l) => import("@/lib/zerodev-intents").then((m) => m.enableIntent(l)))} disabled={!eoa || !!busy} />
+                    <IntentBtn label="Migrate to Intent Executor" onClick={runIntent("Migrate", (l) => import("@/lib/zerodev-intents").then((m) => m.migrateToIntentExecutor(l)))} disabled={!eoa || !!busy} />
+                  </div>
+                </div>
 
-              <button
-                onClick={sendDemoTx}
-                disabled={!canSend || !!busy}
-                className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-              >
-                {busy ??
-                  (isTestnet
-                    ? testnetMethod === "zerodev-7702"
-                      ? "Upgrade EOA & send gasless UserOp"
-                      : "Login with Particle & send gasless UserOp"
-                    : "Sign with MetaMask & Send")}
-              </button>
-
-              {status && (
-                <p className="text-xs text-[color:var(--success)] break-all">
-                  {status}
+                {busy && (
+                  <p className="text-xs text-muted-foreground">{busy}…</p>
+                )}
+                {status && (
+                  <p className="text-xs text-[color:var(--success)] break-all">
+                    {status}
+                  </p>
+                )}
+                {error && (
+                  <p className="text-xs text-destructive break-all">{error}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  EIP-7702 needs MetaMask with <code>wallet_signAuthorization</code>. If your version (e.g. 13.32.x) doesn't support it, the EOA path will fall back to an error and you should use the Particle path.
                 </p>
-              )}
-              {error && (
-                <p className="text-xs text-destructive break-all">{error}</p>
-              )}
-              <p className="text-[11px] text-muted-foreground text-center">
-                {isTestnet
-                  ? testnetMethod === "zerodev-7702"
-                    ? "Signs an EIP-7702 authorization with MetaMask, then sends a sponsored batched UserOp via ZeroDev."
-                    : "Particle Auth signer → ZeroDev ECDSA validator → sponsored Kernel UserOp."
-                  : "Signs rootHash with MetaMask, then submits via Particle."}
-              </p>
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <Field label="Withdraw">
+                  <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
+                      <div>
+                        <div className="text-sm font-medium">USDT</div>
+                        <div className="text-xs text-muted-foreground">Arbitrum</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">0.10</div>
+                  </div>
+                </Field>
+                <div className="flex justify-center">
+                  <div className="size-8 rounded-full border border-panel-border bg-background/60 flex items-center justify-center text-muted-foreground">
+                    ↓
+                  </div>
+                </div>
+                <Field label="To your EOA">
+                  <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
+                    <div className="text-sm font-mono">{short(eoa ?? "")}</div>
+                    <div className="text-xs text-muted-foreground">MetaMask</div>
+                  </div>
+                </Field>
+                <button
+                  onClick={sendDemoTx}
+                  disabled={!canSend || !!busy}
+                  className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                >
+                  {busy ?? "Sign with MetaMask & Send"}
+                </button>
+                {status && (
+                  <p className="text-xs text-[color:var(--success)] break-all">{status}</p>
+                )}
+                {error && (
+                  <p className="text-xs text-destructive break-all">{error}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Signs rootHash with MetaMask, then submits via Particle.
+                </p>
+              </div>
+            )}
           </section>
         </div>
       )}
     </div>
   );
 }
+
+function IntentBtn({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg border border-panel-border bg-background/40 px-3 py-2 text-xs font-medium text-foreground hover:bg-background/70 transition disabled:opacity-50 disabled:cursor-not-allowed text-left"
+    >
+      {label}
+    </button>
+  );
+}
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
