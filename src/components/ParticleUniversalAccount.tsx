@@ -280,11 +280,55 @@ export function ParticleUniversalAccount() {
       });
 
       setBusy("Signing EIP-7702 authorization in MetaMask…");
-      // Sign the authorization manually so we can surface MetaMask errors clearly.
-      const authorization = await walletClient.signAuthorization({
-        account: walletClient.account,
-        contractAddress: KERNEL_V3_3 as `0x${string}`,
+      // viem's walletClient.signAuthorization rejects json-rpc accounts
+      // ("Account type 'json-rpc' is not supported"). Try MetaMask's native
+      // wallet_signAuthorization RPC first, then fall back to viem.
+      let authorization: any;
+      const nonce = await publicClient.getTransactionCount({
+        address: eoa as `0x${string}`,
       });
+      try {
+        const raw = await (window.ethereum as any).request({
+          method: "wallet_signAuthorization",
+          params: [
+            {
+              chainId: `0x${ARB_SEPOLIA.chainId.toString(16)}`,
+              address: KERNEL_V3_3,
+              nonce: `0x${nonce.toString(16)}`,
+            },
+          ],
+        });
+        // MetaMask returns { yParity, r, s } (or v, r, s)
+        authorization = {
+          chainId: ARB_SEPOLIA.chainId,
+          address: KERNEL_V3_3 as `0x${string}`,
+          nonce,
+          yParity:
+            typeof raw.yParity !== "undefined"
+              ? Number(raw.yParity)
+              : Number(raw.v) - 27,
+          r: raw.r,
+          s: raw.s,
+        };
+      } catch (rpcErr: any) {
+        // Fallback to viem (will throw on json-rpc accounts, but try anyway
+        // — some wallets register as local accounts).
+        try {
+          authorization = await walletClient.signAuthorization({
+            account: walletClient.account,
+            contractAddress: KERNEL_V3_3 as `0x${string}`,
+          });
+        } catch (viemErr: any) {
+          const code = rpcErr?.code;
+          if (code === 4200 || code === -32601 || /not supported|unknown method|wallet_signAuthorization/i.test(rpcErr?.message || "")) {
+            throw new Error(
+              `Your MetaMask (likely v13.x) does not support EIP-7702 wallet_signAuthorization yet. Use the Particle path below, or update to a MetaMask build with 7702 support.`
+            );
+          }
+          throw rpcErr;
+        }
+      }
+
 
       setBusy("Building Kernel smart account…");
       const entryPoint = getEntryPoint("0.7");
