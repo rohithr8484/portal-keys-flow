@@ -338,16 +338,21 @@ export function ParticleUniversalAccount() {
         `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
       );
     } catch (e: any) {
-      const msg = e?.shortMessage || e?.message || "ZeroDev 7702 failed";
+      const raw = e?.shortMessage || e?.message || "ZeroDev 7702 failed";
+      const isUnsupported =
+        /json-rpc.*not supported|not supported|does not support|unsupported|wallet_signAuthorization|eth_signAuthorization/i.test(
+          raw
+        );
       setError(
-        msg.includes("does not support") || msg.includes("not supported")
-          ? `${msg} — your MetaMask may not yet support EIP-7702 signAuthorization. Try MetaMask 12+ on Sepolia.`
-          : msg
+        isUnsupported
+          ? `${raw} — EIP-7702 isn't active on Arbitrum Sepolia (Pectra not deployed yet) and MetaMask only exposes signAuthorization on Ethereum Sepolia with v12.10+. Use the "ZeroDev + Particle" path on Arb Sepolia, or switch this path to Ethereum Sepolia.`
+          : raw
       );
     } finally {
       setBusy(null);
     }
   }, [eoa, ensureArbSepolia]);
+
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
   const sendZeroDevParticleTx = useCallback(async () => {
