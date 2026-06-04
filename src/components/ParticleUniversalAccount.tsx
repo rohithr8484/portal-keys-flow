@@ -251,54 +251,56 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
-  // ---------- Testnet path 1: ZeroDev EIP-7702 (MetaMask EOA) ----------
+  // ---------- Testnet path 1: ZeroDev EIP-7702 (Local Account, per 7702.zerodev.app) ----------
   const sendZeroDev7702Tx = useCallback(async () => {
-    if (!eoa) return;
-    setBusy("Switching to Arbitrum Sepolia…");
+    setBusy("Generating local 7702 account…");
     setError(null);
     setStatus(null);
     try {
-      await ensureArbSepolia();
-
       const [
         { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
-        { KERNEL_V3_3, getEntryPoint },
+        { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap },
         viem,
+        accounts,
         { arbitrumSepolia },
       ] = await Promise.all([
         import("@zerodev/sdk"),
         import("@zerodev/sdk/constants"),
         import("viem"),
+        import("viem/accounts"),
         import("viem/chains"),
       ]);
 
-      const { createPublicClient, createWalletClient, custom, http, zeroAddress } =
-        viem;
+      const { createPublicClient, http, zeroAddress } = viem;
+      const { generatePrivateKey, privateKeyToAccount } = accounts;
+
+      const kernelVersion = KERNEL_V3_3;
+      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
+
+      // Per https://7702.zerodev.app/ — use a freshly generated local EOA so
+      // signAuthorization works regardless of wallet support. MetaMask does
+      // not yet expose wallet_signAuthorization on Arbitrum Sepolia.
+      const privateKey = generatePrivateKey();
+      const localAccount = privateKeyToAccount(privateKey);
 
       const publicClient = createPublicClient({
         transport: http(ARB_SEPOLIA.rpcUrl),
         chain: arbitrumSepolia,
       });
 
-      const walletClient = createWalletClient({
-        account: eoa as `0x${string}`,
-        chain: arbitrumSepolia,
-        transport: custom(window.ethereum),
-      });
-
-      setBusy("Signing EIP-7702 authorization in MetaMask…");
-      // Sign the authorization manually so we can surface MetaMask errors clearly.
-      const authorization = await walletClient.signAuthorization({
-        account: walletClient.account,
-        contractAddress: KERNEL_V3_3 as `0x${string}`,
+      setBusy("Signing EIP-7702 authorization (local key)…");
+      const authorization = await localAccount.signAuthorization({
+        chainId: arbitrumSepolia.id,
+        nonce: 0,
+        address: kernelAddresses.accountImplementationAddress,
       });
 
       setBusy("Building Kernel smart account…");
       const entryPoint = getEntryPoint("0.7");
       const account = await createKernelAccount(publicClient as any, {
-        eip7702Account: walletClient.account as any,
+        eip7702Account: localAccount,
         entryPoint,
-        kernelVersion: KERNEL_V3_3,
+        kernelVersion,
         eip7702Auth: authorization,
       });
 
@@ -338,20 +340,11 @@ export function ParticleUniversalAccount() {
         `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
       );
     } catch (e: any) {
-      const raw = e?.shortMessage || e?.message || "ZeroDev 7702 failed";
-      const isUnsupported =
-        /json-rpc.*not supported|not supported|does not support|unsupported|wallet_signAuthorization|eth_signAuthorization/i.test(
-          raw
-        );
-      setError(
-        isUnsupported
-          ? `${raw} — EIP-7702 isn't active on Arbitrum Sepolia (Pectra not deployed yet) and MetaMask only exposes signAuthorization on Ethereum Sepolia with v12.10+. Use the "ZeroDev + Particle" path on Arb Sepolia, or switch this path to Ethereum Sepolia.`
-          : raw
-      );
+      setError(e?.shortMessage || e?.message || "ZeroDev 7702 failed");
     } finally {
       setBusy(null);
     }
-  }, [eoa, ensureArbSepolia]);
+  }, []);
 
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
