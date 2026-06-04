@@ -383,8 +383,7 @@ export function ParticleUniversalAccount() {
         import("viem/chains"),
       ]);
 
-      const { createPublicClient, createWalletClient, custom, http, zeroAddress } =
-        viem;
+      const { createPublicClient, http, zeroAddress } = viem;
 
       const particle = new ParticleNetwork({
         projectId: PARTICLE_PROJECT_ID,
@@ -400,11 +399,11 @@ export function ParticleUniversalAccount() {
         await particle.auth.login();
       }
 
-      // Read the EOA from the provider
+      // Read the EOA from the provider (for display only — ZeroDev derives it from the provider)
       const accounts: string[] = await particleProvider.request({
         method: "eth_accounts",
       });
-      const particleEoa = accounts[0] as `0x${string}`;
+      const particleEoa = accounts?.[0] as `0x${string}` | undefined;
       if (!particleEoa) throw new Error("No Particle account returned");
 
       const publicClient = createPublicClient({
@@ -412,18 +411,14 @@ export function ParticleUniversalAccount() {
         chain: arbitrumSepolia,
       });
 
-      // Build a viem wallet client backed by Particle's EIP-1193 provider,
-      // which acts as the signer for the ZeroDev ECDSA validator.
-      const walletClient = createWalletClient({
-        account: particleEoa,
-        chain: arbitrumSepolia,
-        transport: custom(particleProvider as any),
-      });
-
       setBusy("Creating ECDSA validator…");
       const entryPoint = getEntryPoint("0.7");
+      // ZeroDev's Signer type accepts an EIP-1193 provider directly — this is
+      // the shape ZeroDev's Particle docs use. Passing walletClient.account
+      // (a JsonRpcAccount) is NOT a valid Signer and produced the
+      // "Cannot read properties of undefined (reading 'address')" crash.
       const ecdsaValidator = await signerToEcdsaValidator(publicClient as any, {
-        signer: walletClient.account as any,
+        signer: particleProvider as any,
         entryPoint,
         kernelVersion: KERNEL_V3_1,
       });
@@ -435,6 +430,7 @@ export function ParticleUniversalAccount() {
         kernelVersion: KERNEL_V3_1,
       });
       setSmartAccountAddress(account.address);
+
 
       const paymasterClient = createZeroDevPaymasterClient({
         chain: arbitrumSepolia,
