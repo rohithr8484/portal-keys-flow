@@ -95,6 +95,39 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [xp, setXp] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_xp") || 0);
+  });
+  const [txCount, setTxCount] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_txcount") || 0);
+  });
+  const [streak, setStreak] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_streak") || 0);
+  });
+
+  const awardXp = useCallback((amount: number) => {
+    setXp((x) => {
+      const next = x + amount;
+      try { localStorage.setItem("ua_xp", String(next)); } catch {}
+      return next;
+    });
+    setTxCount((c) => {
+      const next = c + 1;
+      try { localStorage.setItem("ua_txcount", String(next)); } catch {}
+      return next;
+    });
+    setStreak((s) => {
+      const next = s + 1;
+      try { localStorage.setItem("ua_streak", String(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const level = Math.floor(xp / 100) + 1;
+  const levelProgress = xp % 100;
 
   const missingAppId = !PARTICLE_APP_ID;
   const isTestnet = network === "testnet";
@@ -213,6 +246,7 @@ export function ParticleUniversalAccount() {
       const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
       setBusy("Broadcasting…");
       const result = await ua.sendTransaction(tx, signature);
+      awardXp(50);
       setStatus(
         `Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`
       );
@@ -336,6 +370,7 @@ export function ParticleUniversalAccount() {
         hash: userOpHash,
       });
 
+      awardXp(75);
       setStatus(
         `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
       );
@@ -453,6 +488,7 @@ export function ParticleUniversalAccount() {
         hash: userOpHash,
       });
 
+      awardXp(75);
       setStatus(
         `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
       );
@@ -486,14 +522,21 @@ export function ParticleUniversalAccount() {
       : "ZeroDev + Particle";
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 py-12">
-      <header className="mb-10 text-center">
+    <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
+      {/* Animated GameFi backdrop */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 gamefi-grid opacity-40" />
+        <div className="absolute -top-24 left-1/4 size-72 rounded-full bg-primary/20 blur-3xl float-slow" />
+        <div className="absolute top-40 right-10 size-64 rounded-full bg-accent/20 blur-3xl float-slow" style={{ animationDelay: "1.5s" }} />
+      </div>
+
+      <header className="mb-8 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-xs text-muted-foreground mb-4">
-          <span className="size-1.5 rounded-full bg-primary" />
+          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
           EIP-7702 · Particle Network · Universal Accounts
         </div>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight">
-          Connect MetaMask. Spend anywhere.
+        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight neon-text">
+          Connect MetaMask. <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Spend anywhere.</span>
         </h1>
         <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
           One EOA, one balance, every chain. Sign with MetaMask — Particle's
@@ -516,6 +559,64 @@ export function ParticleUniversalAccount() {
           ))}
         </div>
       </header>
+
+      {/* GameFi Dashboard — Player Stats */}
+      <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative size-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg font-bold glow-pulse">
+              {level}
+              <span className="absolute -bottom-1 -right-1 text-[9px] px-1 rounded bg-background border border-panel-border">LV</span>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">Operator</div>
+              <div className="text-sm font-medium font-mono">{eoa ? short(eoa) : "Unconnected"}</div>
+            </div>
+          </div>
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <div className="flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+              <span>XP · {xp}</span>
+              <span>Next LV · {100 - levelProgress}xp</span>
+            </div>
+            <div className="h-2 rounded-full bg-background/60 overflow-hidden relative">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                style={{ width: `${levelProgress}%` }}
+              />
+              <div className="absolute inset-0 shimmer-bar opacity-60" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="Level" value={String(level)} accent="primary" icon="⚡" />
+          <StatCard label="Total XP" value={String(xp)} accent="accent" icon="✦" />
+          <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
+          <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <QuestCard
+            title="First Contact"
+            desc="Connect a wallet"
+            done={!!eoa}
+            reward="+10 XP"
+          />
+          <QuestCard
+            title="Sign of Life"
+            desc="Send your first UserOp"
+            done={txCount >= 1}
+            reward="+50 XP"
+          />
+          <QuestCard
+            title="Chain Hopper"
+            desc="Complete 5 operations"
+            done={txCount >= 5}
+            reward="+200 XP"
+          />
+        </div>
+      </section>
+
 
       {missingAppId && !isTestnet && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
@@ -778,6 +879,80 @@ function AddressRow({
         {loading ? "Loading…" : short(value)}
       </div>
       {value && <Copy value={value} />}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  accent,
+  icon,
+}: {
+  label: string;
+  value: string;
+  accent: "primary" | "accent" | "success";
+  icon?: string;
+}) {
+  const accentClass =
+    accent === "success"
+      ? "text-[color:var(--success)]"
+      : accent === "accent"
+        ? "text-accent-foreground"
+        : "text-primary-foreground";
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-3 hover:border-primary/50 transition-colors group">
+      <div className="absolute -right-4 -top-4 size-16 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        {icon && <span className={`text-xs ${accentClass}`}>{icon}</span>}
+      </div>
+      <div className="text-xl font-bold tabular-nums neon-text">{value}</div>
+    </div>
+  );
+}
+
+function QuestCard({
+  title,
+  desc,
+  done,
+  reward,
+}: {
+  title: string;
+  desc: string;
+  done: boolean;
+  reward: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-xl border p-3 transition-all ${
+        done
+          ? "border-[color:var(--success)]/40 bg-[color:var(--success)]/5"
+          : "border-panel-border bg-background/40 hover:border-primary/40"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span
+              className={`size-4 rounded-full flex items-center justify-center text-[10px] ${
+                done
+                  ? "bg-[color:var(--success)] text-background"
+                  : "border border-panel-border text-muted-foreground"
+              }`}
+            >
+              {done ? "✓" : "○"}
+            </span>
+            <span className="text-xs font-medium">{title}</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground pl-6">{desc}</div>
+        </div>
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary-foreground border border-primary/30 whitespace-nowrap">
+          {reward}
+        </span>
+      </div>
     </div>
   );
 }

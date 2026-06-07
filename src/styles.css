@@ -76,3 +76,45 @@
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
 }
+
+@layer utilities {
+  .neon-border {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent),
+      0 0 24px -4px color-mix(in oklab, var(--primary) 50%, transparent),
+      inset 0 1px 0 0 color-mix(in oklab, var(--primary) 15%, transparent);
+  }
+  .neon-text {
+    text-shadow: 0 0 12px color-mix(in oklab, var(--primary) 70%, transparent);
+  }
+  .gamefi-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .glow-pulse {
+    animation: glow-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px -2px color-mix(in oklab, var(--primary) 50%, transparent); }
+    50% { box-shadow: 0 0 36px 2px color-mix(in oklab, var(--accent) 60%, transparent); }
+  }
+  .shimmer-bar {
+    background: linear-gradient(90deg,
+      transparent,
+      color-mix(in oklab, var(--primary) 60%, transparent),
+      transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .float-slow { animation: float-slow 6s ease-in-out infinite; }
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+}
