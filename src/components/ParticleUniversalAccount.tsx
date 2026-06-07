@@ -95,6 +95,39 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [xp, setXp] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_xp") || 0);
+  });
+  const [txCount, setTxCount] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_txcount") || 0);
+  });
+  const [streak, setStreak] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_streak") || 0);
+  });
+
+  const awardXp = useCallback((amount: number) => {
+    setXp((x) => {
+      const next = x + amount;
+      try { localStorage.setItem("ua_xp", String(next)); } catch {}
+      return next;
+    });
+    setTxCount((c) => {
+      const next = c + 1;
+      try { localStorage.setItem("ua_txcount", String(next)); } catch {}
+      return next;
+    });
+    setStreak((s) => {
+      const next = s + 1;
+      try { localStorage.setItem("ua_streak", String(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const level = Math.floor(xp / 100) + 1;
+  const levelProgress = xp % 100;
 
   const missingAppId = !PARTICLE_APP_ID;
   const isTestnet = network === "testnet";
