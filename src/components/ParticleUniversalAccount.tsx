@@ -246,6 +246,7 @@ export function ParticleUniversalAccount() {
       const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
       setBusy("Broadcasting…");
       const result = await ua.sendTransaction(tx, signature);
+      awardXp(50);
       setStatus(
         `Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`
       );
