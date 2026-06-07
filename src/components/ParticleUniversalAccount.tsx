@@ -370,6 +370,7 @@ export function ParticleUniversalAccount() {
         hash: userOpHash,
       });
 
+      awardXp(75);
       setStatus(
         `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
       );
