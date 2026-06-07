@@ -882,3 +882,77 @@ function AddressRow({
     </div>
   );
 }
+
+function StatCard({
+  label,
+  value,
+  accent,
+  icon,
+}: {
+  label: string;
+  value: string;
+  accent: "primary" | "accent" | "success";
+  icon?: string;
+}) {
+  const accentClass =
+    accent === "success"
+      ? "text-[color:var(--success)]"
+      : accent === "accent"
+        ? "text-accent-foreground"
+        : "text-primary-foreground";
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-3 hover:border-primary/50 transition-colors group">
+      <div className="absolute -right-4 -top-4 size-16 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        {icon && <span className={`text-xs ${accentClass}`}>{icon}</span>}
+      </div>
+      <div className="text-xl font-bold tabular-nums neon-text">{value}</div>
+    </div>
+  );
+}
+
+function QuestCard({
+  title,
+  desc,
+  done,
+  reward,
+}: {
+  title: string;
+  desc: string;
+  done: boolean;
+  reward: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-xl border p-3 transition-all ${
+        done
+          ? "border-[color:var(--success)]/40 bg-[color:var(--success)]/5"
+          : "border-panel-border bg-background/40 hover:border-primary/40"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span
+              className={`size-4 rounded-full flex items-center justify-center text-[10px] ${
+                done
+                  ? "bg-[color:var(--success)] text-background"
+                  : "border border-panel-border text-muted-foreground"
+              }`}
+            >
+              {done ? "✓" : "○"}
+            </span>
+            <span className="text-xs font-medium">{title}</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground pl-6">{desc}</div>
+        </div>
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary-foreground border border-primary/30 whitespace-nowrap">
+          {reward}
+        </span>
+      </div>
+    </div>
+  );
+}
