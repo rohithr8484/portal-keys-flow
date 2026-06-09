@@ -623,24 +623,16 @@ export function ParticleUniversalAccount() {
         setBusy(`${label} · building smart account…`);
         const { kernelClient, publicClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // "out" (Play Game / Spend Coins): send a small platform fee FROM the
-        // smart account to a real recipient, so value visibly leaves the SA.
+        // Fully paymaster-sponsored UserOp: no ETH required on the SA.
+        // "out" (Play Game / Spend Coins): 0-value call to the platform fee
+        //       address — the on-chain tx records EntryPoint -> SA -> fee addr.
         // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
         const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
-        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
-
-        if (direction === "out") {
-          const smartBalance = await (publicClient as any).getBalance({ address: smart });
-          if (smartBalance < value) {
-            throw new Error(
-              `Smart account ${short(smart)} needs at least 0.000001 ETH on ${ARB_SEPOLIA.label} to send the platform fee.`,
-            );
-          }
-        }
+        void publicClient; // balance precheck no longer needed (paymaster-sponsored)
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await (kernelClient as any).sendUserOperation({
-          calls: [{ to, value, data: "0x" }],
+          calls: [{ to, value: BigInt(0), data: "0x" }],
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
