@@ -95,6 +95,21 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coins, setCoins] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_coins") || 0);
+  });
+  const [usdc, setUsdc] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_usdc") || 0);
+  });
+  type QuestKey = "play" | "claim" | "spend";
+  const [questTx, setQuestTx] = useState<Record<QuestKey, string | null>>({
+    play: null,
+    claim: null,
+    spend: null,
+  });
+  const [questBusy, setQuestBusy] = useState<QuestKey | null>(null);
   const [xp, setXp] = useState<number>(() => {
     if (typeof window === "undefined") return 0;
     return Number(localStorage.getItem("ua_xp") || 0);
@@ -107,6 +122,10 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return 0;
     return Number(localStorage.getItem("ua_streak") || 0);
   });
+
+  const persistNum = (key: string, v: number) => {
+    try { localStorage.setItem(key, String(v)); } catch {}
+  };
 
   const awardXp = useCallback((amount: number) => {
     setXp((x) => {
@@ -499,6 +518,174 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
+  // ---------- Build a kernel client on demand for quest actions ----------
+  const buildKernelClient = useCallback(async () => {
+    const [
+      { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
+      zerodevConsts,
+      viem,
+      accountsMod,
+      { arbitrumSepolia },
+    ] = await Promise.all([
+      import("@zerodev/sdk"),
+      import("@zerodev/sdk/constants"),
+      import("viem"),
+      import("viem/accounts"),
+      import("viem/chains"),
+    ]);
+    const { createPublicClient, http } = viem;
+    const publicClient = createPublicClient({
+      transport: http(ARB_SEPOLIA.rpcUrl),
+      chain: arbitrumSepolia,
+    });
+    const paymasterClient = createZeroDevPaymasterClient({
+      chain: arbitrumSepolia,
+      transport: http(ZERODEV_RPC),
+    });
+
+    let account: any;
+    if (testnetMethod === "zerodev-7702") {
+      const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
+      const { generatePrivateKey, privateKeyToAccount } = accountsMod;
+      const kernelVersion = KERNEL_V3_3;
+      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
+      const localAccount = privateKeyToAccount(generatePrivateKey());
+      const authorization = await localAccount.signAuthorization({
+        chainId: arbitrumSepolia.id,
+        nonce: 0,
+        address: kernelAddresses.accountImplementationAddress,
+      });
+      account = await createKernelAccount(publicClient as any, {
+        eip7702Account: localAccount,
+        entryPoint: getEntryPoint("0.7"),
+        kernelVersion,
+        eip7702Auth: authorization,
+      });
+    } else {
+      const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] =
+        await Promise.all([
+          import("@particle-network/auth"),
+          import("@particle-network/provider"),
+          import("@zerodev/ecdsa-validator"),
+        ]);
+      const { KERNEL_V3_1, getEntryPoint } = zerodevConsts;
+      const particle = new ParticleNetwork({
+        projectId: PARTICLE_PROJECT_ID,
+        clientKey: PARTICLE_CLIENT_KEY,
+        appId: PARTICLE_APP_ID,
+        chainName: "arbitrum" as any,
+        chainId: ARB_SEPOLIA.chainId,
+      });
+      const particleProvider = new ParticleProvider(particle.auth);
+      if (!particle.auth.isLogin()) await particle.auth.login();
+      const entryPoint = getEntryPoint("0.7");
+      const ecdsaValidator = await signerToEcdsaValidator(publicClient as any, {
+        signer: particleProvider as any,
+        entryPoint,
+        kernelVersion: KERNEL_V3_1,
+      });
+      account = await createKernelAccount(publicClient as any, {
+        plugins: { sudo: ecdsaValidator },
+        entryPoint,
+        kernelVersion: KERNEL_V3_1,
+      });
+    }
+
+    setSmartAccountAddress(account.address);
+    const kernelClient = createKernelAccountClient({
+      account,
+      chain: arbitrumSepolia,
+      bundlerTransport: http(ZERODEV_RPC),
+      paymaster: paymasterClient,
+      client: publicClient,
+      userOperation: {
+        estimateFeesPerGas: async ({ bundlerClient }: any) =>
+          getUserOperationGasPrice(bundlerClient),
+      },
+    });
+    const { zeroAddress } = viem;
+    return { kernelClient, zeroAddress };
+  }, [testnetMethod]);
+
+  // ---------- GameFi quest runner ----------
+  const runQuest = useCallback(
+    async (
+      key: QuestKey,
+      label: string,
+      effect: () => void,
+    ) => {
+      setQuestBusy(key);
+      setError(null);
+      setStatus(null);
+      try {
+        setBusy(`${label} · building smart account…`);
+        const { kernelClient, zeroAddress } = await buildKernelClient();
+        setBusy(`${label} · sending gasless UserOp…`);
+        const userOpHash = await kernelClient.sendUserOperation({
+          callData: await kernelClient.account!.encodeCalls([
+            { to: zeroAddress, value: BigInt(0), data: "0x" },
+          ]),
+        });
+        const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
+        const txHash = receipt.receipt.transactionHash;
+        setQuestTx((q) => ({ ...q, [key]: txHash }));
+        effect();
+        awardXp(50);
+        setStatus(`${label} confirmed! ${ARB_SEPOLIA.explorer}/tx/${txHash}`);
+      } catch (e: any) {
+        setError(e?.shortMessage || e?.message || `${label} failed`);
+      } finally {
+        setQuestBusy(null);
+        setBusy(null);
+      }
+    },
+    [buildKernelClient, awardXp],
+  );
+
+  const playGame = useCallback(
+    () =>
+      runQuest("play", "🎮 Play Game", () => {
+        setUsdc((v) => {
+          const n = v + 1;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+  const claimRewards = useCallback(
+    () =>
+      runQuest("claim", "🎁 Claim Rewards", () => {
+        setUsdc((v) => {
+          const n = v + 2;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+        setCoins((c) => {
+          const n = c + 10;
+          persistNum("ua_coins", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+  const spendCoins = useCallback(
+    () =>
+      runQuest("spend", "🛒 Spend Coins", () => {
+        setCoins((c) => {
+          const n = Math.max(0, c - 5);
+          persistNum("ua_coins", n);
+          return n;
+        });
+        setUsdc((v) => {
+          const n = v + 3;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+
   const sendTestnetTx =
     testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
   const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
@@ -588,11 +775,13 @@ export function ParticleUniversalAccount() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard label="Level" value={String(level)} accent="primary" icon="⚡" />
           <StatCard label="Total XP" value={String(xp)} accent="accent" icon="✦" />
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
+          <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
+          <StatCard label="USDC" value={usdc.toFixed(2)} accent="success" icon="$" />
         </div>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -615,7 +804,58 @@ export function ParticleUniversalAccount() {
             reward="+200 XP"
           />
         </div>
+
+        {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
+        {isTestnet && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-sm font-semibold neon-text">Game Loop · {methodLabel}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Each action sends a sponsored UserOp on Arbitrum Sepolia.
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <GameActionCard
+                emoji="🎮"
+                title="Play Game"
+                subtitle="→ Earn USDC"
+                reward="+1 USDC"
+                busy={questBusy === "play"}
+                disabled={!!questBusy}
+                onClick={playGame}
+                txHash={questTx.play}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+              <GameActionCard
+                emoji="🎁"
+                title="Claim Rewards"
+                subtitle="→ Receive USDC"
+                reward="+2 USDC · +10 🪙"
+                busy={questBusy === "claim"}
+                disabled={!!questBusy}
+                onClick={claimRewards}
+                txHash={questTx.claim}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+              <GameActionCard
+                emoji="🛒"
+                title="Spend Coins"
+                subtitle="Buy Items → Earn USDC"
+                reward="-5 🪙 · +3 USDC"
+                busy={questBusy === "spend"}
+                disabled={!!questBusy || coins < 5}
+                onClick={spendCoins}
+                txHash={questTx.spend}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+            </div>
+          </div>
+        )}
       </section>
+
+
 
 
       {missingAppId && !isTestnet && (
@@ -953,6 +1193,64 @@ function QuestCard({
           {reward}
         </span>
       </div>
+    </div>
+  );
+}
+
+function GameActionCard({
+  emoji,
+  title,
+  subtitle,
+  reward,
+  busy,
+  disabled,
+  onClick,
+  txHash,
+  explorer,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  reward: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  txHash: string | null;
+  explorer: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
+      <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
+      <div className="flex items-start gap-3 mb-3">
+        <div className="size-10 rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-xl">
+          {emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-[11px] text-muted-foreground">{subtitle}</div>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary-foreground border border-primary/30 whitespace-nowrap">
+          {reward}
+        </span>
+      </div>
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className="w-full rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+      >
+        {busy ? "Sending UserOp…" : `${emoji} ${title}`}
+      </button>
+      {txHash && (
+        <a
+          href={`${explorer}/tx/${txHash}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 block text-[10px] text-[color:var(--success)] hover:underline truncate font-mono"
+          title={txHash}
+        >
+          ✓ tx {txHash.slice(0, 10)}…{txHash.slice(-6)} ↗
+        </a>
+      )}
     </div>
   );
 }
