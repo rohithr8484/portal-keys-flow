@@ -1256,6 +1256,8 @@ function GameActionCard({
   onClick,
   txHash,
   explorer,
+  smartAccount,
+  direction,
 }: {
   emoji: string;
   title: string;
@@ -1266,7 +1268,10 @@ function GameActionCard({
   onClick: () => void;
   txHash: string | null;
   explorer: string;
+  smartAccount: string | null;
+  direction: "in" | "out";
 }) {
+  const dirLabel = direction === "out" ? "ETH out · from" : "ETH in · to";
   return (
     <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
       <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
@@ -1289,6 +1294,29 @@ function GameActionCard({
       >
         {busy ? "Sending UserOp…" : `${emoji} ${title}`}
       </button>
+      <div className="mt-2 rounded-md border border-panel-border bg-background/40 px-2 py-1.5">
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+          Smart Account · {dirLabel}
+        </div>
+        {smartAccount ? (
+          <div className="flex items-center gap-1">
+            <a
+              href={`${explorer}/address/${smartAccount}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[10px] text-primary-foreground hover:underline truncate"
+              title={smartAccount}
+            >
+              {smartAccount.slice(0, 10)}…{smartAccount.slice(-8)}
+            </a>
+            <Copy value={smartAccount} />
+          </div>
+        ) : (
+          <div className="text-[10px] text-muted-foreground italic">
+            click to derive on first run
+          </div>
+        )}
+      </div>
       {txHash && (
         <a
           href={`${explorer}/tx/${txHash}`}
@@ -1303,3 +1331,4 @@ function GameActionCard({
     </div>
   );
 }
+
