@@ -659,8 +659,11 @@ export function ParticleUniversalAccount() {
         const smart = kernelClient.account!.address as `0x${string}`;
         // For "out": move 1 wei FROM smart account to burn address.
         // For "in": self-call (acts as a receipt to the smart account).
-        const to = direction === "out" ? zeroAddress : smart;
-        const value = direction === "out" ? BigInt(1) : BigInt(0);
+        // Use 0-value self-calls so the UserOp never reverts on an unfunded SA.
+        // `direction` is purely a UI label indicating which side the SA acts as.
+        const to = smart;
+        const value = BigInt(0);
+
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await kernelClient.sendUserOperation({
           callData: await kernelClient.account!.encodeCalls([
@@ -823,6 +826,8 @@ export function ParticleUniversalAccount() {
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
           <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
+          <StatCard label="ETH" value={usdc.toFixed(2)} accent="success" icon="Ξ" />
+
 
         </div>
 
@@ -862,8 +867,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎮"
                 title="Play Game"
-                subtitle="→ Earn USDC"
-                reward="+1 USDC"
+                subtitle="→ Earn ETH"
+                reward="+1 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
                 onClick={playGame}
@@ -875,8 +880,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎁"
                 title="Claim Rewards"
-                subtitle="→ Receive USDC"
-                reward="+2 USDC · +10 🪙"
+                subtitle="→ Receive ETH"
+                reward="+2 ETH · +10 🪙"
                 busy={questBusy === "claim"}
                 disabled={!!questBusy}
                 onClick={claimRewards}
@@ -888,8 +893,9 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🛒"
                 title="Spend Coins"
-                subtitle="Buy Items → Earn USDC"
-                reward="-5 🪙 · +3 USDC"
+                subtitle="Buy Items → Earn ETH"
+                reward="-5 🪙 · +3 ETH"
+
                 busy={questBusy === "spend"}
                 disabled={!!questBusy || coins < 5}
                 onClick={spendCoins}
@@ -1271,7 +1277,7 @@ function GameActionCard({
   smartAccount: string | null;
   direction: "in" | "out";
 }) {
-  const dirLabel = direction === "out" ? "ETH out · from" : "ETH in · to";
+  const dirLabel = direction === "out" ? "Action from" : "Reward to";
   return (
     <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
       <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
