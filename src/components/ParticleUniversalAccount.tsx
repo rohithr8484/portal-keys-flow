@@ -175,19 +175,21 @@ export function ParticleUniversalAccount() {
     setUa(null);
     setAddresses(null);
     setBalance(null);
-    setSmartAccountAddress(null);
+    setSmartAccountAddress(
+      network === "testnet" && testnetMethod === "zerodev-7702" ? eoa : null,
+    );
     setStatus(null);
     setError(null);
-  }, [network]);
+  }, [network, testnetMethod, eoa]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("ua_testnet_method", testnetMethod);
     }
-    setSmartAccountAddress(null);
+    setSmartAccountAddress(testnetMethod === "zerodev-7702" ? eoa : null);
     setStatus(null);
     setError(null);
-  }, [testnetMethod]);
+  }, [testnetMethod, eoa]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -332,7 +334,7 @@ export function ParticleUniversalAccount() {
 
       const [
         { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
-        { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap },
+        { KERNEL_V3_3, getEntryPoint },
         viem,
         { arbitrumSepolia },
       ] = await Promise.all([
@@ -345,7 +347,6 @@ export function ParticleUniversalAccount() {
       const { createPublicClient, http, zeroAddress } = viem;
 
       const kernelVersion = KERNEL_V3_3;
-      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
 
       const publicClient = createPublicClient({
         transport: http(ARB_SEPOLIA.rpcUrl),
@@ -528,13 +529,11 @@ export function ParticleUniversalAccount() {
       { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
       zerodevConsts,
       viem,
-      accountsMod,
       { arbitrumSepolia },
     ] = await Promise.all([
       import("@zerodev/sdk"),
       import("@zerodev/sdk/constants"),
       import("viem"),
-      import("viem/accounts"),
       import("viem/chains"),
     ]);
     const { createPublicClient, http } = viem;
@@ -549,9 +548,8 @@ export function ParticleUniversalAccount() {
 
     let account: any;
     if (testnetMethod === "zerodev-7702") {
-      const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
+      const { KERNEL_V3_3, getEntryPoint } = zerodevConsts;
       const kernelVersion = KERNEL_V3_3;
-      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
       if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
       await ensureArbSepolia();
       account = await createKernelAccount(publicClient as any, {
