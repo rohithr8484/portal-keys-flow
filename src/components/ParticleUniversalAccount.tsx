@@ -103,7 +103,6 @@ function Copy({ value }: { value: string }) {
 }
 
 export function ParticleUniversalAccount() {
-  const [mounted, setMounted] = useState(false);
   const [network, setNetwork] = useState<NetworkMode>("mainnet");
   const [testnetMethod, setTestnetMethod] =
     useState<TestnetMethod>("zerodev-7702");
@@ -149,7 +148,6 @@ export function ParticleUniversalAccount() {
     setXp(Number(localStorage.getItem("ua_xp") || 0));
     setTxCount(Number(localStorage.getItem("ua_txcount") || 0));
     setStreak(Number(localStorage.getItem("ua_streak") || 0));
-    setMounted(true);
   }, []);
 
   const awardXp = useCallback((amount: number) => {
