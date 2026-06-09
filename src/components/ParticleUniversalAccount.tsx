@@ -1277,7 +1277,7 @@ function GameActionCard({
   smartAccount: string | null;
   direction: "in" | "out";
 }) {
-  const dirLabel = direction === "out" ? "ETH out · from" : "ETH in · to";
+  const dirLabel = direction === "out" ? "Action from" : "Reward to";
   return (
     <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
       <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
