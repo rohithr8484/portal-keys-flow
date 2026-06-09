@@ -621,6 +621,12 @@ export function ParticleUniversalAccount() {
     }
 
     setSmartAccountAddress(account.address);
+    try {
+      if (testnetMethod === "zerodev-particle" && typeof window !== "undefined") {
+        localStorage.setItem("ua_particle_sa", account.address);
+      }
+    } catch {}
+
     const kernelClient = createKernelAccountClient({
       account,
       chain: arbitrumSepolia,
