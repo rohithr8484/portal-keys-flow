@@ -659,8 +659,11 @@ export function ParticleUniversalAccount() {
         const smart = kernelClient.account!.address as `0x${string}`;
         // For "out": move 1 wei FROM smart account to burn address.
         // For "in": self-call (acts as a receipt to the smart account).
-        const to = direction === "out" ? zeroAddress : smart;
-        const value = direction === "out" ? BigInt(1) : BigInt(0);
+        // Use 0-value self-calls so the UserOp never reverts on an unfunded SA.
+        // `direction` is purely a UI label indicating which side the SA acts as.
+        const to = smart;
+        const value = BigInt(0);
+
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await kernelClient.sendUserOperation({
           callData: await kernelClient.account!.encodeCalls([
