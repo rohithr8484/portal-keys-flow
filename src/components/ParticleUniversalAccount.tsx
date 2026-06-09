@@ -44,6 +44,10 @@ const ARB_SEPOLIA = {
 const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
+const PLATFORM_FEE_ADDRESS =
+  "0x1111111111111111111111111111111111111111" as `0x${string}`;
+const QUEST_PLATFORM_FEE_WEI = BigInt(1_000_000_000_000); // 0.000001 ETH
+
 declare global {
   interface Window {
     ethereum?: any;
@@ -145,7 +149,7 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
-  // Pre-derive 7702 smart account address from persisted key (EIP-7702: SA address == EOA address)
+  // EIP-7702 smart account address is the connected wallet address itself.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (testnetMethod !== "zerodev-7702") {
@@ -154,18 +158,8 @@ export function ParticleUniversalAccount() {
       setSmartAccountAddress(cached);
       return;
     }
-    (async () => {
-      try {
-        const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
-        let pk = localStorage.getItem("ua_7702_pk") as `0x${string}` | null;
-        if (!pk) {
-          pk = generatePrivateKey();
-          localStorage.setItem("ua_7702_pk", pk);
-        }
-        setSmartAccountAddress(privateKeyToAccount(pk).address);
-      } catch {}
-    })();
-  }, [testnetMethod]);
+    setSmartAccountAddress(eoa);
+  }, [testnetMethod, eoa]);
 
 
   const level = Math.floor(xp / 100) + 1;
@@ -329,55 +323,41 @@ export function ParticleUniversalAccount() {
 
   // ---------- Testnet path 1: ZeroDev EIP-7702 (Local Account, per 7702.zerodev.app) ----------
   const sendZeroDev7702Tx = useCallback(async () => {
-    setBusy("Generating local 7702 account…");
+    setBusy("Preparing connected EIP-7702 smart wallet…");
     setError(null);
     setStatus(null);
     try {
+      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
+      await ensureArbSepolia();
+
       const [
         { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
-        { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap },
+        { KERNEL_V3_3, getEntryPoint },
         viem,
-        accounts,
         { arbitrumSepolia },
       ] = await Promise.all([
         import("@zerodev/sdk"),
         import("@zerodev/sdk/constants"),
         import("viem"),
-        import("viem/accounts"),
         import("viem/chains"),
       ]);
 
       const { createPublicClient, http, zeroAddress } = viem;
-      const { generatePrivateKey, privateKeyToAccount } = accounts;
 
       const kernelVersion = KERNEL_V3_3;
-      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
-
-      // Per https://7702.zerodev.app/ — use a freshly generated local EOA so
-      // signAuthorization works regardless of wallet support. MetaMask does
-      // not yet expose wallet_signAuthorization on Arbitrum Sepolia.
-      const privateKey = generatePrivateKey();
-      const localAccount = privateKeyToAccount(privateKey);
 
       const publicClient = createPublicClient({
         transport: http(ARB_SEPOLIA.rpcUrl),
         chain: arbitrumSepolia,
       });
 
-      setBusy("Signing EIP-7702 authorization (local key)…");
-      const authorization = await localAccount.signAuthorization({
-        chainId: arbitrumSepolia.id,
-        nonce: 0,
-        address: kernelAddresses.accountImplementationAddress,
-      });
-
       setBusy("Building Kernel smart account…");
       const entryPoint = getEntryPoint("0.7");
       const account = await createKernelAccount(publicClient as any, {
-        eip7702Account: localAccount,
+        eip7702Account: window.ethereum,
+        address: eoa as `0x${string}`,
         entryPoint,
         kernelVersion,
-        eip7702Auth: authorization,
       });
 
       setSmartAccountAddress(account.address);
@@ -421,7 +401,7 @@ export function ParticleUniversalAccount() {
     } finally {
       setBusy(null);
     }
-  }, []);
+  }, [eoa, ensureArbSepolia, awardXp]);
 
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
@@ -547,13 +527,11 @@ export function ParticleUniversalAccount() {
       { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
       zerodevConsts,
       viem,
-      accountsMod,
       { arbitrumSepolia },
     ] = await Promise.all([
       import("@zerodev/sdk"),
       import("@zerodev/sdk/constants"),
       import("viem"),
-      import("viem/accounts"),
       import("viem/chains"),
     ]);
     const { createPublicClient, http } = viem;
@@ -568,26 +546,15 @@ export function ParticleUniversalAccount() {
 
     let account: any;
     if (testnetMethod === "zerodev-7702") {
-      const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
-      const { privateKeyToAccount, generatePrivateKey } = accountsMod;
+      const { KERNEL_V3_3, getEntryPoint } = zerodevConsts;
       const kernelVersion = KERNEL_V3_3;
-      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
-      let pk = (typeof window !== "undefined" && localStorage.getItem("ua_7702_pk")) as `0x${string}` | null;
-      if (!pk) {
-        pk = generatePrivateKey();
-        try { localStorage.setItem("ua_7702_pk", pk!); } catch {}
-      }
-      const localAccount = privateKeyToAccount(pk!);
-      const authorization = await localAccount.signAuthorization({
-        chainId: arbitrumSepolia.id,
-        nonce: 0,
-        address: kernelAddresses.accountImplementationAddress,
-      });
+      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
+      await ensureArbSepolia();
       account = await createKernelAccount(publicClient as any, {
-        eip7702Account: localAccount,
+        eip7702Account: window.ethereum,
+        address: eoa as `0x${string}`,
         entryPoint: getEntryPoint("0.7"),
         kernelVersion,
-        eip7702Auth: authorization,
       });
 
     } else {
@@ -638,9 +605,8 @@ export function ParticleUniversalAccount() {
           getUserOperationGasPrice(bundlerClient),
       },
     });
-    const { zeroAddress } = viem;
-    return { kernelClient, zeroAddress };
-  }, [testnetMethod]);
+    return { kernelClient, publicClient };
+  }, [testnetMethod, eoa, ensureArbSepolia]);
 
   // ---------- GameFi quest runner ----------
   const runQuest = useCallback(
@@ -655,20 +621,26 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient } = await buildKernelClient();
+        const { kernelClient, publicClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // "out" (Play Game / Spend Coins): spend 1 wei FROM the smart account
-        // to a burn address — funded via the SA's own ETH balance.
+        // "out" (Play Game / Spend Coins): send a small platform fee FROM the
+        // smart account to a real recipient, so value visibly leaves the SA.
         // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
-        const BURN = "0x000000000000000000000000000000000000dEaD" as `0x${string}`;
-        const to = direction === "out" ? BURN : smart;
-        const value = direction === "out" ? BigInt(1) : BigInt(0);
+        const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
+        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
+
+        if (direction === "out") {
+          const smartBalance = await (publicClient as any).getBalance({ address: smart });
+          if (smartBalance < value) {
+            throw new Error(
+              `Smart account ${short(smart)} needs at least 0.000001 ETH on ${ARB_SEPOLIA.label} to send the platform fee.`,
+            );
+          }
+        }
 
         setBusy(`${label} · sending gasless UserOp…`);
-        const userOpHash = await kernelClient.sendUserOperation({
-          callData: await kernelClient.account!.encodeCalls([
-            { to, value, data: "0x" },
-          ]),
+        const userOpHash = await (kernelClient as any).sendUserOperation({
+          calls: [{ to, value, data: "0x" }],
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
@@ -960,7 +932,7 @@ export function ParticleUniversalAccount() {
           </div>
           <div className="text-[11px]">
             {testnetMethod === "zerodev-7702"
-              ? "Upgrades your MetaMask EOA into a Kernel V3.3 smart account via EIP-7702 signAuthorization. Requires MetaMask with 7702 support."
+              ? "Uses your connected wallet as the EIP-7702 Kernel smart account; Play Game and Spend Coins send a small ETH platform fee out from that address."
               : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
