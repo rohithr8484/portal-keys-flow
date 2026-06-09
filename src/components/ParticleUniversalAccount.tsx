@@ -145,6 +145,29 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
+  // Pre-derive 7702 smart account address from persisted key (EIP-7702: SA address == EOA address)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (testnetMethod !== "zerodev-7702") {
+      // Particle path: address resolved after login during first quest
+      const cached = localStorage.getItem("ua_particle_sa");
+      setSmartAccountAddress(cached);
+      return;
+    }
+    (async () => {
+      try {
+        const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
+        let pk = localStorage.getItem("ua_7702_pk") as `0x${string}` | null;
+        if (!pk) {
+          pk = generatePrivateKey();
+          localStorage.setItem("ua_7702_pk", pk);
+        }
+        setSmartAccountAddress(privateKeyToAccount(pk).address);
+      } catch {}
+    })();
+  }, [testnetMethod]);
+
+
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
 
@@ -546,10 +569,15 @@ export function ParticleUniversalAccount() {
     let account: any;
     if (testnetMethod === "zerodev-7702") {
       const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
-      const { generatePrivateKey, privateKeyToAccount } = accountsMod;
+      const { privateKeyToAccount, generatePrivateKey } = accountsMod;
       const kernelVersion = KERNEL_V3_3;
       const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
-      const localAccount = privateKeyToAccount(generatePrivateKey());
+      let pk = (typeof window !== "undefined" && localStorage.getItem("ua_7702_pk")) as `0x${string}` | null;
+      if (!pk) {
+        pk = generatePrivateKey();
+        try { localStorage.setItem("ua_7702_pk", pk!); } catch {}
+      }
+      const localAccount = privateKeyToAccount(pk!);
       const authorization = await localAccount.signAuthorization({
         chainId: arbitrumSepolia.id,
         nonce: 0,
@@ -561,6 +589,7 @@ export function ParticleUniversalAccount() {
         kernelVersion,
         eip7702Auth: authorization,
       });
+
     } else {
       const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] =
         await Promise.all([
@@ -592,6 +621,12 @@ export function ParticleUniversalAccount() {
     }
 
     setSmartAccountAddress(account.address);
+    try {
+      if (testnetMethod === "zerodev-particle" && typeof window !== "undefined") {
+        localStorage.setItem("ua_particle_sa", account.address);
+      }
+    } catch {}
+
     const kernelClient = createKernelAccountClient({
       account,
       chain: arbitrumSepolia,
@@ -612,6 +647,7 @@ export function ParticleUniversalAccount() {
     async (
       key: QuestKey,
       label: string,
+      direction: "out" | "in",
       effect: () => void,
     ) => {
       setQuestBusy(key);
@@ -620,10 +656,15 @@ export function ParticleUniversalAccount() {
       try {
         setBusy(`${label} · building smart account…`);
         const { kernelClient, zeroAddress } = await buildKernelClient();
+        const smart = kernelClient.account!.address as `0x${string}`;
+        // For "out": move 1 wei FROM smart account to burn address.
+        // For "in": self-call (acts as a receipt to the smart account).
+        const to = direction === "out" ? zeroAddress : smart;
+        const value = direction === "out" ? BigInt(1) : BigInt(0);
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await kernelClient.sendUserOperation({
           callData: await kernelClient.account!.encodeCalls([
-            { to: zeroAddress, value: BigInt(0), data: "0x" },
+            { to, value, data: "0x" },
           ]),
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
@@ -644,7 +685,7 @@ export function ParticleUniversalAccount() {
 
   const playGame = useCallback(
     () =>
-      runQuest("play", "🎮 Play Game", () => {
+      runQuest("play", "🎮 Play Game", "out", () => {
         setUsdc((v) => {
           const n = v + 1;
           persistNum("ua_usdc", n);
@@ -655,7 +696,7 @@ export function ParticleUniversalAccount() {
   );
   const claimRewards = useCallback(
     () =>
-      runQuest("claim", "🎁 Claim Rewards", () => {
+      runQuest("claim", "🎁 Claim Rewards", "in", () => {
         setUsdc((v) => {
           const n = v + 2;
           persistNum("ua_usdc", n);
@@ -671,7 +712,7 @@ export function ParticleUniversalAccount() {
   );
   const spendCoins = useCallback(
     () =>
-      runQuest("spend", "🛒 Spend Coins", () => {
+      runQuest("spend", "🛒 Spend Coins", "out", () => {
         setCoins((c) => {
           const n = Math.max(0, c - 5);
           persistNum("ua_coins", n);
@@ -685,6 +726,7 @@ export function ParticleUniversalAccount() {
       }),
     [runQuest],
   );
+
 
   const sendTestnetTx =
     testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
@@ -781,7 +823,7 @@ export function ParticleUniversalAccount() {
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
           <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
-          <StatCard label="USDC" value={usdc.toFixed(2)} accent="success" icon="$" />
+
         </div>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -827,6 +869,8 @@ export function ParticleUniversalAccount() {
                 onClick={playGame}
                 txHash={questTx.play}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="out"
               />
               <GameActionCard
                 emoji="🎁"
@@ -838,6 +882,8 @@ export function ParticleUniversalAccount() {
                 onClick={claimRewards}
                 txHash={questTx.claim}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="in"
               />
               <GameActionCard
                 emoji="🛒"
@@ -849,7 +895,10 @@ export function ParticleUniversalAccount() {
                 onClick={spendCoins}
                 txHash={questTx.spend}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="out"
               />
+
             </div>
           </div>
         )}
@@ -1207,6 +1256,8 @@ function GameActionCard({
   onClick,
   txHash,
   explorer,
+  smartAccount,
+  direction,
 }: {
   emoji: string;
   title: string;
@@ -1217,7 +1268,10 @@ function GameActionCard({
   onClick: () => void;
   txHash: string | null;
   explorer: string;
+  smartAccount: string | null;
+  direction: "in" | "out";
 }) {
+  const dirLabel = direction === "out" ? "ETH out · from" : "ETH in · to";
   return (
     <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
       <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
@@ -1240,6 +1294,29 @@ function GameActionCard({
       >
         {busy ? "Sending UserOp…" : `${emoji} ${title}`}
       </button>
+      <div className="mt-2 rounded-md border border-panel-border bg-background/40 px-2 py-1.5">
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+          Smart Account · {dirLabel}
+        </div>
+        {smartAccount ? (
+          <div className="flex items-center gap-1">
+            <a
+              href={`${explorer}/address/${smartAccount}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[10px] text-primary-foreground hover:underline truncate"
+              title={smartAccount}
+            >
+              {smartAccount.slice(0, 10)}…{smartAccount.slice(-8)}
+            </a>
+            <Copy value={smartAccount} />
+          </div>
+        ) : (
+          <div className="text-[10px] text-muted-foreground italic">
+            click to derive on first run
+          </div>
+        )}
+      </div>
       {txHash && (
         <a
           href={`${explorer}/tx/${txHash}`}
@@ -1254,3 +1331,4 @@ function GameActionCard({
     </div>
   );
 }
+
