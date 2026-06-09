@@ -356,11 +356,10 @@ export function ParticleUniversalAccount() {
 
   // ---------- Testnet path 1: ZeroDev EIP-7702 (Local Account, per 7702.zerodev.app) ----------
   const sendZeroDev7702Tx = useCallback(async () => {
-    setBusy("Preparing connected EIP-7702 smart wallet…");
+    setBusy("Preparing funded EIP-7702 smart wallet…");
     setError(null);
     setStatus(null);
     try {
-      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
       await ensureArbSepolia();
 
       const [
@@ -385,10 +384,10 @@ export function ParticleUniversalAccount() {
       });
 
       setBusy("Building Kernel smart account…");
+      const local7702Account = await getLocal7702Account();
       const entryPoint = getEntryPoint("0.7");
       const account = await createKernelAccount(publicClient as any, {
-        eip7702Account: window.ethereum,
-        address: eoa as `0x${string}`,
+        eip7702Account: local7702Account,
         entryPoint,
         kernelVersion,
       });
