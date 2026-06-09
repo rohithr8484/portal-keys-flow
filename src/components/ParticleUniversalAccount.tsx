@@ -866,8 +866,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎮"
                 title="Play Game"
-                subtitle="→ Earn ETH"
-                reward="+1 ETH"
+                subtitle="Move ETH → EntryPoint"
+                reward="-0.000001 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
                 onClick={playGame}
