@@ -95,6 +95,21 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coins, setCoins] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_coins") || 0);
+  });
+  const [usdc, setUsdc] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    return Number(localStorage.getItem("ua_usdc") || 0);
+  });
+  type QuestKey = "play" | "claim" | "spend";
+  const [questTx, setQuestTx] = useState<Record<QuestKey, string | null>>({
+    play: null,
+    claim: null,
+    spend: null,
+  });
+  const [questBusy, setQuestBusy] = useState<QuestKey | null>(null);
   const [xp, setXp] = useState<number>(() => {
     if (typeof window === "undefined") return 0;
     return Number(localStorage.getItem("ua_xp") || 0);
@@ -107,6 +122,10 @@ export function ParticleUniversalAccount() {
     if (typeof window === "undefined") return 0;
     return Number(localStorage.getItem("ua_streak") || 0);
   });
+
+  const persistNum = (key: string, v: number) => {
+    try { localStorage.setItem(key, String(v)); } catch {}
+  };
 
   const awardXp = useCallback((amount: number) => {
     setXp((x) => {
