@@ -775,11 +775,13 @@ export function ParticleUniversalAccount() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard label="Level" value={String(level)} accent="primary" icon="⚡" />
           <StatCard label="Total XP" value={String(xp)} accent="accent" icon="✦" />
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
+          <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
+          <StatCard label="USDC" value={usdc.toFixed(2)} accent="success" icon="$" />
         </div>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -802,7 +804,58 @@ export function ParticleUniversalAccount() {
             reward="+200 XP"
           />
         </div>
+
+        {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
+        {isTestnet && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-sm font-semibold neon-text">Game Loop · {methodLabel}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Each action sends a sponsored UserOp on Arbitrum Sepolia.
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <GameActionCard
+                emoji="🎮"
+                title="Play Game"
+                subtitle="→ Earn USDC"
+                reward="+1 USDC"
+                busy={questBusy === "play"}
+                disabled={!!questBusy}
+                onClick={playGame}
+                txHash={questTx.play}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+              <GameActionCard
+                emoji="🎁"
+                title="Claim Rewards"
+                subtitle="→ Receive USDC"
+                reward="+2 USDC · +10 🪙"
+                busy={questBusy === "claim"}
+                disabled={!!questBusy}
+                onClick={claimRewards}
+                txHash={questTx.claim}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+              <GameActionCard
+                emoji="🛒"
+                title="Spend Coins"
+                subtitle="Buy Items → Earn USDC"
+                reward="-5 🪙 · +3 USDC"
+                busy={questBusy === "spend"}
+                disabled={!!questBusy || coins < 5}
+                onClick={spendCoins}
+                txHash={questTx.spend}
+                explorer={ARB_SEPOLIA.explorer}
+              />
+            </div>
+          </div>
+        )}
       </section>
+
+
 
 
       {missingAppId && !isTestnet && (
