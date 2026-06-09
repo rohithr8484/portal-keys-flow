@@ -45,6 +45,12 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
+const ENTRY_POINT_V07_ADDRESS =
+  "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
+const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
+const ENTRY_POINT_INTERFACE = new ethers.Interface([
+  "function depositTo(address account) payable",
+]);
 
 declare global {
   interface Window {
@@ -97,17 +103,9 @@ function Copy({ value }: { value: string }) {
 }
 
 export function ParticleUniversalAccount() {
-  const [network, setNetwork] = useState<NetworkMode>(() => {
-    if (typeof window === "undefined") return "mainnet";
-    return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
-  });
-  const [testnetMethod, setTestnetMethod] = useState<TestnetMethod>(() => {
-    if (typeof window === "undefined") return "zerodev-7702";
-    return (
-      (localStorage.getItem("ua_testnet_method") as TestnetMethod) ||
-      "zerodev-7702"
-    );
-  });
+  const [network, setNetwork] = useState<NetworkMode>("mainnet");
+  const [testnetMethod, setTestnetMethod] =
+    useState<TestnetMethod>("zerodev-7702");
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -119,14 +117,8 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [coins, setCoins] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_coins") || 0);
-  });
-  const [usdc, setUsdc] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_usdc") || 0);
-  });
+  const [coins, setCoins] = useState<number>(0);
+  const [usdc, setUsdc] = useState<number>(0);
   type QuestKey = "play" | "claim" | "spend";
   const [questTx, setQuestTx] = useState<Record<QuestKey, string | null>>({
     play: null,
@@ -134,22 +126,29 @@ export function ParticleUniversalAccount() {
     spend: null,
   });
   const [questBusy, setQuestBusy] = useState<QuestKey | null>(null);
-  const [xp, setXp] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_xp") || 0);
-  });
-  const [txCount, setTxCount] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_txcount") || 0);
-  });
-  const [streak, setStreak] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_streak") || 0);
-  });
+  const [xp, setXp] = useState<number>(0);
+  const [txCount, setTxCount] = useState<number>(0);
+  const [streak, setStreak] = useState<number>(0);
 
   const persistNum = (key: string, v: number) => {
     try { localStorage.setItem(key, String(v)); } catch {}
   };
+
+  useEffect(() => {
+    const storedNetwork = localStorage.getItem("ua_network") as NetworkMode | null;
+    const storedMethod = localStorage.getItem("ua_testnet_method") as TestnetMethod | null;
+    if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
+      setNetwork(storedNetwork);
+    }
+    if (storedMethod === "zerodev-7702" || storedMethod === "zerodev-particle") {
+      setTestnetMethod(storedMethod);
+    }
+    setCoins(Number(localStorage.getItem("ua_coins") || 0));
+    setUsdc(Number(localStorage.getItem("ua_usdc") || 0));
+    setXp(Number(localStorage.getItem("ua_xp") || 0));
+    setTxCount(Number(localStorage.getItem("ua_txcount") || 0));
+    setStreak(Number(localStorage.getItem("ua_streak") || 0));
+  }, []);
 
   const awardXp = useCallback((amount: number) => {
     setXp((x) => {
@@ -645,17 +644,33 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient } = await buildKernelClient();
+        const { kernelClient, publicClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // Sponsored UserOp path: records the on-chain tx as bundler/paymaster
-        // funding movement from 0x4337002C... to the EntryPoint. Native ETH
-        // value from an unfunded 7702 sender reverts during simulation.
-        const to = smart;
-        const value = BigInt(0);
+        const isOutbound = direction === "out";
+        const to = isOutbound ? ENTRY_POINT_V07_ADDRESS : smart;
+        const value = isOutbound ? QUEST_ENTRYPOINT_DEPOSIT_WEI : BigInt(0);
+        const data = isOutbound
+          ? (ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [
+              smart,
+            ]) as `0x${string}`)
+          : "0x";
 
-        setBusy(`${label} · sending gasless UserOp…`);
+        if (value > BigInt(0)) {
+          const smartBalance = await publicClient.getBalance({ address: smart });
+          if (smartBalance < value) {
+            throw new Error(
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to move funds to EntryPoint ${ENTRY_POINT_V07_ADDRESS}. Fund the displayed SA address, not 0x4337002C...`,
+            );
+          }
+        }
+
+        setBusy(
+          isOutbound
+            ? `${label} · moving ETH to EntryPoint…`
+            : `${label} · sending gasless UserOp…`,
+        );
         const userOpHash = await (kernelClient as any).sendUserOperation({
-          calls: [{ to, value, data: "0x" }],
+          callData: await kernelClient.account!.encodeCalls([{ to, value, data }]),
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
@@ -677,7 +692,7 @@ export function ParticleUniversalAccount() {
     () =>
       runQuest("play", "🎮 Play Game", "out", () => {
         setUsdc((v) => {
-          const n = v + 1;
+          const n = Math.max(0, v - 0.000001);
           persistNum("ua_usdc", n);
           return n;
         });
@@ -849,8 +864,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎮"
                 title="Play Game"
-                subtitle="→ Earn ETH"
-                reward="+1 ETH"
+                subtitle="Move ETH → EntryPoint"
+                reward="-0.000001 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
                 onClick={playGame}
