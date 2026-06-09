@@ -869,6 +869,8 @@ export function ParticleUniversalAccount() {
                 onClick={playGame}
                 txHash={questTx.play}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="out"
               />
               <GameActionCard
                 emoji="🎁"
@@ -880,6 +882,8 @@ export function ParticleUniversalAccount() {
                 onClick={claimRewards}
                 txHash={questTx.claim}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="in"
               />
               <GameActionCard
                 emoji="🛒"
@@ -891,7 +895,10 @@ export function ParticleUniversalAccount() {
                 onClick={spendCoins}
                 txHash={questTx.spend}
                 explorer={ARB_SEPOLIA.explorer}
+                smartAccount={smartAccountAddress}
+                direction="out"
               />
+
             </div>
           </div>
         )}
