@@ -44,9 +44,6 @@ const ARB_SEPOLIA = {
 const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
-const PLATFORM_FEE_ADDRESS =
-  "0xE90B61c315F2dE1D2B08d4a3D60B125cafA0aEbf" as `0x${string}`;
-const QUEST_PLATFORM_FEE_WEI = BigInt(1_000_000_000_000); // 0.000001 ETH
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
 
 declare global {
