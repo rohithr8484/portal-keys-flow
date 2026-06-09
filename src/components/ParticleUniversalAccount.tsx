@@ -1196,3 +1196,61 @@ function QuestCard({
     </div>
   );
 }
+
+function GameActionCard({
+  emoji,
+  title,
+  subtitle,
+  reward,
+  busy,
+  disabled,
+  onClick,
+  txHash,
+  explorer,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  reward: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  txHash: string | null;
+  explorer: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-4 hover:border-primary/50 transition group">
+      <div className="absolute -right-6 -top-6 size-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
+      <div className="flex items-start gap-3 mb-3">
+        <div className="size-10 rounded-lg bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-xl">
+          {emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-[11px] text-muted-foreground">{subtitle}</div>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary-foreground border border-primary/30 whitespace-nowrap">
+          {reward}
+        </span>
+      </div>
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className="w-full rounded-lg bg-primary py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+      >
+        {busy ? "Sending UserOp…" : `${emoji} ${title}`}
+      </button>
+      {txHash && (
+        <a
+          href={`${explorer}/tx/${txHash}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 block text-[10px] text-[color:var(--success)] hover:underline truncate font-mono"
+          title={txHash}
+        >
+          ✓ tx {txHash.slice(0, 10)}…{txHash.slice(-6)} ↗
+        </a>
+      )}
+    </div>
+  );
+}
