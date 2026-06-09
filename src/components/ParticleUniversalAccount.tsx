@@ -45,8 +45,9 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const PLATFORM_FEE_ADDRESS =
-  "0x1111111111111111111111111111111111111111" as `0x${string}`;
+  "0xE90B61c315F2dE1D2B08d4a3D60B125cafA0aEbf" as `0x${string}`;
 const QUEST_PLATFORM_FEE_WEI = BigInt(1_000_000_000_000); // 0.000001 ETH
+const UA_7702_PRIVATE_KEY = "ua_7702_pk";
 
 declare global {
   interface Window {
@@ -57,6 +58,28 @@ declare global {
 function short(addr?: string) {
   if (!addr) return "—";
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function isStoredPrivateKey(value: string | null): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{64}$/.test(value ?? "");
+}
+
+async function getLocal7702Account() {
+  if (typeof window === "undefined") {
+    throw new Error("Local EIP-7702 account is browser-only");
+  }
+
+  const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
+  const cachedPrivateKey = localStorage.getItem(UA_7702_PRIVATE_KEY);
+  let privateKey: `0x${string}`;
+  if (isStoredPrivateKey(cachedPrivateKey)) {
+    privateKey = cachedPrivateKey;
+  } else {
+    privateKey = generatePrivateKey();
+    localStorage.setItem(UA_7702_PRIVATE_KEY, privateKey);
+  }
+
+  return privateKeyToAccount(privateKey);
 }
 
 function Copy({ value }: { value: string }) {
@@ -149,7 +172,7 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
-  // EIP-7702 smart account address is the connected wallet address itself.
+  // EIP-7702 smart account address is the locally persisted 7702 EOA itself.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (testnetMethod !== "zerodev-7702") {
@@ -158,8 +181,18 @@ export function ParticleUniversalAccount() {
       setSmartAccountAddress(cached);
       return;
     }
-    setSmartAccountAddress(eoa);
-  }, [testnetMethod, eoa]);
+    let cancelled = false;
+    getLocal7702Account()
+      .then((account) => {
+        if (!cancelled) setSmartAccountAddress(account.address);
+      })
+      .catch(() => {
+        if (!cancelled) setSmartAccountAddress(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [testnetMethod]);
 
 
   const level = Math.floor(xp / 100) + 1;
@@ -175,7 +208,7 @@ export function ParticleUniversalAccount() {
     setUa(null);
     setAddresses(null);
     setBalance(null);
-    setSmartAccountAddress(null);
+    if (network !== "testnet") setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
   }, [network]);
@@ -323,13 +356,10 @@ export function ParticleUniversalAccount() {
 
   // ---------- Testnet path 1: ZeroDev EIP-7702 (Local Account, per 7702.zerodev.app) ----------
   const sendZeroDev7702Tx = useCallback(async () => {
-    setBusy("Preparing connected EIP-7702 smart wallet…");
+    setBusy("Preparing funded EIP-7702 smart wallet…");
     setError(null);
     setStatus(null);
     try {
-      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
-      await ensureArbSepolia();
-
       const [
         { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
         { KERNEL_V3_3, getEntryPoint },
@@ -352,10 +382,10 @@ export function ParticleUniversalAccount() {
       });
 
       setBusy("Building Kernel smart account…");
+      const local7702Account = await getLocal7702Account();
       const entryPoint = getEntryPoint("0.7");
       const account = await createKernelAccount(publicClient as any, {
-        eip7702Account: window.ethereum,
-        address: eoa as `0x${string}`,
+        eip7702Account: local7702Account,
         entryPoint,
         kernelVersion,
       });
@@ -382,8 +412,7 @@ export function ParticleUniversalAccount() {
       setBusy("Sending gasless batched UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account!.encodeCalls([
-          { to: zeroAddress, value: BigInt(0), data: "0x" },
-          { to: zeroAddress, value: BigInt(0), data: "0x" },
+          { to: PLATFORM_FEE_ADDRESS, value: QUEST_PLATFORM_FEE_WEI, data: "0x" },
         ]),
       });
 
@@ -401,7 +430,7 @@ export function ParticleUniversalAccount() {
     } finally {
       setBusy(null);
     }
-  }, [eoa, ensureArbSepolia, awardXp]);
+  }, [awardXp]);
 
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
@@ -548,11 +577,9 @@ export function ParticleUniversalAccount() {
     if (testnetMethod === "zerodev-7702") {
       const { KERNEL_V3_3, getEntryPoint } = zerodevConsts;
       const kernelVersion = KERNEL_V3_3;
-      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
-      await ensureArbSepolia();
+      const local7702Account = await getLocal7702Account();
       account = await createKernelAccount(publicClient as any, {
-        eip7702Account: window.ethereum,
-        address: eoa as `0x${string}`,
+        eip7702Account: local7702Account,
         entryPoint: getEntryPoint("0.7"),
         kernelVersion,
       });
@@ -606,7 +633,7 @@ export function ParticleUniversalAccount() {
       },
     });
     return { kernelClient, publicClient };
-  }, [testnetMethod, eoa, ensureArbSepolia]);
+  }, [testnetMethod]);
 
   // ---------- GameFi quest runner ----------
   const runQuest = useCallback(
@@ -621,18 +648,17 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient, publicClient } = await buildKernelClient();
+        const { kernelClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // Fully paymaster-sponsored UserOp: no ETH required on the SA.
-        // "out" (Play Game / Spend Coins): 0-value call to the platform fee
-        //       address — the on-chain tx records EntryPoint -> SA -> fee addr.
+        // "out" (Play Game / Spend Coins): transfer a real ETH platform fee
+        //       from the funded smart account to the platform address.
         // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
         const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
-        void publicClient; // balance precheck no longer needed (paymaster-sponsored)
+        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await (kernelClient as any).sendUserOperation({
-          calls: [{ to, value: BigInt(0), data: "0x" }],
+          calls: [{ to, value, data: "0x" }],
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
@@ -704,13 +730,8 @@ export function ParticleUniversalAccount() {
     return `$${balance.totalAmountInUSD.toFixed(2)}`;
   }, [balance]);
 
-  // For ZeroDev+Particle path, login happens inside the send action,
-  // so the button is always enabled in testnet.
-  const canSend = isTestnet
-    ? testnetMethod === "zerodev-particle"
-      ? true
-      : !!eoa
-    : !!ua;
+  // Testnet send actions build their signer on demand.
+  const canSend = isTestnet ? true : !!ua;
 
   const methodLabel =
     testnetMethod === "zerodev-7702"
@@ -924,13 +945,13 @@ export function ParticleUniversalAccount() {
           </div>
           <div className="text-[11px]">
             {testnetMethod === "zerodev-7702"
-              ? "Uses your connected wallet as the EIP-7702 Kernel smart account; Play Game and Spend Coins send a small ETH platform fee out from that address."
+              ? "Uses the funded local EIP-7702 Kernel smart account; Play Game and Spend Coins transfer ETH from that address to the platform address."
               : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
       )}
 
-      {!eoa && !(isTestnet && testnetMethod === "zerodev-particle") ? (
+      {!eoa && !isTestnet ? (
         <div className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-10 text-center">
           <div className="mx-auto size-14 rounded-2xl bg-primary/15 flex items-center justify-center text-2xl mb-4">
             🦊
@@ -1081,7 +1102,7 @@ export function ParticleUniversalAccount() {
                 {busy ??
                   (isTestnet
                     ? testnetMethod === "zerodev-7702"
-                      ? "Upgrade EOA & send gasless UserOp"
+                      ? "Send ETH from funded smart account"
                       : "Login with Particle & send gasless UserOp"
                     : "Sign with MetaMask & Send")}
               </button>
@@ -1097,7 +1118,7 @@ export function ParticleUniversalAccount() {
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
                   ? testnetMethod === "zerodev-7702"
-                    ? "Signs an EIP-7702 authorization with MetaMask, then sends a sponsored batched UserOp via ZeroDev."
+                    ? "Uses the persisted funded EIP-7702 account, then sends a sponsored UserOp via ZeroDev."
                     : "Particle Auth signer → ZeroDev ECDSA validator → sponsored Kernel UserOp."
                   : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
