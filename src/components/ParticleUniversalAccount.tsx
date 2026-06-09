@@ -149,7 +149,7 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
-  // EIP-7702 smart account address is the connected wallet address itself.
+  // Pre-derive 7702 smart account address from the persisted local key.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (testnetMethod !== "zerodev-7702") {
@@ -158,8 +158,18 @@ export function ParticleUniversalAccount() {
       setSmartAccountAddress(cached);
       return;
     }
-    setSmartAccountAddress(eoa);
-  }, [testnetMethod, eoa]);
+    (async () => {
+      try {
+        const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
+        let pk = localStorage.getItem("ua_7702_pk") as `0x${string}` | null;
+        if (!pk) {
+          pk = generatePrivateKey();
+          localStorage.setItem("ua_7702_pk", pk);
+        }
+        setSmartAccountAddress(privateKeyToAccount(pk).address);
+      } catch {}
+    })();
+  }, [testnetMethod]);
 
 
   const level = Math.floor(xp / 100) + 1;
@@ -175,21 +185,19 @@ export function ParticleUniversalAccount() {
     setUa(null);
     setAddresses(null);
     setBalance(null);
-    setSmartAccountAddress(
-      network === "testnet" && testnetMethod === "zerodev-7702" ? eoa : null,
-    );
+    setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-  }, [network, testnetMethod, eoa]);
+  }, [network]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("ua_testnet_method", testnetMethod);
     }
-    setSmartAccountAddress(testnetMethod === "zerodev-7702" ? eoa : null);
+    setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-  }, [testnetMethod, eoa]);
+  }, [testnetMethod]);
 
   const connect = useCallback(async () => {
     setError(null);
