@@ -70,8 +70,11 @@ async function getLocal7702Account() {
   }
 
   const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
-  let privateKey = localStorage.getItem(UA_7702_PRIVATE_KEY);
-  if (!isStoredPrivateKey(privateKey)) {
+  const cachedPrivateKey = localStorage.getItem(UA_7702_PRIVATE_KEY);
+  let privateKey: `0x${string}`;
+  if (isStoredPrivateKey(cachedPrivateKey)) {
+    privateKey = cachedPrivateKey;
+  } else {
     privateKey = generatePrivateKey();
     localStorage.setItem(UA_7702_PRIVATE_KEY, privateKey);
   }
