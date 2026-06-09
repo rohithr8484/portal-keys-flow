@@ -865,8 +865,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎮"
                 title="Play Game"
-                subtitle="→ Earn USDC"
-                reward="+1 USDC"
+                subtitle="→ Earn ETH"
+                reward="+1 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
                 onClick={playGame}
@@ -878,8 +878,8 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🎁"
                 title="Claim Rewards"
-                subtitle="→ Receive USDC"
-                reward="+2 USDC · +10 🪙"
+                subtitle="→ Receive ETH"
+                reward="+2 ETH · +10 🪙"
                 busy={questBusy === "claim"}
                 disabled={!!questBusy}
                 onClick={claimRewards}
@@ -891,8 +891,9 @@ export function ParticleUniversalAccount() {
               <GameActionCard
                 emoji="🛒"
                 title="Spend Coins"
-                subtitle="Buy Items → Earn USDC"
-                reward="-5 🪙 · +3 USDC"
+                subtitle="Buy Items → Earn ETH"
+                reward="-5 🪙 · +3 ETH"
+
                 busy={questBusy === "spend"}
                 disabled={!!questBusy || coins < 5}
                 onClick={spendCoins}
