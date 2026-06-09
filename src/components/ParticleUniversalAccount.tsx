@@ -655,14 +655,14 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient, zeroAddress } = await buildKernelClient();
+        const { kernelClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // For "out": move 1 wei FROM smart account to burn address.
-        // For "in": self-call (acts as a receipt to the smart account).
-        // Use 0-value self-calls so the UserOp never reverts on an unfunded SA.
-        // `direction` is purely a UI label indicating which side the SA acts as.
-        const to = smart;
-        const value = BigInt(0);
+        // "out" (Play Game / Spend Coins): spend 1 wei FROM the smart account
+        // to a burn address — funded via the SA's own ETH balance.
+        // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
+        const BURN = "0x000000000000000000000000000000000000dEaD" as `0x${string}`;
+        const to = direction === "out" ? BURN : smart;
+        const value = direction === "out" ? BigInt(1) : BigInt(0);
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await kernelClient.sendUserOperation({
