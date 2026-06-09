@@ -45,6 +45,12 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
+const ENTRY_POINT_V07_ADDRESS =
+  "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
+const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
+const ENTRY_POINT_INTERFACE = new ethers.Interface([
+  "function depositTo(address account) payable",
+]);
 
 declare global {
   interface Window {
@@ -97,6 +103,7 @@ function Copy({ value }: { value: string }) {
 }
 
 export function ParticleUniversalAccount() {
+  const [mounted, setMounted] = useState(false);
   const [network, setNetwork] = useState<NetworkMode>(() => {
     if (typeof window === "undefined") return "mainnet";
     return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
@@ -150,6 +157,10 @@ export function ParticleUniversalAccount() {
   const persistNum = (key: string, v: number) => {
     try { localStorage.setItem(key, String(v)); } catch {}
   };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const awardXp = useCallback((amount: number) => {
     setXp((x) => {
