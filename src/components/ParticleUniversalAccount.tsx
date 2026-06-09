@@ -44,9 +44,6 @@ const ARB_SEPOLIA = {
 const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
-const PLATFORM_FEE_ADDRESS =
-  "0xE90B61c315F2dE1D2B08d4a3D60B125cafA0aEbf" as `0x${string}`;
-const QUEST_PLATFORM_FEE_WEI = BigInt(1_000_000_000_000); // 0.000001 ETH
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
 
 declare global {
@@ -372,7 +369,7 @@ export function ParticleUniversalAccount() {
         import("viem/chains"),
       ]);
 
-      const { createPublicClient, http, zeroAddress } = viem;
+      const { createPublicClient, http } = viem;
 
       const kernelVersion = KERNEL_V3_3;
 
@@ -412,7 +409,7 @@ export function ParticleUniversalAccount() {
       setBusy("Sending gasless batched UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account!.encodeCalls([
-          { to: PLATFORM_FEE_ADDRESS, value: QUEST_PLATFORM_FEE_WEI, data: "0x" },
+          { to: account.address, value: BigInt(0), data: "0x" },
         ]),
       });
 
@@ -650,11 +647,11 @@ export function ParticleUniversalAccount() {
         setBusy(`${label} · building smart account…`);
         const { kernelClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // "out" (Play Game / Spend Coins): transfer a real ETH platform fee
-        //       from the funded smart account to the platform address.
-        // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
-        const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
-        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
+        // Sponsored UserOp path: records the on-chain tx as bundler/paymaster
+        // funding movement from 0x4337002C... to the EntryPoint. Native ETH
+        // value from an unfunded 7702 sender reverts during simulation.
+        const to = smart;
+        const value = BigInt(0);
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await (kernelClient as any).sendUserOperation({
@@ -945,7 +942,7 @@ export function ParticleUniversalAccount() {
           </div>
           <div className="text-[11px]">
             {testnetMethod === "zerodev-7702"
-              ? "Uses the funded local EIP-7702 Kernel smart account; Play Game and Spend Coins transfer ETH from that address to the platform address."
+              ? "Uses the EIP-7702 Kernel smart account; UserOps are sponsored, so the confirmed tx is funded by 0x4337002C... into the EntryPoint."
               : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
@@ -1102,7 +1099,7 @@ export function ParticleUniversalAccount() {
                 {busy ??
                   (isTestnet
                     ? testnetMethod === "zerodev-7702"
-                      ? "Send ETH from funded smart account"
+                      ? "Send sponsored EntryPoint UserOp"
                       : "Login with Particle & send gasless UserOp"
                     : "Sign with MetaMask & Send")}
               </button>
@@ -1118,7 +1115,7 @@ export function ParticleUniversalAccount() {
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
                   ? testnetMethod === "zerodev-7702"
-                    ? "Uses the persisted funded EIP-7702 account, then sends a sponsored UserOp via ZeroDev."
+                    ? "Uses the persisted EIP-7702 account and a sponsored EntryPoint UserOp via ZeroDev."
                     : "Particle Auth signer → ZeroDev ECDSA validator → sponsored Kernel UserOp."
                   : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
