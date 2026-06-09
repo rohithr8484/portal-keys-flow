@@ -360,8 +360,6 @@ export function ParticleUniversalAccount() {
     setError(null);
     setStatus(null);
     try {
-      await ensureArbSepolia();
-
       const [
         { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
         { KERNEL_V3_3, getEntryPoint },
@@ -433,7 +431,7 @@ export function ParticleUniversalAccount() {
     } finally {
       setBusy(null);
     }
-  }, [eoa, ensureArbSepolia, awardXp]);
+  }, [awardXp]);
 
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
@@ -580,7 +578,6 @@ export function ParticleUniversalAccount() {
     if (testnetMethod === "zerodev-7702") {
       const { KERNEL_V3_3, getEntryPoint } = zerodevConsts;
       const kernelVersion = KERNEL_V3_3;
-      await ensureArbSepolia();
       const local7702Account = await getLocal7702Account();
       account = await createKernelAccount(publicClient as any, {
         eip7702Account: local7702Account,
@@ -637,7 +634,7 @@ export function ParticleUniversalAccount() {
       },
     });
     return { kernelClient, publicClient };
-  }, [testnetMethod, eoa, ensureArbSepolia]);
+  }, [testnetMethod]);
 
   // ---------- GameFi quest runner ----------
   const runQuest = useCallback(
