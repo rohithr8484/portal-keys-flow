@@ -104,17 +104,9 @@ function Copy({ value }: { value: string }) {
 
 export function ParticleUniversalAccount() {
   const [mounted, setMounted] = useState(false);
-  const [network, setNetwork] = useState<NetworkMode>(() => {
-    if (typeof window === "undefined") return "mainnet";
-    return (localStorage.getItem("ua_network") as NetworkMode) || "mainnet";
-  });
-  const [testnetMethod, setTestnetMethod] = useState<TestnetMethod>(() => {
-    if (typeof window === "undefined") return "zerodev-7702";
-    return (
-      (localStorage.getItem("ua_testnet_method") as TestnetMethod) ||
-      "zerodev-7702"
-    );
-  });
+  const [network, setNetwork] = useState<NetworkMode>("mainnet");
+  const [testnetMethod, setTestnetMethod] =
+    useState<TestnetMethod>("zerodev-7702");
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
@@ -126,14 +118,8 @@ export function ParticleUniversalAccount() {
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [coins, setCoins] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_coins") || 0);
-  });
-  const [usdc, setUsdc] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_usdc") || 0);
-  });
+  const [coins, setCoins] = useState<number>(0);
+  const [usdc, setUsdc] = useState<number>(0);
   type QuestKey = "play" | "claim" | "spend";
   const [questTx, setQuestTx] = useState<Record<QuestKey, string | null>>({
     play: null,
@@ -141,24 +127,28 @@ export function ParticleUniversalAccount() {
     spend: null,
   });
   const [questBusy, setQuestBusy] = useState<QuestKey | null>(null);
-  const [xp, setXp] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_xp") || 0);
-  });
-  const [txCount, setTxCount] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_txcount") || 0);
-  });
-  const [streak, setStreak] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    return Number(localStorage.getItem("ua_streak") || 0);
-  });
+  const [xp, setXp] = useState<number>(0);
+  const [txCount, setTxCount] = useState<number>(0);
+  const [streak, setStreak] = useState<number>(0);
 
   const persistNum = (key: string, v: number) => {
     try { localStorage.setItem(key, String(v)); } catch {}
   };
 
   useEffect(() => {
+    const storedNetwork = localStorage.getItem("ua_network") as NetworkMode | null;
+    const storedMethod = localStorage.getItem("ua_testnet_method") as TestnetMethod | null;
+    if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
+      setNetwork(storedNetwork);
+    }
+    if (storedMethod === "zerodev-7702" || storedMethod === "zerodev-particle") {
+      setTestnetMethod(storedMethod);
+    }
+    setCoins(Number(localStorage.getItem("ua_coins") || 0));
+    setUsdc(Number(localStorage.getItem("ua_usdc") || 0));
+    setXp(Number(localStorage.getItem("ua_xp") || 0));
+    setTxCount(Number(localStorage.getItem("ua_txcount") || 0));
+    setStreak(Number(localStorage.getItem("ua_streak") || 0));
     setMounted(true);
   }, []);
 
