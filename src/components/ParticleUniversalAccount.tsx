@@ -945,7 +945,7 @@ export function ParticleUniversalAccount() {
           </div>
           <div className="text-[11px]">
             {testnetMethod === "zerodev-7702"
-              ? "Uses the funded local EIP-7702 Kernel smart account; Play Game and Spend Coins transfer ETH from that address to the platform address."
+              ? "Uses the EIP-7702 Kernel smart account; UserOps are sponsored, so the confirmed tx is funded by 0x4337002C... into the EntryPoint."
               : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
@@ -1102,7 +1102,7 @@ export function ParticleUniversalAccount() {
                 {busy ??
                   (isTestnet
                     ? testnetMethod === "zerodev-7702"
-                      ? "Send ETH from funded smart account"
+                      ? "Send sponsored EntryPoint UserOp"
                       : "Login with Particle & send gasless UserOp"
                     : "Sign with MetaMask & Send")}
               </button>
@@ -1118,7 +1118,7 @@ export function ParticleUniversalAccount() {
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
                   ? testnetMethod === "zerodev-7702"
-                    ? "Uses the persisted funded EIP-7702 account, then sends a sponsored UserOp via ZeroDev."
+                    ? "Uses the persisted EIP-7702 account and a sponsored EntryPoint UserOp via ZeroDev."
                     : "Particle Auth signer → ZeroDev ECDSA validator → sponsored Kernel UserOp."
                   : "Signs rootHash with MetaMask, then submits via Particle."}
               </p>
