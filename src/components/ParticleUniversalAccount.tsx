@@ -325,7 +325,7 @@ export function ParticleUniversalAccount() {
 
   // ---------- Testnet path 1: ZeroDev EIP-7702 (Local Account, per 7702.zerodev.app) ----------
   const sendZeroDev7702Tx = useCallback(async () => {
-    setBusy("Generating local 7702 account…");
+    setBusy("Preparing connected EIP-7702 smart wallet…");
     setError(null);
     setStatus(null);
     try {
@@ -934,7 +934,7 @@ export function ParticleUniversalAccount() {
           </div>
           <div className="text-[11px]">
             {testnetMethod === "zerodev-7702"
-              ? "Upgrades your MetaMask EOA into a Kernel V3.3 smart account via EIP-7702 signAuthorization. Requires MetaMask with 7702 support."
+              ? "Uses your connected wallet as the EIP-7702 Kernel smart account; Play Game and Spend Coins send a small ETH platform fee out from that address."
               : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
