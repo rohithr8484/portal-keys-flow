@@ -145,6 +145,29 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
+  // Pre-derive 7702 smart account address from persisted key (EIP-7702: SA address == EOA address)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (testnetMethod !== "zerodev-7702") {
+      // Particle path: address resolved after login during first quest
+      const cached = localStorage.getItem("ua_particle_sa");
+      setSmartAccountAddress(cached);
+      return;
+    }
+    (async () => {
+      try {
+        const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
+        let pk = localStorage.getItem("ua_7702_pk") as `0x${string}` | null;
+        if (!pk) {
+          pk = generatePrivateKey();
+          localStorage.setItem("ua_7702_pk", pk);
+        }
+        setSmartAccountAddress(privateKeyToAccount(pk).address);
+      } catch {}
+    })();
+  }, [testnetMethod]);
+
+
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
 
