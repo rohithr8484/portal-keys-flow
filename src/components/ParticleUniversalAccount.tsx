@@ -826,6 +826,8 @@ export function ParticleUniversalAccount() {
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
           <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
+          <StatCard label="ETH" value={usdc.toFixed(2)} accent="success" icon="Ξ" />
+
 
         </div>
 
