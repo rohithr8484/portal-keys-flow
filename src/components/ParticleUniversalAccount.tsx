@@ -692,7 +692,7 @@ export function ParticleUniversalAccount() {
     () =>
       runQuest("play", "🎮 Play Game", "out", () => {
         setUsdc((v) => {
-          const n = v + 1;
+          const n = Math.max(0, v - 0.000001);
           persistNum("ua_usdc", n);
           return n;
         });
