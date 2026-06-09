@@ -618,6 +618,7 @@ export function ParticleUniversalAccount() {
     async (
       key: QuestKey,
       label: string,
+      direction: "out" | "in",
       effect: () => void,
     ) => {
       setQuestBusy(key);
@@ -626,10 +627,15 @@ export function ParticleUniversalAccount() {
       try {
         setBusy(`${label} · building smart account…`);
         const { kernelClient, zeroAddress } = await buildKernelClient();
+        const smart = kernelClient.account!.address as `0x${string}`;
+        // For "out": move 1 wei FROM smart account to burn address.
+        // For "in": self-call (acts as a receipt to the smart account).
+        const to = direction === "out" ? zeroAddress : smart;
+        const value = direction === "out" ? BigInt(1) : BigInt(0);
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await kernelClient.sendUserOperation({
           callData: await kernelClient.account!.encodeCalls([
-            { to: zeroAddress, value: BigInt(0), data: "0x" },
+            { to, value, data: "0x" },
           ]),
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
@@ -650,7 +656,7 @@ export function ParticleUniversalAccount() {
 
   const playGame = useCallback(
     () =>
-      runQuest("play", "🎮 Play Game", () => {
+      runQuest("play", "🎮 Play Game", "out", () => {
         setUsdc((v) => {
           const n = v + 1;
           persistNum("ua_usdc", n);
@@ -661,7 +667,7 @@ export function ParticleUniversalAccount() {
   );
   const claimRewards = useCallback(
     () =>
-      runQuest("claim", "🎁 Claim Rewards", () => {
+      runQuest("claim", "🎁 Claim Rewards", "in", () => {
         setUsdc((v) => {
           const n = v + 2;
           persistNum("ua_usdc", n);
@@ -677,7 +683,7 @@ export function ParticleUniversalAccount() {
   );
   const spendCoins = useCallback(
     () =>
-      runQuest("spend", "🛒 Spend Coins", () => {
+      runQuest("spend", "🛒 Spend Coins", "out", () => {
         setCoins((c) => {
           const n = Math.max(0, c - 5);
           persistNum("ua_coins", n);
@@ -691,6 +697,7 @@ export function ParticleUniversalAccount() {
       }),
     [runQuest],
   );
+
 
   const sendTestnetTx =
     testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
