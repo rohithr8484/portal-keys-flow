@@ -208,7 +208,7 @@ export function ParticleUniversalAccount() {
     setUa(null);
     setAddresses(null);
     setBalance(null);
-    setSmartAccountAddress(null);
+    if (network !== "testnet") setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
   }, [network]);
