@@ -546,10 +546,15 @@ export function ParticleUniversalAccount() {
     let account: any;
     if (testnetMethod === "zerodev-7702") {
       const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
-      const { generatePrivateKey, privateKeyToAccount } = accountsMod;
+      const { privateKeyToAccount, generatePrivateKey } = accountsMod;
       const kernelVersion = KERNEL_V3_3;
       const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
-      const localAccount = privateKeyToAccount(generatePrivateKey());
+      let pk = (typeof window !== "undefined" && localStorage.getItem("ua_7702_pk")) as `0x${string}` | null;
+      if (!pk) {
+        pk = generatePrivateKey();
+        try { localStorage.setItem("ua_7702_pk", pk!); } catch {}
+      }
+      const localAccount = privateKeyToAccount(pk!);
       const authorization = await localAccount.signAuthorization({
         chainId: arbitrumSepolia.id,
         nonce: 0,
@@ -561,6 +566,7 @@ export function ParticleUniversalAccount() {
         kernelVersion,
         eip7702Auth: authorization,
       });
+
     } else {
       const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] =
         await Promise.all([
