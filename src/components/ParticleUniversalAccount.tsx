@@ -149,7 +149,7 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
-  // Pre-derive 7702 smart account address from the persisted local key.
+  // EIP-7702 smart account address is the connected wallet address itself.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (testnetMethod !== "zerodev-7702") {
@@ -158,18 +158,8 @@ export function ParticleUniversalAccount() {
       setSmartAccountAddress(cached);
       return;
     }
-    (async () => {
-      try {
-        const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
-        let pk = localStorage.getItem("ua_7702_pk") as `0x${string}` | null;
-        if (!pk) {
-          pk = generatePrivateKey();
-          localStorage.setItem("ua_7702_pk", pk);
-        }
-        setSmartAccountAddress(privateKeyToAccount(pk).address);
-      } catch {}
-    })();
-  }, [testnetMethod]);
+    setSmartAccountAddress(eoa);
+  }, [testnetMethod, eoa]);
 
 
   const level = Math.floor(xp / 100) + 1;
