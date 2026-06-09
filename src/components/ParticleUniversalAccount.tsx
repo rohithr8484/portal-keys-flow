@@ -412,8 +412,7 @@ export function ParticleUniversalAccount() {
       setBusy("Sending gasless batched UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account!.encodeCalls([
-          { to: zeroAddress, value: BigInt(0), data: "0x" },
-          { to: zeroAddress, value: BigInt(0), data: "0x" },
+          { to: PLATFORM_FEE_ADDRESS, value: QUEST_PLATFORM_FEE_WEI, data: "0x" },
         ]),
       });
 
