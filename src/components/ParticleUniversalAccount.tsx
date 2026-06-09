@@ -656,17 +656,33 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient } = await buildKernelClient();
+        const { kernelClient, publicClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // Sponsored UserOp path: records the on-chain tx as bundler/paymaster
-        // funding movement from 0x4337002C... to the EntryPoint. Native ETH
-        // value from an unfunded 7702 sender reverts during simulation.
-        const to = smart;
-        const value = BigInt(0);
+        const isOutbound = direction === "out";
+        const to = isOutbound ? ENTRY_POINT_V07_ADDRESS : smart;
+        const value = isOutbound ? QUEST_ENTRYPOINT_DEPOSIT_WEI : BigInt(0);
+        const data = isOutbound
+          ? (ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [
+              smart,
+            ]) as `0x${string}`)
+          : "0x";
 
-        setBusy(`${label} · sending gasless UserOp…`);
+        if (value > BigInt(0)) {
+          const smartBalance = await publicClient.getBalance({ address: smart });
+          if (smartBalance < value) {
+            throw new Error(
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to move funds to EntryPoint ${ENTRY_POINT_V07_ADDRESS}. Fund the displayed SA address, not 0x4337002C...`,
+            );
+          }
+        }
+
+        setBusy(
+          isOutbound
+            ? `${label} · moving ETH to EntryPoint…`
+            : `${label} · sending gasless UserOp…`,
+        );
         const userOpHash = await (kernelClient as any).sendUserOperation({
-          calls: [{ to, value, data: "0x" }],
+          callData: await kernelClient.account!.encodeCalls([{ to, value, data }]),
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
