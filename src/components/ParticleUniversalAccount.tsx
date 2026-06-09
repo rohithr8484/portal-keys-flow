@@ -781,7 +781,7 @@ export function ParticleUniversalAccount() {
           <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
           <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
           <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
-          <StatCard label="USDC" value={usdc.toFixed(2)} accent="success" icon="$" />
+
         </div>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
