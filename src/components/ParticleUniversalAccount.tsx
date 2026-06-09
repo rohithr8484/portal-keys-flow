@@ -652,18 +652,17 @@ export function ParticleUniversalAccount() {
       setStatus(null);
       try {
         setBusy(`${label} · building smart account…`);
-        const { kernelClient, publicClient } = await buildKernelClient();
+        const { kernelClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // Fully paymaster-sponsored UserOp: no ETH required on the SA.
-        // "out" (Play Game / Spend Coins): 0-value call to the platform fee
-        //       address — the on-chain tx records EntryPoint -> SA -> fee addr.
+        // "out" (Play Game / Spend Coins): transfer a real ETH platform fee
+        //       from the funded smart account to the platform address.
         // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
         const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
-        void publicClient; // balance precheck no longer needed (paymaster-sponsored)
+        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await (kernelClient as any).sendUserOperation({
-          calls: [{ to, value: BigInt(0), data: "0x" }],
+          calls: [{ to, value, data: "0x" }],
         });
         const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
         const txHash = receipt.receipt.transactionHash;
