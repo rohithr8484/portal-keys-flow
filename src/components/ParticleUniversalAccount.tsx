@@ -45,8 +45,9 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const PLATFORM_FEE_ADDRESS =
-  "0x1111111111111111111111111111111111111111" as `0x${string}`;
+  "0xE90B61c315F2dE1D2B08d4a3D60B125cafA0aEbf" as `0x${string}`;
 const QUEST_PLATFORM_FEE_WEI = BigInt(1_000_000_000_000); // 0.000001 ETH
+const UA_7702_PRIVATE_KEY = "ua_7702_pk";
 
 declare global {
   interface Window {
@@ -57,6 +58,25 @@ declare global {
 function short(addr?: string) {
   if (!addr) return "—";
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function isStoredPrivateKey(value: string | null): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{64}$/.test(value ?? "");
+}
+
+async function getLocal7702Account() {
+  if (typeof window === "undefined") {
+    throw new Error("Local EIP-7702 account is browser-only");
+  }
+
+  const { privateKeyToAccount, generatePrivateKey } = await import("viem/accounts");
+  let privateKey = localStorage.getItem(UA_7702_PRIVATE_KEY);
+  if (!isStoredPrivateKey(privateKey)) {
+    privateKey = generatePrivateKey();
+    localStorage.setItem(UA_7702_PRIVATE_KEY, privateKey);
+  }
+
+  return privateKeyToAccount(privateKey);
 }
 
 function Copy({ value }: { value: string }) {
