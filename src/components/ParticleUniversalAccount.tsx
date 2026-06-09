@@ -580,11 +580,10 @@ export function ParticleUniversalAccount() {
     if (testnetMethod === "zerodev-7702") {
       const { KERNEL_V3_3, getEntryPoint } = zerodevConsts;
       const kernelVersion = KERNEL_V3_3;
-      if (!eoa) throw new Error("Connect the funded EIP-7702 smart wallet first");
       await ensureArbSepolia();
+      const local7702Account = await getLocal7702Account();
       account = await createKernelAccount(publicClient as any, {
-        eip7702Account: window.ethereum,
-        address: eoa as `0x${string}`,
+        eip7702Account: local7702Account,
         entryPoint: getEntryPoint("0.7"),
         kernelVersion,
       });
