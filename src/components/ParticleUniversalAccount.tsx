@@ -372,7 +372,7 @@ export function ParticleUniversalAccount() {
         import("viem/chains"),
       ]);
 
-      const { createPublicClient, http, zeroAddress } = viem;
+      const { createPublicClient, http } = viem;
 
       const kernelVersion = KERNEL_V3_3;
 
@@ -412,7 +412,7 @@ export function ParticleUniversalAccount() {
       setBusy("Sending gasless batched UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account!.encodeCalls([
-          { to: PLATFORM_FEE_ADDRESS, value: QUEST_PLATFORM_FEE_WEI, data: "0x" },
+          { to: account.address, value: BigInt(0), data: "0x" },
         ]),
       });
 
@@ -650,11 +650,11 @@ export function ParticleUniversalAccount() {
         setBusy(`${label} · building smart account…`);
         const { kernelClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
-        // "out" (Play Game / Spend Coins): transfer a real ETH platform fee
-        //       from the funded smart account to the platform address.
-        // "in"  (Claim Rewards): 0-value self-call acting as an on-chain receipt.
-        const to = direction === "out" ? PLATFORM_FEE_ADDRESS : smart;
-        const value = direction === "out" ? QUEST_PLATFORM_FEE_WEI : BigInt(0);
+        // Sponsored UserOp path: records the on-chain tx as bundler/paymaster
+        // funding movement from 0x4337002C... to the EntryPoint. Native ETH
+        // value from an unfunded 7702 sender reverts during simulation.
+        const to = smart;
+        const value = BigInt(0);
 
         setBusy(`${label} · sending gasless UserOp…`);
         const userOpHash = await (kernelClient as any).sendUserOperation({
