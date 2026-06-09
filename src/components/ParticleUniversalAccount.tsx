@@ -518,6 +518,174 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
+  // ---------- Build a kernel client on demand for quest actions ----------
+  const buildKernelClient = useCallback(async () => {
+    const [
+      { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
+      zerodevConsts,
+      viem,
+      accountsMod,
+      { arbitrumSepolia },
+    ] = await Promise.all([
+      import("@zerodev/sdk"),
+      import("@zerodev/sdk/constants"),
+      import("viem"),
+      import("viem/accounts"),
+      import("viem/chains"),
+    ]);
+    const { createPublicClient, http } = viem;
+    const publicClient = createPublicClient({
+      transport: http(ARB_SEPOLIA.rpcUrl),
+      chain: arbitrumSepolia,
+    });
+    const paymasterClient = createZeroDevPaymasterClient({
+      chain: arbitrumSepolia,
+      transport: http(ZERODEV_RPC),
+    });
+
+    let account: any;
+    if (testnetMethod === "zerodev-7702") {
+      const { KERNEL_V3_3, getEntryPoint, KernelVersionToAddressesMap } = zerodevConsts;
+      const { generatePrivateKey, privateKeyToAccount } = accountsMod;
+      const kernelVersion = KERNEL_V3_3;
+      const kernelAddresses = (KernelVersionToAddressesMap as any)[kernelVersion];
+      const localAccount = privateKeyToAccount(generatePrivateKey());
+      const authorization = await localAccount.signAuthorization({
+        chainId: arbitrumSepolia.id,
+        nonce: 0,
+        address: kernelAddresses.accountImplementationAddress,
+      });
+      account = await createKernelAccount(publicClient as any, {
+        eip7702Account: localAccount,
+        entryPoint: getEntryPoint("0.7"),
+        kernelVersion,
+        eip7702Auth: authorization,
+      });
+    } else {
+      const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] =
+        await Promise.all([
+          import("@particle-network/auth"),
+          import("@particle-network/provider"),
+          import("@zerodev/ecdsa-validator"),
+        ]);
+      const { KERNEL_V3_1, getEntryPoint } = zerodevConsts;
+      const particle = new ParticleNetwork({
+        projectId: PARTICLE_PROJECT_ID,
+        clientKey: PARTICLE_CLIENT_KEY,
+        appId: PARTICLE_APP_ID,
+        chainName: "arbitrum" as any,
+        chainId: ARB_SEPOLIA.chainId,
+      });
+      const particleProvider = new ParticleProvider(particle.auth);
+      if (!particle.auth.isLogin()) await particle.auth.login();
+      const entryPoint = getEntryPoint("0.7");
+      const ecdsaValidator = await signerToEcdsaValidator(publicClient as any, {
+        signer: particleProvider as any,
+        entryPoint,
+        kernelVersion: KERNEL_V3_1,
+      });
+      account = await createKernelAccount(publicClient as any, {
+        plugins: { sudo: ecdsaValidator },
+        entryPoint,
+        kernelVersion: KERNEL_V3_1,
+      });
+    }
+
+    setSmartAccountAddress(account.address);
+    const kernelClient = createKernelAccountClient({
+      account,
+      chain: arbitrumSepolia,
+      bundlerTransport: http(ZERODEV_RPC),
+      paymaster: paymasterClient,
+      client: publicClient,
+      userOperation: {
+        estimateFeesPerGas: async ({ bundlerClient }: any) =>
+          getUserOperationGasPrice(bundlerClient),
+      },
+    });
+    const { zeroAddress } = viem;
+    return { kernelClient, zeroAddress };
+  }, [testnetMethod]);
+
+  // ---------- GameFi quest runner ----------
+  const runQuest = useCallback(
+    async (
+      key: QuestKey,
+      label: string,
+      effect: () => void,
+    ) => {
+      setQuestBusy(key);
+      setError(null);
+      setStatus(null);
+      try {
+        setBusy(`${label} · building smart account…`);
+        const { kernelClient, zeroAddress } = await buildKernelClient();
+        setBusy(`${label} · sending gasless UserOp…`);
+        const userOpHash = await kernelClient.sendUserOperation({
+          callData: await kernelClient.account!.encodeCalls([
+            { to: zeroAddress, value: BigInt(0), data: "0x" },
+          ]),
+        });
+        const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
+        const txHash = receipt.receipt.transactionHash;
+        setQuestTx((q) => ({ ...q, [key]: txHash }));
+        effect();
+        awardXp(50);
+        setStatus(`${label} confirmed! ${ARB_SEPOLIA.explorer}/tx/${txHash}`);
+      } catch (e: any) {
+        setError(e?.shortMessage || e?.message || `${label} failed`);
+      } finally {
+        setQuestBusy(null);
+        setBusy(null);
+      }
+    },
+    [buildKernelClient, awardXp],
+  );
+
+  const playGame = useCallback(
+    () =>
+      runQuest("play", "🎮 Play Game", () => {
+        setUsdc((v) => {
+          const n = v + 1;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+  const claimRewards = useCallback(
+    () =>
+      runQuest("claim", "🎁 Claim Rewards", () => {
+        setUsdc((v) => {
+          const n = v + 2;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+        setCoins((c) => {
+          const n = c + 10;
+          persistNum("ua_coins", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+  const spendCoins = useCallback(
+    () =>
+      runQuest("spend", "🛒 Spend Coins", () => {
+        setCoins((c) => {
+          const n = Math.max(0, c - 5);
+          persistNum("ua_coins", n);
+          return n;
+        });
+        setUsdc((v) => {
+          const n = v + 3;
+          persistNum("ua_usdc", n);
+          return n;
+        });
+      }),
+    [runQuest],
+  );
+
   const sendTestnetTx =
     testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
   const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
