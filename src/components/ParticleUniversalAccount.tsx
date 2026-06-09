@@ -172,7 +172,7 @@ export function ParticleUniversalAccount() {
     });
   }, []);
 
-  // EIP-7702 smart account address is the connected wallet address itself.
+  // EIP-7702 smart account address is the locally persisted 7702 EOA itself.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (testnetMethod !== "zerodev-7702") {
@@ -181,8 +181,18 @@ export function ParticleUniversalAccount() {
       setSmartAccountAddress(cached);
       return;
     }
-    setSmartAccountAddress(eoa);
-  }, [testnetMethod, eoa]);
+    let cancelled = false;
+    getLocal7702Account()
+      .then((account) => {
+        if (!cancelled) setSmartAccountAddress(account.address);
+      })
+      .catch(() => {
+        if (!cancelled) setSmartAccountAddress(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [testnetMethod]);
 
 
   const level = Math.floor(xp / 100) + 1;
