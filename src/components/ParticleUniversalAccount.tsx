@@ -754,10 +754,13 @@ export function ParticleUniversalAccount() {
     <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
       {/* Animated GameFi backdrop */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 gamefi-grid opacity-40" />
-        <div className="absolute -top-24 left-1/4 size-72 rounded-full bg-primary/20 blur-3xl float-slow" />
-        <div className="absolute top-40 right-10 size-64 rounded-full bg-accent/20 blur-3xl float-slow" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute inset-0 gamefi-grid opacity-30" />
+        <div className="absolute -top-32 left-1/4 size-96 rounded-full bg-primary/25 blur-[120px] float-slow" />
+        <div className="absolute top-40 right-10 size-80 rounded-full bg-accent/25 blur-[120px] float-slow" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute bottom-20 left-10 size-72 rounded-full bg-primary/15 blur-[100px] float-slow" style={{ animationDelay: "3s" }} />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       </div>
+
 
       <header className="mb-10 text-center relative">
         <div className="flex justify-center mb-5">
