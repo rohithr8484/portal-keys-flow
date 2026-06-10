@@ -754,40 +754,59 @@ export function ParticleUniversalAccount() {
     <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
       {/* Animated GameFi backdrop */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 gamefi-grid opacity-40" />
-        <div className="absolute -top-24 left-1/4 size-72 rounded-full bg-primary/20 blur-3xl float-slow" />
-        <div className="absolute top-40 right-10 size-64 rounded-full bg-accent/20 blur-3xl float-slow" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute inset-0 gamefi-grid opacity-30" />
+        <div className="absolute -top-32 left-1/4 size-96 rounded-full bg-primary/25 blur-[120px] float-slow" />
+        <div className="absolute top-40 right-10 size-80 rounded-full bg-accent/25 blur-[120px] float-slow" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute bottom-20 left-10 size-72 rounded-full bg-primary/15 blur-[100px] float-slow" style={{ animationDelay: "3s" }} />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       </div>
 
-      <header className="mb-8 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-xs text-muted-foreground mb-4">
-          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-          EIP-7702 · Particle Network · Universal Accounts
+
+      <header className="mb-10 text-center relative">
+        <div className="flex justify-center mb-5">
+          <div className="relative inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur-xl shadow-lg shadow-primary/10">
+            <div className="relative size-8 rounded-xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center text-base font-black text-primary-foreground glow-pulse">
+              ◆
+            </div>
+            <div className="text-left leading-tight">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Powered by Particle</div>
+              <div className="text-sm font-bold tracking-tight">OmniQuest Wallet</div>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight neon-text">
-          Connect MetaMask. <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Spend anywhere.</span>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-5">
+          <span className="size-1.5 rounded-full bg-success animate-pulse" />
+          EIP-7702 · Universal Accounts · Cross-chain GameFi
+        </div>
+
+        <h1 className="text-5xl sm:text-6xl font-black tracking-tighter neon-text">
+          <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent [background-size:200%_auto] animate-[shimmer_4s_linear_infinite]">
+            OmniQuest
+          </span>
         </h1>
-        <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-          One EOA, one balance, every chain. Sign with MetaMask — Particle's
-          Universal Account routes funds across EVM and Solana.
+        <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
+          One wallet. Every chain. Play, spend, and quest across EVM and Solana
+          with a single Universal Account.
         </p>
 
-        <div className="mt-6 inline-flex rounded-lg border border-panel-border bg-panel/60 p-1">
+        <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">
           {(["mainnet", "testnet"] as const).map((n) => (
             <button
               key={n}
               onClick={() => setNetwork(n)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-md transition ${
+              className={`px-5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 network === n
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-md shadow-primary/30"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {n === "mainnet" ? "Mainnet" : "Testnet"}
+              {n === "mainnet" ? "◉ Mainnet" : "◎ Testnet"}
             </button>
           ))}
         </div>
       </header>
+
 
       {/* GameFi Dashboard — Player Stats */}
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
