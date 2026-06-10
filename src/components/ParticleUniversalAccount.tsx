@@ -906,20 +906,6 @@ export function ParticleUniversalAccount() {
                 smartAccount={smartAccountAddress}
                 direction="in"
               />
-              <GameActionCard
-                emoji="🛒"
-                title="Spend Coins"
-                subtitle="Buy Items → Earn ETH"
-                reward="-5 🪙 · +3 ETH"
-
-                busy={questBusy === "spend"}
-                disabled={!!questBusy || coins < 5}
-                onClick={spendCoins}
-                txHash={questTx.spend}
-                explorer={ARB_SEPOLIA.explorer}
-                smartAccount={smartAccountAddress}
-                direction="out"
-              />
 
             </div>
           </div>
