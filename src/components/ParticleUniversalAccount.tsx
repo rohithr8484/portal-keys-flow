@@ -958,6 +958,7 @@ export function ParticleUniversalAccount() {
                 <div className="text-[11px] text-muted-foreground">
                   Each action sends a sponsored UserOp on Arbitrum Sepolia.
                 </div>
+              </div>
             </div>
             {platformAddress && (
               <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
