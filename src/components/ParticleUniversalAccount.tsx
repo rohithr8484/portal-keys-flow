@@ -746,28 +746,33 @@ export function ParticleUniversalAccount() {
     setError(null);
     setStatus(null);
     try {
-      if (!window.ethereum) throw new Error("MetaMask not detected");
       setBusy("🎁 Claim Rewards · deriving smart account…");
       const { kernelClient } = await buildKernelClient();
       const smart = kernelClient.account!.address as `0x${string}`;
 
-      // Real EOA -> Smart Account transfer so the reward visibly lands on the SA.
-      const browserProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await browserProvider.getSigner();
-      const from = (await signer.getAddress()) as `0x${string}`;
-      const rewardWei = ethers.parseUnits("0.000001", "ether"); // 1e-6 ETH reward
+      // Platform Treasury -> Smart Account transfer. The platform wallet is a
+      // local dev key stored in this browser (ua_platform_pk). Fund its address
+      // on Arbitrum Sepolia and it will pay out rewards to the SA.
+      const platform = await getPlatformWallet();
+      const from = platform.address as `0x${string}`;
+      setPlatformAddress(from);
+      const rewardWei = ethers.parseUnits("0.000001", "ether");
 
-      const eoaBal = await browserProvider.getBalance(from);
-      if (eoaBal < rewardWei)
+      const bal = await platform.provider!.getBalance(from);
+      setPlatformBalance(ethers.formatEther(bal));
+      if (bal < rewardWei + ethers.parseUnits("0.00005", "ether"))
         throw new Error(
-          `Connected EOA ${from} needs at least 0.000001 ETH on Arbitrum Sepolia to fund the reward to smart account ${smart}.`,
+          `Platform account ${from} needs ETH on Arbitrum Sepolia. Fund it from the faucet, then retry. Current balance: ${ethers.formatEther(bal)} ETH.`,
         );
 
-      setBusy(`🎁 Claim Rewards · sending ETH from ${from} → ${smart}…`);
-      const tx = await signer.sendTransaction({ to: smart, value: rewardWei });
+      setBusy(`🎁 Claim Rewards · platform ${from} → smart account ${smart}…`);
+      const tx = await platform.sendTransaction({ to: smart, value: rewardWei });
       const rcpt = await tx.wait();
       const txHash = (rcpt?.hash ?? tx.hash) as `0x${string}`;
       setQuestTx((q) => ({ ...q, claim: txHash }));
+
+      const newBal = await platform.provider!.getBalance(from);
+      setPlatformBalance(ethers.formatEther(newBal));
 
       setUsdc((v) => {
         const n = v + 2;
@@ -781,7 +786,7 @@ export function ParticleUniversalAccount() {
       });
       awardXp(50);
       setStatus(
-        `🎁 Claim Rewards confirmed — 0.000001 ETH moved from ${from} to smart account ${smart}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+        `🎁 Claim Rewards confirmed — 0.000001 ETH sent from platform ${from} to smart account ${smart}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
       );
     } catch (e: any) {
       setError(e?.shortMessage || e?.message || "Claim Rewards failed");
