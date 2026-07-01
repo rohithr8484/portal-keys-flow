@@ -45,12 +45,25 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
+const UA_PLATFORM_PRIVATE_KEY = "ua_platform_pk";
 const ENTRY_POINT_V07_ADDRESS =
   "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
 const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
 const ENTRY_POINT_INTERFACE = new ethers.Interface([
   "function depositTo(address account) payable",
 ]);
+
+async function getPlatformWallet() {
+  if (typeof window === "undefined") throw new Error("browser-only");
+  const { generatePrivateKey } = await import("viem/accounts");
+  let pk = localStorage.getItem(UA_PLATFORM_PRIVATE_KEY);
+  if (!/^0x[0-9a-fA-F]{64}$/.test(pk ?? "")) {
+    pk = generatePrivateKey();
+    localStorage.setItem(UA_PLATFORM_PRIVATE_KEY, pk!);
+  }
+  const provider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+  return new ethers.Wallet(pk as string, provider);
+}
 
 declare global {
   interface Window {
@@ -129,6 +142,8 @@ export function ParticleUniversalAccount() {
   const [xp, setXp] = useState<number>(0);
   const [txCount, setTxCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
+  const [platformAddress, setPlatformAddress] = useState<string | null>(null);
+  const [platformBalance, setPlatformBalance] = useState<string | null>(null);
 
   const persistNum = (key: string, v: number) => {
     try { localStorage.setItem(key, String(v)); } catch {}
@@ -148,6 +163,15 @@ export function ParticleUniversalAccount() {
     setXp(Number(localStorage.getItem("ua_xp") || 0));
     setTxCount(Number(localStorage.getItem("ua_txcount") || 0));
     setStreak(Number(localStorage.getItem("ua_streak") || 0));
+    // Initialize / load platform wallet
+    (async () => {
+      try {
+        const w = await getPlatformWallet();
+        setPlatformAddress(w.address);
+        const bal = await w.provider!.getBalance(w.address);
+        setPlatformBalance(ethers.formatEther(bal));
+      } catch {}
+    })();
   }, []);
 
   const awardXp = useCallback((amount: number) => {
@@ -722,28 +746,33 @@ export function ParticleUniversalAccount() {
     setError(null);
     setStatus(null);
     try {
-      if (!window.ethereum) throw new Error("MetaMask not detected");
       setBusy("🎁 Claim Rewards · deriving smart account…");
       const { kernelClient } = await buildKernelClient();
       const smart = kernelClient.account!.address as `0x${string}`;
 
-      // Real EOA -> Smart Account transfer so the reward visibly lands on the SA.
-      const browserProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await browserProvider.getSigner();
-      const from = (await signer.getAddress()) as `0x${string}`;
-      const rewardWei = ethers.parseUnits("0.000001", "ether"); // 1e-6 ETH reward
+      // Platform Treasury -> Smart Account transfer. The platform wallet is a
+      // local dev key stored in this browser (ua_platform_pk). Fund its address
+      // on Arbitrum Sepolia and it will pay out rewards to the SA.
+      const platform = await getPlatformWallet();
+      const from = platform.address as `0x${string}`;
+      setPlatformAddress(from);
+      const rewardWei = ethers.parseUnits("0.000001", "ether");
 
-      const eoaBal = await browserProvider.getBalance(from);
-      if (eoaBal < rewardWei)
+      const bal = await platform.provider!.getBalance(from);
+      setPlatformBalance(ethers.formatEther(bal));
+      if (bal < rewardWei + ethers.parseUnits("0.00005", "ether"))
         throw new Error(
-          `Connected EOA ${from} needs at least 0.000001 ETH on Arbitrum Sepolia to fund the reward to smart account ${smart}.`,
+          `Platform account ${from} needs ETH on Arbitrum Sepolia. Fund it from the faucet, then retry. Current balance: ${ethers.formatEther(bal)} ETH.`,
         );
 
-      setBusy(`🎁 Claim Rewards · sending ETH from ${from} → ${smart}…`);
-      const tx = await signer.sendTransaction({ to: smart, value: rewardWei });
+      setBusy(`🎁 Claim Rewards · platform ${from} → smart account ${smart}…`);
+      const tx = await platform.sendTransaction({ to: smart, value: rewardWei });
       const rcpt = await tx.wait();
       const txHash = (rcpt?.hash ?? tx.hash) as `0x${string}`;
       setQuestTx((q) => ({ ...q, claim: txHash }));
+
+      const newBal = await platform.provider!.getBalance(from);
+      setPlatformBalance(ethers.formatEther(newBal));
 
       setUsdc((v) => {
         const n = v + 2;
@@ -757,7 +786,7 @@ export function ParticleUniversalAccount() {
       });
       awardXp(50);
       setStatus(
-        `🎁 Claim Rewards confirmed — 0.000001 ETH moved from ${from} to smart account ${smart}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+        `🎁 Claim Rewards confirmed — 0.000001 ETH sent from platform ${from} to smart account ${smart}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
       );
     } catch (e: any) {
       setError(e?.shortMessage || e?.message || "Claim Rewards failed");
@@ -931,6 +960,24 @@ export function ParticleUniversalAccount() {
                 </div>
               </div>
             </div>
+            {platformAddress && (
+              <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
+                <div>
+                  <div className="font-semibold text-foreground">🏦 Platform Treasury (rewards source)</div>
+                  <div className="text-muted-foreground break-all">
+                    {platformAddress} · balance {platformBalance ?? "…"} ETH
+                  </div>
+                </div>
+                <a
+                  href={ARB_SEPOLIA.faucet}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-primary"
+                >
+                  Fund via faucet →
+                </a>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
                 emoji="🎮"
