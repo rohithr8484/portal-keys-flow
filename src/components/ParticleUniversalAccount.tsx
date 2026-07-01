@@ -717,22 +717,56 @@ export function ParticleUniversalAccount() {
       }),
     [runQuest],
   );
-  const claimRewards = useCallback(
-    () =>
-      runQuest("claim", "🎁 Claim Rewards", "in", () => {
-        setUsdc((v) => {
-          const n = v + 2;
-          persistNum("ua_usdc", n);
-          return n;
-        });
-        setCoins((c) => {
-          const n = c + 10;
-          persistNum("ua_coins", n);
-          return n;
-        });
-      }),
-    [runQuest],
-  );
+  const claimRewards = useCallback(async () => {
+    setQuestBusy("claim");
+    setError(null);
+    setStatus(null);
+    try {
+      if (!window.ethereum) throw new Error("MetaMask not detected");
+      setBusy("🎁 Claim Rewards · deriving smart account…");
+      const { kernelClient } = await buildKernelClient();
+      const smart = kernelClient.account!.address as `0x${string}`;
+
+      // Real EOA -> Smart Account transfer so the reward visibly lands on the SA.
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await browserProvider.getSigner();
+      const from = (await signer.getAddress()) as `0x${string}`;
+      const rewardWei = ethers.parseUnits("0.000001", "ether"); // 1e-6 ETH reward
+
+      const eoaBal = await browserProvider.getBalance(from);
+      if (eoaBal < rewardWei)
+        throw new Error(
+          `Connected EOA ${from} needs at least 0.000001 ETH on Arbitrum Sepolia to fund the reward to smart account ${smart}.`,
+        );
+
+      setBusy(`🎁 Claim Rewards · sending ETH from ${from} → ${smart}…`);
+      const tx = await signer.sendTransaction({ to: smart, value: rewardWei });
+      const rcpt = await tx.wait();
+      const txHash = (rcpt?.hash ?? tx.hash) as `0x${string}`;
+      setQuestTx((q) => ({ ...q, claim: txHash }));
+
+      setUsdc((v) => {
+        const n = v + 2;
+        persistNum("ua_usdc", n);
+        return n;
+      });
+      setCoins((c) => {
+        const n = c + 10;
+        persistNum("ua_coins", n);
+        return n;
+      });
+      awardXp(50);
+      setStatus(
+        `🎁 Claim Rewards confirmed — 0.000001 ETH moved from ${from} to smart account ${smart}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+      );
+    } catch (e: any) {
+      setError(e?.shortMessage || e?.message || "Claim Rewards failed");
+    } finally {
+      setQuestBusy(null);
+      setBusy(null);
+    }
+  }, [buildKernelClient, awardXp]);
+
   const spendCoins = useCallback(
     () =>
       runQuest("spend", "🛒 Spend Coins", "out", () => {
