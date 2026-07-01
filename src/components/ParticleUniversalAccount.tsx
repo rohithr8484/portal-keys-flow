@@ -163,6 +163,15 @@ export function ParticleUniversalAccount() {
     setXp(Number(localStorage.getItem("ua_xp") || 0));
     setTxCount(Number(localStorage.getItem("ua_txcount") || 0));
     setStreak(Number(localStorage.getItem("ua_streak") || 0));
+    // Initialize / load platform wallet
+    (async () => {
+      try {
+        const w = await getPlatformWallet();
+        setPlatformAddress(w.address);
+        const bal = await w.provider!.getBalance(w.address);
+        setPlatformBalance(ethers.formatEther(bal));
+      } catch {}
+    })();
   }, []);
 
   const awardXp = useCallback((amount: number) => {
