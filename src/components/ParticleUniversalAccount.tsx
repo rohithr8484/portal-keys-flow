@@ -142,6 +142,8 @@ export function ParticleUniversalAccount() {
   const [xp, setXp] = useState<number>(0);
   const [txCount, setTxCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
+  const [platformAddress, setPlatformAddress] = useState<string | null>(null);
+  const [platformBalance, setPlatformBalance] = useState<string | null>(null);
 
   const persistNum = (key: string, v: number) => {
     try { localStorage.setItem(key, String(v)); } catch {}
