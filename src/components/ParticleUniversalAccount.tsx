@@ -647,15 +647,26 @@ export function ParticleUniversalAccount() {
         const { kernelClient, publicClient } = await buildKernelClient();
         const smart = kernelClient.account!.address as `0x${string}`;
         const isOutbound = direction === "out";
-        const to = isOutbound ? ENTRY_POINT_V07_ADDRESS : smart;
-        const value = isOutbound ? QUEST_ENTRYPOINT_DEPOSIT_WEI : BigInt(0);
-        const data = isOutbound
-          ? (ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [
-              smart,
-            ]) as `0x${string}`)
-          : "0x";
 
-        if (value > BigInt(0)) {
+        // Claim Rewards ("in"): send a tiny self-transfer (SA -> SA) so the on-chain
+        // internal transaction visibly credits the smart account, instead of a
+        // 0-value self-call whose only ETH movement is paymaster -> bundler operator
+        // (e.g. 0x43370494...). Falls back to a 0-value self-call if the SA is empty.
+        let to: `0x${string}`;
+        let value: bigint;
+        let data: `0x${string}`;
+        if (isOutbound) {
+          to = ENTRY_POINT_V07_ADDRESS;
+          value = QUEST_ENTRYPOINT_DEPOSIT_WEI;
+          data = ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [smart]) as `0x${string}`;
+        } else {
+          to = smart;
+          const smartBalance = await publicClient.getBalance({ address: smart });
+          value = smartBalance >= BigInt(1) ? BigInt(1) : BigInt(0);
+          data = "0x";
+        }
+
+        if (isOutbound && value > BigInt(0)) {
           const smartBalance = await publicClient.getBalance({ address: smart });
           if (smartBalance < value) {
             throw new Error(
@@ -667,7 +678,9 @@ export function ParticleUniversalAccount() {
         setBusy(
           isOutbound
             ? `${label} · moving ETH to EntryPoint…`
-            : `${label} · sending gasless UserOp…`,
+            : value > BigInt(0)
+              ? `${label} · crediting smart account (${smart})…`
+              : `${label} · sending gasless self-call…`,
         );
         const userOpHash = await (kernelClient as any).sendUserOperation({
           callData: await kernelClient.account!.encodeCalls([{ to, value, data }]),
@@ -677,7 +690,12 @@ export function ParticleUniversalAccount() {
         setQuestTx((q) => ({ ...q, [key]: txHash }));
         effect();
         awardXp(50);
-        setStatus(`${label} confirmed! ${ARB_SEPOLIA.explorer}/tx/${txHash}`);
+        const note =
+          !isOutbound && value === BigInt(0)
+            ? ` (SA has 0 ETH — sent 0-value self-call; fund ${smart} to see a real SA→SA credit)`
+            : "";
+        setStatus(`${label} confirmed!${note} ${ARB_SEPOLIA.explorer}/tx/${txHash}`);
+
       } catch (e: any) {
         setError(e?.shortMessage || e?.message || `${label} failed`);
       } finally {
