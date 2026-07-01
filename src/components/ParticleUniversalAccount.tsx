@@ -958,8 +958,25 @@ export function ParticleUniversalAccount() {
                 <div className="text-[11px] text-muted-foreground">
                   Each action sends a sponsored UserOp on Arbitrum Sepolia.
                 </div>
-              </div>
             </div>
+            {platformAddress && (
+              <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
+                <div>
+                  <div className="font-semibold text-foreground">🏦 Platform Treasury (rewards source)</div>
+                  <div className="text-muted-foreground break-all">
+                    {platformAddress} · balance {platformBalance ?? "…"} ETH
+                  </div>
+                </div>
+                <a
+                  href={ARB_SEPOLIA.faucet}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-primary"
+                >
+                  Fund via faucet →
+                </a>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
                 emoji="🎮"
