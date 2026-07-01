@@ -45,12 +45,25 @@ const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
+const UA_PLATFORM_PRIVATE_KEY = "ua_platform_pk";
 const ENTRY_POINT_V07_ADDRESS =
   "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
 const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
 const ENTRY_POINT_INTERFACE = new ethers.Interface([
   "function depositTo(address account) payable",
 ]);
+
+async function getPlatformWallet() {
+  if (typeof window === "undefined") throw new Error("browser-only");
+  const { generatePrivateKey } = await import("viem/accounts");
+  let pk = localStorage.getItem(UA_PLATFORM_PRIVATE_KEY);
+  if (!/^0x[0-9a-fA-F]{64}$/.test(pk ?? "")) {
+    pk = generatePrivateKey();
+    localStorage.setItem(UA_PLATFORM_PRIVATE_KEY, pk!);
+  }
+  const provider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+  return new ethers.Wallet(pk as string, provider);
+}
 
 declare global {
   interface Window {
