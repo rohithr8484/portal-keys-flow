@@ -49,6 +49,8 @@ const UA_PLATFORM_PRIVATE_KEY = "ua_platform_pk";
 const ENTRY_POINT_V07_ADDRESS =
   "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
 const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
+const PLATFORM_FEE_RECIPIENT =
+  "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb" as `0x${string}`;
 const ENTRY_POINT_INTERFACE = new ethers.Interface([
   "function depositTo(address account) payable",
 ]);
@@ -680,9 +682,9 @@ export function ParticleUniversalAccount() {
         let value: bigint;
         let data: `0x${string}`;
         if (isOutbound) {
-          to = ENTRY_POINT_V07_ADDRESS;
+          to = PLATFORM_FEE_RECIPIENT;
           value = QUEST_ENTRYPOINT_DEPOSIT_WEI;
-          data = ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [smart]) as `0x${string}`;
+          data = "0x";
         } else {
           to = smart;
           const smartBalance = await publicClient.getBalance({ address: smart });
@@ -694,14 +696,14 @@ export function ParticleUniversalAccount() {
           const smartBalance = await publicClient.getBalance({ address: smart });
           if (smartBalance < value) {
             throw new Error(
-              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to move funds to EntryPoint ${ENTRY_POINT_V07_ADDRESS}. Fund the displayed SA address, not 0x4337002C...`,
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
             );
           }
         }
 
         setBusy(
           isOutbound
-            ? `${label} · moving ETH to EntryPoint…`
+            ? `${label} · moving ETH from ${smart} → platform ${PLATFORM_FEE_RECIPIENT}…`
             : value > BigInt(0)
               ? `${label} · crediting smart account (${smart})…`
               : `${label} · sending gasless self-call…`,
