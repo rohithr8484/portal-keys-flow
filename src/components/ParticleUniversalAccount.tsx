@@ -732,17 +732,48 @@ export function ParticleUniversalAccount() {
     [buildKernelClient, awardXp],
   );
 
-  const playGame = useCallback(
-    () =>
-      runQuest("play", "🎮 Play Game", "out", () => {
-        setUsdc((v) => {
-          const n = Math.max(0, v - 0.000001);
-          persistNum("ua_usdc", n);
-          return n;
-        });
-      }),
-    [runQuest],
-  );
+  const playGame = useCallback(async () => {
+    setQuestBusy("play");
+    setError(null);
+    setStatus(null);
+    try {
+      // Send as a regular EOA tx from the 7702 smart-account key so it appears
+      // in the platform's "Transactions" tab (not just Internal Transactions).
+      const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
+      if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
+        throw new Error("7702 smart-account key not initialized yet — open the app once, then retry.");
+      }
+      const rpc = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+      const wallet = new ethers.Wallet(pk, rpc);
+      const from = (await wallet.getAddress()) as `0x${string}`;
+      const value = QUEST_ENTRYPOINT_DEPOSIT_WEI;
+      const bal = await rpc.getBalance(from);
+      if (bal < value) {
+        throw new Error(
+          `Smart account ${from} has ${ethers.formatEther(bal)} ETH; needs at least ${ethers.formatEther(value)} ETH (plus gas) to send to platform ${PLATFORM_FEE_RECIPIENT}.`,
+        );
+      }
+      setBusy(`🎮 Play Game · ${from} → platform ${PLATFORM_FEE_RECIPIENT}…`);
+      const tx = await wallet.sendTransaction({ to: PLATFORM_FEE_RECIPIENT, value });
+      const receipt = await tx.wait();
+      const txHash = (receipt?.hash ?? tx.hash) as `0x${string}`;
+      setQuestTx((q) => ({ ...q, play: txHash }));
+      setUsdc((v) => {
+        const n = Math.max(0, v - 0.000001);
+        persistNum("ua_usdc", n);
+        return n;
+      });
+      awardXp(50);
+      setStatus(
+        `🎮 Play Game confirmed — ${ethers.formatEther(value)} ETH sent from ${from} to platform ${PLATFORM_FEE_RECIPIENT}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+      );
+    } catch (e: any) {
+      setError(e?.shortMessage || e?.message || "Play Game failed");
+    } finally {
+      setQuestBusy(null);
+      setBusy(null);
+    }
+  }, [awardXp]);
   const claimRewards = useCallback(async () => {
     setQuestBusy("claim");
     setError(null);
