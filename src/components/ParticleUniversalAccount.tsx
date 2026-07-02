@@ -743,7 +743,7 @@ export function ParticleUniversalAccount() {
       if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
         throw new Error("7702 smart-account key not initialized yet — open the app once, then retry.");
       }
-      const rpc = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpc);
+      const rpc = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
       const wallet = new ethers.Wallet(pk, rpc);
       const from = (await wallet.getAddress()) as `0x${string}`;
       const value = QUEST_ENTRYPOINT_DEPOSIT_WEI;
