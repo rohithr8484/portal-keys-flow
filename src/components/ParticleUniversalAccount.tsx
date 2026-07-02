@@ -49,6 +49,8 @@ const UA_PLATFORM_PRIVATE_KEY = "ua_platform_pk";
 const ENTRY_POINT_V07_ADDRESS =
   "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
 const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
+const PLATFORM_FEE_RECIPIENT =
+  "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb" as `0x${string}`;
 const ENTRY_POINT_INTERFACE = new ethers.Interface([
   "function depositTo(address account) payable",
 ]);
