@@ -680,9 +680,9 @@ export function ParticleUniversalAccount() {
         let value: bigint;
         let data: `0x${string}`;
         if (isOutbound) {
-          to = ENTRY_POINT_V07_ADDRESS;
+          to = PLATFORM_FEE_RECIPIENT;
           value = QUEST_ENTRYPOINT_DEPOSIT_WEI;
-          data = ENTRY_POINT_INTERFACE.encodeFunctionData("depositTo", [smart]) as `0x${string}`;
+          data = "0x";
         } else {
           to = smart;
           const smartBalance = await publicClient.getBalance({ address: smart });
@@ -694,14 +694,14 @@ export function ParticleUniversalAccount() {
           const smartBalance = await publicClient.getBalance({ address: smart });
           if (smartBalance < value) {
             throw new Error(
-              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to move funds to EntryPoint ${ENTRY_POINT_V07_ADDRESS}. Fund the displayed SA address, not 0x4337002C...`,
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
             );
           }
         }
 
         setBusy(
           isOutbound
-            ? `${label} · moving ETH to EntryPoint…`
+            ? `${label} · moving ETH from ${smart} → platform ${PLATFORM_FEE_RECIPIENT}…`
             : value > BigInt(0)
               ? `${label} · crediting smart account (${smart})…`
               : `${label} · sending gasless self-call…`,
