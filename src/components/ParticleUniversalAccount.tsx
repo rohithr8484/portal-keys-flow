@@ -900,8 +900,7 @@ export function ParticleUniversalAccount() {
           </span>
         </h1>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
-          One wallet. Every chain. Play, spend, and quest across EVM and Solana
-          with a single Universal Account.
+          One wallet. Every chain.
         </p>
 
         <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">
@@ -1013,9 +1012,9 @@ export function ParticleUniversalAccount() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
-                emoji="🎮"
-                title="Play Game"
-                subtitle="Move ETH → EntryPoint"
+                emoji="🏊"
+                title="Send to Pool"
+                subtitle="Route ETH → Platform"
                 reward="-0.000001 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
