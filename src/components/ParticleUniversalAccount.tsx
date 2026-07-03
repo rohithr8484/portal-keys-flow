@@ -696,7 +696,7 @@ export function ParticleUniversalAccount() {
           const smartBalance = await publicClient.getBalance({ address: smart });
           if (smartBalance < value) {
             throw new Error(
-              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Send to Pool needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
             );
           }
         }
@@ -753,7 +753,7 @@ export function ParticleUniversalAccount() {
           `Smart account ${from} has ${ethers.formatEther(bal)} ETH; needs at least ${ethers.formatEther(value)} ETH (plus gas) to send to platform ${PLATFORM_FEE_RECIPIENT}.`,
         );
       }
-      setBusy(`🎮 Play Game · ${from} → platform ${PLATFORM_FEE_RECIPIENT}…`);
+      setBusy(`🏊 Send to Pool · ${from} → platform ${PLATFORM_FEE_RECIPIENT}…`);
       const tx = await wallet.sendTransaction({ to: PLATFORM_FEE_RECIPIENT, value });
       const receipt = await tx.wait();
       const txHash = (receipt?.hash ?? tx.hash) as `0x${string}`;
@@ -765,10 +765,10 @@ export function ParticleUniversalAccount() {
       });
       awardXp(50);
       setStatus(
-        `🎮 Play Game confirmed — ${ethers.formatEther(value)} ETH sent from ${from} to platform ${PLATFORM_FEE_RECIPIENT}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+        `🏊 Send to Pool confirmed — ${ethers.formatEther(value)} ETH sent from ${from} to platform ${PLATFORM_FEE_RECIPIENT}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
       );
     } catch (e: any) {
-      setError(e?.shortMessage || e?.message || "Play Game failed");
+      setError(e?.shortMessage || e?.message || "Send to Pool failed");
     } finally {
       setQuestBusy(null);
       setBusy(null);
