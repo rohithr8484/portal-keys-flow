@@ -696,7 +696,7 @@ export function ParticleUniversalAccount() {
           const smartBalance = await publicClient.getBalance({ address: smart });
           if (smartBalance < value) {
             throw new Error(
-              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Play Game needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
+              `Smart account ${smart} has ${ethers.formatEther(smartBalance)} ETH; Send to Pool needs ${ethers.formatEther(value)} ETH to send to platform ${PLATFORM_FEE_RECIPIENT}. Fund the SA address shown on the card.`,
             );
           }
         }
@@ -753,7 +753,7 @@ export function ParticleUniversalAccount() {
           `Smart account ${from} has ${ethers.formatEther(bal)} ETH; needs at least ${ethers.formatEther(value)} ETH (plus gas) to send to platform ${PLATFORM_FEE_RECIPIENT}.`,
         );
       }
-      setBusy(`🎮 Play Game · ${from} → platform ${PLATFORM_FEE_RECIPIENT}…`);
+      setBusy(`🏊 Send to Pool · ${from} → platform ${PLATFORM_FEE_RECIPIENT}…`);
       const tx = await wallet.sendTransaction({ to: PLATFORM_FEE_RECIPIENT, value });
       const receipt = await tx.wait();
       const txHash = (receipt?.hash ?? tx.hash) as `0x${string}`;
@@ -765,10 +765,10 @@ export function ParticleUniversalAccount() {
       });
       awardXp(50);
       setStatus(
-        `🎮 Play Game confirmed — ${ethers.formatEther(value)} ETH sent from ${from} to platform ${PLATFORM_FEE_RECIPIENT}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+        `🏊 Send to Pool confirmed — ${ethers.formatEther(value)} ETH sent from ${from} to platform ${PLATFORM_FEE_RECIPIENT}. ${ARB_SEPOLIA.explorer}/tx/${txHash}`,
       );
     } catch (e: any) {
-      setError(e?.shortMessage || e?.message || "Play Game failed");
+      setError(e?.shortMessage || e?.message || "Send to Pool failed");
     } finally {
       setQuestBusy(null);
       setBusy(null);
@@ -900,8 +900,7 @@ export function ParticleUniversalAccount() {
           </span>
         </h1>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
-          One wallet. Every chain. Play, spend, and quest across EVM and Solana
-          with a single Universal Account.
+          One wallet. Every chain.
         </p>
 
         <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">
@@ -1013,9 +1012,9 @@ export function ParticleUniversalAccount() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
-                emoji="🎮"
-                title="Play Game"
-                subtitle="Move ETH → EntryPoint"
+                emoji="🏊"
+                title="Send to Pool"
+                subtitle="Route ETH → Platform"
                 reward="-0.000001 ETH"
                 busy={questBusy === "play"}
                 disabled={!!questBusy}
@@ -1275,6 +1274,41 @@ export function ParticleUniversalAccount() {
           </section>
         </div>
       )}
+
+      {/* Universal Pay — capability grid (mainnet-ready surface on top of the connected UA) */}
+      <section className="mt-10 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
+        <div className="flex items-end justify-between mb-5 flex-wrap gap-2">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Universal Pay</div>
+            <h2 className="text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Payment primitives built on the account you already connected.
+            </p>
+          </div>
+          <span className="text-[11px] px-2.5 py-1 rounded-full border border-panel-border bg-background/40 text-muted-foreground">
+            Mainnet · one balance
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[
+            { icon: "💸", title: "One-tap Transfers", desc: "Fire a payment to one wallet or fan it out to a whole group in a single confirmation." },
+            { icon: "🪙", title: "Token-agnostic Rails", desc: "Charge or receive in USDC, USDT, or ETH — the source asset in the vault is routed for you." },
+            { icon: "🧾", title: "Payable Links", desc: "Spin up a shareable invoice with a live status and a scannable code for offline handoff." },
+            { icon: "🌉", title: "Any-chain Top-ups", desc: "Deposit from wherever your funds live; balances collapse into Arbitrum automatically." },
+            { icon: "🧮", title: "Unified Ledger", desc: "An EIP-7702 smart account presents every network as a single spendable figure." },
+            { icon: "📷", title: "Scan & Get Paid", desc: "Display a code to collect at the counter, or scan one to settle instantly." },
+          ].map((f) => (
+            <div key={f.title} className="group relative rounded-xl border border-panel-border bg-background/40 p-4 hover:border-primary/50 transition-colors">
+              <div className="absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/25 transition" />
+              <div className="size-9 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center text-lg mb-3">
+                {f.icon}
+              </div>
+              <div className="text-sm font-semibold mb-1">{f.title}</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
