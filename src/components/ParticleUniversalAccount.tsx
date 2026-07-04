@@ -920,40 +920,11 @@ export function ParticleUniversalAccount() {
         </div>
       </header>
 
-      {/* Universal Pay — capability grid, front and center */}
-      <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
-        <div className="flex items-end justify-between mb-5 flex-wrap gap-2">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Universal Pay</div>
-            <h2 className="text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Payment primitives built on the account you already connected.
-            </p>
-          </div>
-          <span className="text-[11px] px-2.5 py-1 rounded-full border border-panel-border bg-background/40 text-muted-foreground">
-            Mainnet · one balance
-          </span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[
-            { icon: "💸", title: "One-tap Transfers", desc: "Fire a payment to one wallet or fan it out to a whole group in a single confirmation." },
-            { icon: "🪙", title: "Token-agnostic Rails", desc: "Charge or receive in USDC, USDT, or ETH — the source asset in the vault is routed for you." },
-            { icon: "🧾", title: "Payable Links & Splits", desc: "Spin up a shareable invoice, split with friends, and track it live with a scannable code." },
-            { icon: "🌉", title: "Any-chain Top-ups", desc: "Deposit from wherever your funds live; balances collapse into Arbitrum automatically." },
-            { icon: "🧮", title: "Unified Ledger", desc: "An EIP-7702 smart account presents every network as a single spendable figure." },
-            { icon: "📷", title: "Scan & Get Paid", desc: "Display a code to collect at the counter, or scan one to settle instantly." },
-          ].map((f) => (
-            <div key={f.title} className="group relative rounded-xl border border-panel-border bg-background/40 p-4 hover:border-primary/50 transition-colors">
-              <div className="absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/25 transition" />
-              <div className="size-9 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center text-lg mb-3">
-                {f.icon}
-              </div>
-              <div className="text-sm font-semibold mb-1">{f.title}</div>
-              <div className="text-xs text-muted-foreground leading-relaxed">{f.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <UniversalPayPanel
+        smartAccount={smartAccountAddress}
+        unifiedUsd={balance?.totalAmountInUSD ?? null}
+        onNotify={(msg) => setStatus(msg)}
+      />
 
 
       {/* GameFi Dashboard — Player Stats */}
