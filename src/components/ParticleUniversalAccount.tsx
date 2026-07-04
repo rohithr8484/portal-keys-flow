@@ -924,7 +924,7 @@ export function ParticleUniversalAccount() {
       <UniversalPayPanel
         smartAccount={smartAccountAddress}
         unifiedUsd={balance?.totalAmountInUSD ?? null}
-        onNotify={(msg) => setStatus(msg)}
+        onNotify={(msg: string) => setStatus(msg)}
       />
 
 
