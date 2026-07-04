@@ -5,6 +5,7 @@ import {
   PARTICLE_CLIENT_KEY,
   PARTICLE_PROJECT_ID,
 } from "@/lib/particle-config";
+import { UniversalPayPanel } from "@/components/UniversalPayPanel";
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
 type SdkModule = typeof import("@particle-network/universal-account-sdk");
