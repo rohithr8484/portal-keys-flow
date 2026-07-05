@@ -658,52 +658,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
           </div>
         </TabsContent>
 
-        {/* RECEIVE */}
-        <TabsContent value="receive" className="mt-0">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 flex flex-col items-center gap-3">
-              <div className="text-sm font-semibold self-start">
-                Your deposit QR
-              </div>
-              <div className="rounded-xl bg-white p-3">
-                <QRCodeSVG value={address || "not-connected"} size={192} />
-              </div>
-              <div className="font-mono text-xs break-all text-center">
-                {address || "Connect a wallet"}
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  if (!address) return;
-                  navigator.clipboard.writeText(address);
-                  onNotify?.("Address copied");
-                }}
-              >
-                Copy address
-              </Button>
-            </div>
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
-              <div className="text-sm font-semibold">Cross-chain top-ups</div>
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                {["Ethereum", "Base", "Optimism", "Polygon", "BSC", "Arbitrum"].map(
-                  (c) => (
-                    <div
-                      key={c}
-                      className="rounded-md border border-panel-border bg-background/60 py-2"
-                    >
-                      {c}
-                    </div>
-                  ),
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Deposit from any of these networks — the Universal Account
-                consolidates the balance on Arbitrum automatically.
-              </p>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* Activity feed */}
