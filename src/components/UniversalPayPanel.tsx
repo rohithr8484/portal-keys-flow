@@ -156,12 +156,41 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
     return { list, valid, total, each };
   }, [payRecipients, payAmount, paySplit]);
 
-  const submitPay = () => {
+  const [payBusy, setPayBusy] = useState(false);
+  const submitPay = async () => {
     if (!requireAddress()) return;
     if (payPreview.valid.length === 0 || payPreview.total <= 0) {
       onNotify?.("Add a valid recipient and amount");
       return;
     }
+    const each = paySplit ? payPreview.total / payPreview.valid.length : payPreview.total;
+
+    if (onPay) {
+      setPayBusy(true);
+      try {
+        for (const to of payPreview.valid) {
+          onNotify?.(`Signing transfer of ${each.toFixed(4)} ${payToken} → ${shortAddr(to)}…`);
+          const res = await onPay({ recipient: to, amount: each, token: payToken });
+          pushActivity({
+            kind: "pay",
+            label: `Sent to ${shortAddr(to)}`,
+            amount: each,
+            token: payToken,
+            hash: res?.txId,
+          });
+        }
+        onNotify?.("Payment broadcast via Universal Account");
+        setPayAmount("");
+        setPayRecipients("");
+      } catch (e: any) {
+        onNotify?.(e?.message ?? "Transfer failed");
+      } finally {
+        setPayBusy(false);
+      }
+      return;
+    }
+
+    // Fallback: log locally when no on-chain handler wired.
     pushActivity({
       kind: "pay",
       label: paySplit
