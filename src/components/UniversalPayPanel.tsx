@@ -409,8 +409,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
                   </span>
                 </span>
               </div>
-              <Button onClick={submitPay} className="w-full">
-                {paySplit ? "Split payment" : "Send payment"}
+              <Button onClick={submitPay} className="w-full" disabled={payBusy}>
+                {payBusy ? "Broadcasting…" : paySplit ? "Split payment" : "Send payment"}
               </Button>
             </div>
 
