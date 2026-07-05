@@ -28,38 +28,6 @@ type Props = {
   }) => Promise<{ txId?: string } | void>;
 };
 
-// ---- Static catalogues (inspired by universal-pay demo) ----
-type Merchant = {
-  key: string;
-  name: string;
-  category: string;
-  icon: string;
-  price: number;
-  unit: string;
-};
-
-const MERCHANTS: Merchant[] = [
-  { key: "netflix", name: "Netflix", category: "Streaming", icon: "🎬", price: 15.49, unit: "/mo" },
-  { key: "spotify", name: "Spotify", category: "Music", icon: "🎧", price: 11.99, unit: "/mo" },
-  { key: "prime", name: "Amazon Prime", category: "Shopping", icon: "📦", price: 14.99, unit: "/mo" },
-  { key: "yt", name: "YouTube Premium", category: "Streaming", icon: "▶️", price: 13.99, unit: "/mo" },
-  { key: "disney", name: "Disney+", category: "Streaming", icon: "🏰", price: 9.99, unit: "/mo" },
-  { key: "apple", name: "Apple Music", category: "Music", icon: "🎵", price: 10.99, unit: "/mo" },
-  { key: "xbox", name: "Xbox Game Pass", category: "Gaming", icon: "🎮", price: 16.99, unit: "/mo" },
-  { key: "steam", name: "Steam Wallet", category: "Gaming", icon: "🕹️", price: 20.0, unit: "top-up" },
-  { key: "x", name: "X Premium", category: "Social", icon: "✦", price: 8.0, unit: "/mo" },
-  { key: "cart", name: "Amazon Order", category: "Shopping", icon: "🛒", price: 49.99, unit: "one-time" },
-  // ---- Travel ----
-  { key: "flight", name: "Flight Ticket", category: "Travel", icon: "✈️", price: 249.0, unit: "one-way" },
-  { key: "hotel", name: "Hotel Night", category: "Travel", icon: "🏨", price: 129.0, unit: "/night" },
-  { key: "airbnb", name: "Airbnb Stay", category: "Travel", icon: "🏡", price: 89.0, unit: "/night" },
-  { key: "uber", name: "Ride Credit", category: "Travel", icon: "🚕", price: 25.0, unit: "top-up" },
-  { key: "esim", name: "Travel eSIM", category: "Travel", icon: "📶", price: 12.0, unit: "10GB" },
-  { key: "insurance", name: "Trip Insurance", category: "Travel", icon: "🛡️", price: 18.5, unit: "/trip" },
-  { key: "rail", name: "Rail Pass", category: "Travel", icon: "🚄", price: 79.0, unit: "3-day" },
-  { key: "lounge", name: "Airport Lounge", category: "Travel", icon: "🛋️", price: 45.0, unit: "/visit" },
-];
-
 const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
 type Token = (typeof SETTLEMENT_TOKENS)[number];
 
@@ -93,7 +61,7 @@ type PayRequest = {
 };
 type Activity = {
   id: string;
-  kind: "pay" | "receive" | "cart" | "request";
+  kind: "pay" | "receive" | "request";
   label: string;
   amount: number;
   token: Token;
@@ -109,9 +77,7 @@ const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC, USDT or ETH — auto-sourced from your assets." },
   { key: "requests", icon: "🧾", title: "Requests & invoices", desc: "Trackable payment requests with shareable links and QR codes." },
-  { key: "cart", icon: "🛍️", title: "Bills & shopping", desc: "Pay subscriptions and orders from one universal balance." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
-  
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
@@ -123,7 +89,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
   const [requests, setRequests] = usePersist<PayRequest[]>("up_requests", []);
   const [activity, setActivity] = usePersist<Activity[]>("up_activity", []);
-  const [cart, setCart] = usePersist<Record<string, number>>("up_cart", {});
 
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -243,37 +208,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
   const updateReq = (id: string, status: PayRequest["status"]) =>
     setRequests((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
 
-  // ---------- Cart state ----------
-  const cartLines = useMemo(
-    () =>
-      Object.entries(cart)
-        .map(([k, qty]) => {
-          const m = MERCHANTS.find((mm) => mm.key === k);
-          return m ? { m, qty } : null;
-        })
-        .filter(Boolean) as { m: Merchant; qty: number }[],
-    [cart],
-  );
-  const cartTotal = cartLines.reduce((s, l) => s + l.m.price * l.qty, 0);
-  const bumpCart = (k: string, delta: number) =>
-    setCart((prev) => {
-      const next = { ...prev, [k]: Math.max(0, (prev[k] ?? 0) + delta) };
-      if (next[k] === 0) delete next[k];
-      return next;
-    });
-  const checkoutCart = () => {
-    if (!requireAddress()) return;
-    if (cartTotal <= 0) return;
-    pushActivity({
-      kind: "cart",
-      label: `Checkout · ${cartLines.length} item(s)`,
-      amount: cartTotal,
-      token: "USDC",
-    });
-    setCart({});
-    onNotify?.("Cart settled in USDC");
-  };
-
   // ---------- Contacts state ----------
   const [cName, setCName] = useState("");
   const [cAddr, setCAddr] = useState("");
@@ -320,7 +254,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
       </div>
 
       {/* Feature strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
         {FEATURES.map((f) => (
           <button
             key={f.key}
@@ -559,75 +493,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* CART */}
-        <TabsContent value="cart" className="mt-0">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 rounded-xl border border-panel-border bg-background/40 p-4">
-              <div className="text-sm font-semibold mb-3">Subscriptions & shops</div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {MERCHANTS.map((m) => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => bumpCart(m.key, 1)}
-                    className="rounded-lg border border-panel-border bg-background/60 p-3 text-left hover:border-primary/50 cursor-pointer"
-                  >
-                    <div className="text-lg">{m.icon}</div>
-                    <div className="text-xs font-semibold mt-1">{m.name}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      ${m.price.toFixed(2)} {m.unit}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-2">
-              <div className="text-sm font-semibold">Cart</div>
-              {cartLines.length === 0 && (
-                <div className="text-xs text-muted-foreground">Empty.</div>
-              )}
-              {cartLines.map(({ m, qty }) => (
-                <div
-                  key={m.key}
-                  className="flex items-center justify-between text-xs border-b border-panel-border py-1"
-                >
-                  <span>
-                    {m.icon} {m.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => bumpCart(m.key, -1)}
-                    >
-                      −
-                    </Button>
-                    <span className="w-6 text-center">{qty}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => bumpCart(m.key, 1)}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <div className="flex justify-between text-sm font-semibold pt-2">
-                <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
-              </div>
-              <Button
-                className="w-full"
-                onClick={checkoutCart}
-                disabled={cartTotal <= 0}
-              >
-                Checkout in USDC
-              </Button>
             </div>
           </div>
         </TabsContent>
