@@ -111,7 +111,7 @@ const FEATURES = [
   { key: "requests", icon: "🧾", title: "Requests & invoices", desc: "Trackable payment requests with shareable links and QR codes." },
   { key: "cart", icon: "🛍️", title: "Bills & shopping", desc: "Pay subscriptions and orders from one universal balance." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
-  { key: "receive", icon: "🔳", title: "Receive by QR", desc: "Show a code to collect at a counter, or share your deposit address." },
+  
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
