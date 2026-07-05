@@ -19,6 +19,13 @@ type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
   onNotify?: (msg: string) => void;
+  /** When provided, Pay & Split and Checkout will execute a real Universal Account transfer. */
+  onPay?: (args: {
+    recipient: string;
+    amount: number;
+    token: "USDC" | "USDT" | "ETH";
+    memo?: string;
+  }) => Promise<{ txId?: string } | void>;
 };
 
 // ---- Static catalogues (inspired by universal-pay demo) ----
