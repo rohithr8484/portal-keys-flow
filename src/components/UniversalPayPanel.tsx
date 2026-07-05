@@ -49,6 +49,15 @@ const MERCHANTS: Merchant[] = [
   { key: "steam", name: "Steam Wallet", category: "Gaming", icon: "🕹️", price: 20.0, unit: "top-up" },
   { key: "x", name: "X Premium", category: "Social", icon: "✦", price: 8.0, unit: "/mo" },
   { key: "cart", name: "Amazon Order", category: "Shopping", icon: "🛒", price: 49.99, unit: "one-time" },
+  // ---- Travel ----
+  { key: "flight", name: "Flight Ticket", category: "Travel", icon: "✈️", price: 249.0, unit: "one-way" },
+  { key: "hotel", name: "Hotel Night", category: "Travel", icon: "🏨", price: 129.0, unit: "/night" },
+  { key: "airbnb", name: "Airbnb Stay", category: "Travel", icon: "🏡", price: 89.0, unit: "/night" },
+  { key: "uber", name: "Ride Credit", category: "Travel", icon: "🚕", price: 25.0, unit: "top-up" },
+  { key: "esim", name: "Travel eSIM", category: "Travel", icon: "📶", price: 12.0, unit: "10GB" },
+  { key: "insurance", name: "Trip Insurance", category: "Travel", icon: "🛡️", price: 18.5, unit: "/trip" },
+  { key: "rail", name: "Rail Pass", category: "Travel", icon: "🚄", price: 79.0, unit: "3-day" },
+  { key: "lounge", name: "Airport Lounge", category: "Travel", icon: "🛋️", price: 45.0, unit: "/visit" },
 ];
 
 const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
