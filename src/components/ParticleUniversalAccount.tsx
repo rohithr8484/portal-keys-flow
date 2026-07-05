@@ -925,6 +925,33 @@ export function ParticleUniversalAccount() {
         smartAccount={smartAccountAddress}
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         onNotify={(msg: string) => setStatus(msg)}
+        onPay={
+          ua && eoa
+            ? async ({ recipient, amount, token }) => {
+                const { CHAIN_ID } = await loadSdk();
+                const TOKENS: Record<string, string | undefined> = {
+                  USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+                  USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+                  ETH: undefined,
+                };
+                const tx = await ua.createTransferTransaction({
+                  token: {
+                    chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+                    ...(TOKENS[token] ? { address: TOKENS[token] } : {}),
+                  },
+                  amount: amount.toString(),
+                  receiver: recipient,
+                });
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const signature = await signer.signMessage(
+                  ethers.getBytes(tx.rootHash),
+                );
+                const result = await ua.sendTransaction(tx, signature);
+                return { txId: result.transactionId };
+              }
+            : undefined
+        }
       />
 
 
