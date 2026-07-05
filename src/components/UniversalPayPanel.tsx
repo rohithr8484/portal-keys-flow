@@ -19,6 +19,13 @@ type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
   onNotify?: (msg: string) => void;
+  /** When provided, Pay & Split and Checkout will execute a real Universal Account transfer. */
+  onPay?: (args: {
+    recipient: string;
+    amount: number;
+    token: "USDC" | "USDT" | "ETH";
+    memo?: string;
+  }) => Promise<{ txId?: string } | void>;
 };
 
 // ---- Static catalogues (inspired by universal-pay demo) ----
@@ -42,6 +49,15 @@ const MERCHANTS: Merchant[] = [
   { key: "steam", name: "Steam Wallet", category: "Gaming", icon: "🕹️", price: 20.0, unit: "top-up" },
   { key: "x", name: "X Premium", category: "Social", icon: "✦", price: 8.0, unit: "/mo" },
   { key: "cart", name: "Amazon Order", category: "Shopping", icon: "🛒", price: 49.99, unit: "one-time" },
+  // ---- Travel ----
+  { key: "flight", name: "Flight Ticket", category: "Travel", icon: "✈️", price: 249.0, unit: "one-way" },
+  { key: "hotel", name: "Hotel Night", category: "Travel", icon: "🏨", price: 129.0, unit: "/night" },
+  { key: "airbnb", name: "Airbnb Stay", category: "Travel", icon: "🏡", price: 89.0, unit: "/night" },
+  { key: "uber", name: "Ride Credit", category: "Travel", icon: "🚕", price: 25.0, unit: "top-up" },
+  { key: "esim", name: "Travel eSIM", category: "Travel", icon: "📶", price: 12.0, unit: "10GB" },
+  { key: "insurance", name: "Trip Insurance", category: "Travel", icon: "🛡️", price: 18.5, unit: "/trip" },
+  { key: "rail", name: "Rail Pass", category: "Travel", icon: "🚄", price: 79.0, unit: "3-day" },
+  { key: "lounge", name: "Airport Lounge", category: "Travel", icon: "🛋️", price: 45.0, unit: "/visit" },
 ];
 
 const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
@@ -95,12 +111,12 @@ const FEATURES = [
   { key: "requests", icon: "🧾", title: "Requests & invoices", desc: "Trackable payment requests with shareable links and QR codes." },
   { key: "cart", icon: "🛍️", title: "Bills & shopping", desc: "Pay subscriptions and orders from one universal balance." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
-  { key: "receive", icon: "🔳", title: "Receive by QR", desc: "Show a code to collect at a counter, or share your deposit address." },
+  
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }: Props) {
   const address = smartAccount ?? "";
   const [tab, setTab] = useState<FeatureKey>("pay");
 
@@ -140,12 +156,41 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
     return { list, valid, total, each };
   }, [payRecipients, payAmount, paySplit]);
 
-  const submitPay = () => {
+  const [payBusy, setPayBusy] = useState(false);
+  const submitPay = async () => {
     if (!requireAddress()) return;
     if (payPreview.valid.length === 0 || payPreview.total <= 0) {
       onNotify?.("Add a valid recipient and amount");
       return;
     }
+    const each = paySplit ? payPreview.total / payPreview.valid.length : payPreview.total;
+
+    if (onPay) {
+      setPayBusy(true);
+      try {
+        for (const to of payPreview.valid) {
+          onNotify?.(`Signing transfer of ${each.toFixed(4)} ${payToken} → ${shortAddr(to)}…`);
+          const res = await onPay({ recipient: to, amount: each, token: payToken });
+          pushActivity({
+            kind: "pay",
+            label: `Sent to ${shortAddr(to)}`,
+            amount: each,
+            token: payToken,
+            hash: res?.txId,
+          });
+        }
+        onNotify?.("Payment broadcast via Universal Account");
+        setPayAmount("");
+        setPayRecipients("");
+      } catch (e: any) {
+        onNotify?.(e?.message ?? "Transfer failed");
+      } finally {
+        setPayBusy(false);
+      }
+      return;
+    }
+
+    // Fallback: log locally when no on-chain handler wired.
     pushActivity({
       kind: "pay",
       label: paySplit
@@ -275,7 +320,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
       </div>
 
       {/* Feature strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
         {FEATURES.map((f) => (
           <button
             key={f.key}
@@ -364,8 +409,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
                   </span>
                 </span>
               </div>
-              <Button onClick={submitPay} className="w-full">
-                {paySplit ? "Split payment" : "Send payment"}
+              <Button onClick={submitPay} className="w-full" disabled={payBusy}>
+                {payBusy ? "Broadcasting…" : paySplit ? "Split payment" : "Send payment"}
               </Button>
             </div>
 
@@ -642,52 +687,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify }: Props)
           </div>
         </TabsContent>
 
-        {/* RECEIVE */}
-        <TabsContent value="receive" className="mt-0">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 flex flex-col items-center gap-3">
-              <div className="text-sm font-semibold self-start">
-                Your deposit QR
-              </div>
-              <div className="rounded-xl bg-white p-3">
-                <QRCodeSVG value={address || "not-connected"} size={192} />
-              </div>
-              <div className="font-mono text-xs break-all text-center">
-                {address || "Connect a wallet"}
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  if (!address) return;
-                  navigator.clipboard.writeText(address);
-                  onNotify?.("Address copied");
-                }}
-              >
-                Copy address
-              </Button>
-            </div>
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
-              <div className="text-sm font-semibold">Cross-chain top-ups</div>
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                {["Ethereum", "Base", "Optimism", "Polygon", "BSC", "Arbitrum"].map(
-                  (c) => (
-                    <div
-                      key={c}
-                      className="rounded-md border border-panel-border bg-background/60 py-2"
-                    >
-                      {c}
-                    </div>
-                  ),
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Deposit from any of these networks — the Universal Account
-                consolidates the balance on Arbitrum automatically.
-              </p>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* Activity feed */}
