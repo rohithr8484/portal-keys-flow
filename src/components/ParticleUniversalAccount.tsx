@@ -925,84 +925,136 @@ export function ParticleUniversalAccount() {
         smartAccount={smartAccountAddress}
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         onNotify={(msg: string) => setStatus(msg)}
-        onPay={
-          ua && eoa
-            ? async ({ recipient, amount, token }) => {
-                const { CHAIN_ID } = await loadSdk();
-                const TOKENS: Record<string, string | undefined> = {
-                  USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-                  USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-                  ETH: undefined,
-                };
-                const tx = await ua.createTransferTransaction({
-                  token: {
-                    chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
-                    ...(TOKENS[token] ? { address: TOKENS[token] } : {}),
-                  },
-                  amount: amount.toString(),
-                  receiver: recipient,
+        onPay={async ({ recipient, amount, token }) => {
+          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
+            await import("@/lib/split");
+
+          // ---- Testnet path: gasless kernel userop (send-to-pool style) ----
+          if (isTestnet) {
+            const { kernelClient } = await buildKernelClient();
+            const chainId = EVM_CHAINS.arbitrumSepolia;
+            const calls =
+              token === "ETH"
+                ? buildSplitNativeCalls({
+                    chainId,
+                    recipients: [{ address: recipient, amount }],
+                  })
+                : buildSplitNativeCalls({
+                    chainId,
+                    recipients: [{ address: recipient, amount }],
+                  });
+            const userOpHash = await (kernelClient as any).sendUserOperation({
+              callData: await kernelClient.account!.encodeCalls(
+                calls.map((c) => ({
+                  to: c.to as `0x${string}`,
+                  value: BigInt(c.value),
+                  data: c.data as `0x${string}`,
+                })),
+              ),
+            });
+            const receipt = await kernelClient.waitForUserOperationReceipt({
+              hash: userOpHash,
+            });
+            awardXp(25);
+            return { txId: receipt.receipt.transactionHash };
+          }
+
+          // ---- Mainnet path: Particle Universal Account transfer ----
+          if (!(ua && eoa)) throw new Error("Connect a wallet first");
+          const { CHAIN_ID } = await loadSdk();
+          const TOKENS: Record<string, string | undefined> = {
+            USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            ETH: undefined,
+          };
+          const tx = await ua.createTransferTransaction({
+            token: {
+              chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+              ...(TOKENS[token] ? { address: TOKENS[token] } : {}),
+            },
+            amount: amount.toString(),
+            receiver: recipient,
+          });
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const signature = await signer.signMessage(
+            ethers.getBytes(tx.rootHash),
+          );
+          const result = await ua.sendTransaction(tx, signature);
+          return { txId: result.transactionId };
+        }}
+        onSplitPay={async ({ recipients, token }) => {
+          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
+            await import("@/lib/split");
+
+          // ---- Testnet path: ONE gasless kernel userop batches every leg ----
+          if (isTestnet) {
+            const { kernelClient } = await buildKernelClient();
+            const chainId = EVM_CHAINS.arbitrumSepolia;
+            // Testnet only settles native ETH (no canonical USDC/USDT on ARB Sepolia here).
+            const calls = buildSplitNativeCalls({ chainId, recipients });
+            const userOpHash = await (kernelClient as any).sendUserOperation({
+              callData: await kernelClient.account!.encodeCalls(
+                calls.map((c) => ({
+                  to: c.to as `0x${string}`,
+                  value: BigInt(c.value),
+                  data: c.data as `0x${string}`,
+                })),
+              ),
+            });
+            const receipt = await kernelClient.waitForUserOperationReceipt({
+              hash: userOpHash,
+            });
+            awardXp(50);
+            return { txId: receipt.receipt.transactionHash };
+          }
+
+          // ---- Mainnet path: batched Universal Account execute transaction ----
+          if (!(ua && eoa)) throw new Error("Connect a wallet first");
+          const { CHAIN_ID } = await loadSdk();
+          const chainId = EVM_CHAINS.arbitrum;
+          const TOKENS: Record<
+            "USDC" | "USDT",
+            { address: string; decimals: number }
+          > = {
+            USDC: {
+              address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+              decimals: 6,
+            },
+            USDT: {
+              address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+              decimals: 6,
+            },
+          };
+          const transactions =
+            token === "ETH"
+              ? buildSplitNativeCalls({ chainId, recipients })
+              : buildSplitERC20Calls({
+                  chainId,
+                  tokenAddress: TOKENS[token].address,
+                  decimals: TOKENS[token].decimals,
+                  recipients,
                 });
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const signature = await signer.signMessage(
-                  ethers.getBytes(tx.rootHash),
-                );
-                const result = await ua.sendTransaction(tx, signature);
-                return { txId: result.transactionId };
-              }
-            : undefined
-        }
-        onSplitPay={
-          ua && eoa
-            ? async ({ recipients, token }) => {
-                const { CHAIN_ID } = await loadSdk();
-                const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
-                  await import("@/lib/split");
-                const chainId = EVM_CHAINS.arbitrum;
-                const TOKENS: Record<
-                  "USDC" | "USDT",
-                  { address: string; decimals: number }
-                > = {
-                  USDC: {
-                    address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-                    decimals: 6,
-                  },
-                  USDT: {
-                    address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-                    decimals: 6,
-                  },
-                };
-                const transactions =
-                  token === "ETH"
-                    ? buildSplitNativeCalls({ chainId, recipients })
-                    : buildSplitERC20Calls({
-                        chainId,
-                        tokenAddress: TOKENS[token].address,
-                        decimals: TOKENS[token].decimals,
-                        recipients,
-                      });
-                const create =
-                  ua.createExecuteTransaction?.bind(ua) ??
-                  ua.createUniversalTransaction?.bind(ua);
-                if (!create) {
-                  throw new Error(
-                    "Universal Account SDK missing execute/universal transaction builder",
-                  );
-                }
-                const tx = await create({
-                  chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId,
-                  transactions,
-                });
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                const signature = await signer.signMessage(
-                  ethers.getBytes(tx.rootHash),
-                );
-                const result = await ua.sendTransaction(tx, signature);
-                return { txId: result.transactionId };
-              }
-            : undefined
-        }
+          const create =
+            ua.createExecuteTransaction?.bind(ua) ??
+            ua.createUniversalTransaction?.bind(ua);
+          if (!create) {
+            throw new Error(
+              "Universal Account SDK missing execute/universal transaction builder",
+            );
+          }
+          const tx = await create({
+            chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId,
+            transactions,
+          });
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const signature = await signer.signMessage(
+            ethers.getBytes(tx.rootHash),
+          );
+          const result = await ua.sendTransaction(tx, signature);
+          return { txId: result.transactionId };
+        }}
       />
 
 
