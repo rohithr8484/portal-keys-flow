@@ -19,10 +19,19 @@ type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
   onNotify?: (msg: string) => void;
-  /** When provided, Pay & Split and Checkout will execute a real Universal Account transfer. */
+  /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
     recipient: string;
     amount: number;
+    token: "USDC" | "USDT" | "ETH";
+    memo?: string;
+  }) => Promise<{ txId?: string } | void>;
+  /**
+   * Batched split — every recipient settles atomically in ONE Universal
+   * Account transaction requiring ONE signature.
+   */
+  onSplitPay?: (args: {
+    recipients: { address: string; amount: number }[];
     token: "USDC" | "USDT" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string } | void>;
