@@ -139,6 +139,35 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     }
     const each = paySplit ? payPreview.total / payPreview.valid.length : payPreview.total;
 
+    // Batched split: one signature, one Universal Account tx.
+    if (paySplit && payPreview.valid.length > 1 && onSplitPay) {
+      setPayBusy(true);
+      try {
+        onNotify?.(
+          `Batching ${payPreview.valid.length} transfers of ${each.toFixed(4)} ${payToken}…`,
+        );
+        const res = await onSplitPay({
+          recipients: payPreview.valid.map((address) => ({ address, amount: each })),
+          token: payToken,
+        });
+        pushActivity({
+          kind: "pay",
+          label: `Split × ${payPreview.valid.length} in one tx`,
+          amount: payPreview.total,
+          token: payToken,
+          hash: res?.txId,
+        });
+        onNotify?.("Batched split settled in one Universal Account transaction");
+        setPayAmount("");
+        setPayRecipients("");
+      } catch (e: any) {
+        onNotify?.(e?.message ?? "Batched split failed");
+      } finally {
+        setPayBusy(false);
+      }
+      return;
+    }
+
     if (onPay) {
       setPayBusy(true);
       try {
