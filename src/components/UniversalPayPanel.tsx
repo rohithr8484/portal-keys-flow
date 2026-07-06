@@ -91,7 +91,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
   const [tab, setTab] = useState<FeatureKey>("pay");
 
