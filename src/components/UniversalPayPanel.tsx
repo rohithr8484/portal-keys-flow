@@ -19,10 +19,19 @@ type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
   onNotify?: (msg: string) => void;
-  /** When provided, Pay & Split and Checkout will execute a real Universal Account transfer. */
+  /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
     recipient: string;
     amount: number;
+    token: "USDC" | "USDT" | "ETH";
+    memo?: string;
+  }) => Promise<{ txId?: string } | void>;
+  /**
+   * Batched split — every recipient settles atomically in ONE Universal
+   * Account transaction requiring ONE signature.
+   */
+  onSplitPay?: (args: {
+    recipients: { address: string; amount: number }[];
     token: "USDC" | "USDT" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string } | void>;
@@ -82,7 +91,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
   const [tab, setTab] = useState<FeatureKey>("pay");
 
@@ -129,6 +138,35 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay }:
       return;
     }
     const each = paySplit ? payPreview.total / payPreview.valid.length : payPreview.total;
+
+    // Batched split: one signature, one Universal Account tx.
+    if (paySplit && payPreview.valid.length > 1 && onSplitPay) {
+      setPayBusy(true);
+      try {
+        onNotify?.(
+          `Batching ${payPreview.valid.length} transfers of ${each.toFixed(4)} ${payToken}…`,
+        );
+        const res = await onSplitPay({
+          recipients: payPreview.valid.map((address) => ({ address, amount: each })),
+          token: payToken,
+        });
+        pushActivity({
+          kind: "pay",
+          label: `Split × ${payPreview.valid.length} in one tx`,
+          amount: payPreview.total,
+          token: payToken,
+          hash: res?.txId,
+        });
+        onNotify?.("Batched split settled in one Universal Account transaction");
+        setPayAmount("");
+        setPayRecipients("");
+      } catch (e: any) {
+        onNotify?.(e?.message ?? "Batched split failed");
+      } finally {
+        setPayBusy(false);
+      }
+      return;
+    }
 
     if (onPay) {
       setPayBusy(true);
