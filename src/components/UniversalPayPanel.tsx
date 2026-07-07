@@ -165,7 +165,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
         });
         onNotify?.(
           res?.txId
-            ? `Batched split confirmed — tx ${res.txId}`
+            ? `Batched split confirmed — tx ${res.txId}${res.txUrl ? ` ${res.txUrl}` : ""}`
             : "Batched split settled in one Universal Account transaction",
         );
         setPayAmount("");
