@@ -25,7 +25,7 @@ type Props = {
     amount: number;
     token: "USDC" | "USDT" | "ETH";
     memo?: string;
-  }) => Promise<{ txId?: string } | void>;
+  }) => Promise<{ txId?: string; txUrl?: string } | void>;
   /**
    * Batched split — every recipient settles atomically in ONE Universal
    * Account transaction requiring ONE signature.
@@ -34,7 +34,7 @@ type Props = {
     recipients: { address: string; amount: number }[];
     token: "USDC" | "USDT" | "ETH";
     memo?: string;
-  }) => Promise<{ txId?: string } | void>;
+  }) => Promise<{ txId?: string; txUrl?: string } | void>;
 };
 
 const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
@@ -76,10 +76,15 @@ type Activity = {
   token: Token;
   at: number;
   hash?: string;
+  txUrl?: string;
 };
 
 function shortAddr(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
+}
+
+function shortHash(hash: string) {
+  return `${hash.slice(0, 10)}…${hash.slice(-6)}`;
 }
 
 const FEATURES = [
@@ -156,8 +161,13 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           amount: payPreview.total,
           token: payToken,
           hash: res?.txId,
+          txUrl: res?.txUrl,
         });
-        onNotify?.("Batched split settled in one Universal Account transaction");
+        onNotify?.(
+          res?.txId
+            ? `Batched split confirmed — tx ${res.txId}${res.txUrl ? ` ${res.txUrl}` : ""}`
+            : "Batched split settled in one Universal Account transaction",
+        );
         setPayAmount("");
         setPayRecipients("");
       } catch (e: any) {
@@ -180,6 +190,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
             amount: each,
             token: payToken,
             hash: res?.txId,
+            txUrl: res?.txUrl,
           });
         }
         onNotify?.("Payment broadcast via Universal Account");
@@ -608,11 +619,25 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                 key={a.id}
                 className="flex items-center justify-between text-xs border-b border-panel-border py-1"
               >
-                <span>
+                <span className="min-w-0 pr-2">
                   <Badge variant="secondary" className="mr-2">
                     {a.kind}
                   </Badge>
                   {a.label}
+                  {a.hash && (
+                    <a
+                      href={a.txUrl ?? "#"}
+                      target={a.txUrl ? "_blank" : undefined}
+                      rel={a.txUrl ? "noreferrer" : undefined}
+                      className="ml-2 font-mono text-[color:var(--success)] hover:underline"
+                      title={a.hash}
+                      onClick={(event) => {
+                        if (!a.txUrl) event.preventDefault();
+                      }}
+                    >
+                      ✓ tx {shortHash(a.hash)} ↗
+                    </a>
+                  )}
                 </span>
                 <span className="text-muted-foreground">
                   {a.amount} {a.token} ·{" "}

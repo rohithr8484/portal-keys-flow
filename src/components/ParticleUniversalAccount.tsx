@@ -42,6 +42,11 @@ const ARB_SEPOLIA = {
   faucet: "https://faucet.quicknode.com/arbitrum/sepolia",
 };
 
+const ARBITRUM_MAINNET = {
+  chainId: 42161,
+  explorer: "https://arbiscan.io",
+};
+
 const ZERODEV_RPC =
   "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
@@ -77,6 +82,23 @@ declare global {
 function short(addr?: string) {
   if (!addr) return "—";
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function getSubmittedTxHash(result: any): string | undefined {
+  return (
+    result?.transactionHash ??
+    result?.txHash ??
+    result?.hash ??
+    result?.receipt?.transactionHash ??
+    result?.transactionId
+  );
+}
+
+function getTxUrl(hashOrId: string | undefined, explorer: string) {
+  if (!hashOrId) return undefined;
+  return /^0x([A-Fa-f0-9]{64})$/.test(hashOrId)
+    ? `${explorer}/tx/${hashOrId}`
+    : `https://universalx.app/activity/details?id=${hashOrId}`;
 }
 
 function isStoredPrivateKey(value: string | null): value is `0x${string}` {
@@ -922,7 +944,11 @@ export function ParticleUniversalAccount() {
       </header>
 
       <UniversalPayPanel
-        smartAccount={smartAccountAddress}
+        smartAccount={
+          isTestnet
+            ? smartAccountAddress
+            : addresses?.evmSmartAccount ?? (ua ? eoa : null)
+        }
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         onNotify={(msg: string) => setStatus(msg)}
         onPay={async ({ recipient, amount, token }) => {
@@ -955,8 +981,9 @@ export function ParticleUniversalAccount() {
             const receipt = await kernelClient.waitForUserOperationReceipt({
               hash: userOpHash,
             });
+            const txId = receipt.receipt.transactionHash;
             awardXp(25);
-            return { txId: receipt.receipt.transactionHash };
+            return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
 
           // ---- Mainnet path: Particle Universal Account transfer ----
@@ -981,7 +1008,11 @@ export function ParticleUniversalAccount() {
             ethers.getBytes(tx.rootHash),
           );
           const result = await ua.sendTransaction(tx, signature);
-          return { txId: result.transactionId };
+          const txId = getSubmittedTxHash(result);
+          return {
+            txId,
+            txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
+          };
         }}
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
@@ -991,7 +1022,8 @@ export function ParticleUniversalAccount() {
           if (isTestnet) {
             const { kernelClient } = await buildKernelClient();
             const chainId = EVM_CHAINS.arbitrumSepolia;
-            // Testnet only settles native ETH (no canonical USDC/USDT on ARB Sepolia here).
+            // Testnet split follows the Send-to-Pool path: native ETH calls are
+            // encoded in one Kernel UserOp, preserving duplicate recipients.
             const calls = buildSplitNativeCalls({ chainId, recipients });
             const userOpHash = await (kernelClient as any).sendUserOperation({
               callData: await kernelClient.account!.encodeCalls(
@@ -1005,8 +1037,9 @@ export function ParticleUniversalAccount() {
             const receipt = await kernelClient.waitForUserOperationReceipt({
               hash: userOpHash,
             });
+            const txId = receipt.receipt.transactionHash;
             awardXp(50);
-            return { txId: receipt.receipt.transactionHash };
+            return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
 
           // ---- Mainnet path: batched Universal Account execute transaction ----
@@ -1053,7 +1086,11 @@ export function ParticleUniversalAccount() {
             ethers.getBytes(tx.rootHash),
           );
           const result = await ua.sendTransaction(tx, signature);
-          return { txId: result.transactionId };
+          const txId = getSubmittedTxHash(result);
+          return {
+            txId,
+            txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
+          };
         }}
       />
 
