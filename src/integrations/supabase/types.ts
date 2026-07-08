@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      payment_requests: {
+        Row: {
+          amount: number
+          chain_id: number
+          created_at: string
+          expiry: string | null
+          id: string
+          memo: string | null
+          recipient: string
+          status: string
+          token: string
+          tx_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          chain_id: number
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          memo?: string | null
+          recipient: string
+          status?: string
+          token: string
+          tx_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          chain_id?: number
+          created_at?: string
+          expiry?: string | null
+          id?: string
+          memo?: string | null
+          recipient?: string
+          status?: string
+          token?: string
+          tx_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
