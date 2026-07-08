@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ethers } from "ethers";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  createPaymentRequest,
+  listRecentRequests,
+  cancelPaymentRequest,
+  CHAIN_META,
+  type PaymentRequestRow,
+} from "@/lib/payment-requests";
 
 type Props = {
   smartAccount: string | null;
@@ -89,6 +96,7 @@ function shortHash(hash: string) {
 
 const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
+  { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
   { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC, USDT or ETH — auto-sourced from your assets." },
   { key: "requests", icon: "🧾", title: "Requests & invoices", desc: "Trackable payment requests with shareable links and QR codes." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
@@ -303,7 +311,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       </div>
 
       {/* Feature strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
         {FEATURES.map((f) => (
           <button
             key={f.key}
@@ -420,7 +428,16 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           </div>
         </TabsContent>
 
-        {/* ANY TOKEN — reuses balance panel */}
+        {/* RECEIVE */}
+        <TabsContent value="receive" className="mt-0">
+          <ReceiveTab
+            address={address}
+            onNotify={onNotify}
+            pushActivity={pushActivity}
+          />
+        </TabsContent>
+
+
         <TabsContent value="token" className="mt-0">
           <div className="rounded-xl border border-panel-border bg-background/40 p-6 text-center">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -691,3 +708,267 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     </section>
   );
 }
+
+// -------- Receive tab: create payment request + QR + share link --------
+
+const RECEIVE_TOKENS = ["ETH", "USDC", "USDT"] as const;
+type ReceiveToken = (typeof RECEIVE_TOKENS)[number];
+
+function ReceiveTab({
+  address,
+  onNotify,
+  pushActivity,
+}: {
+  address: string;
+  onNotify?: (msg: string) => void;
+  pushActivity: (a: Omit<Activity, "id" | "at">) => void;
+}) {
+  const [chainId, setChainId] = useState<number>(42161); // Arbitrum One
+  const [token, setToken] = useState<ReceiveToken>("USDC");
+  const [amount, setAmount] = useState("");
+  const [memo, setMemo] = useState("");
+  const [expiryMinutes, setExpiryMinutes] = useState<string>("60");
+  const [busy, setBusy] = useState(false);
+  const [request, setRequest] = useState<PaymentRequestRow | null>(null);
+  const [recent, setRecent] = useState<PaymentRequestRow[]>([]);
+  const qrRef = useRef<SVGSVGElement | null>(null);
+
+  const chain = CHAIN_META[chainId];
+
+  const refresh = async () => {
+    if (!address) return;
+    try {
+      const rows = await listRecentRequests(address, 10);
+      setRecent(rows);
+    } catch {}
+  };
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, request?.id]);
+
+  const payUrl = useMemo(() => {
+    if (!request) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    return `${origin}/pay/${request.id}`;
+  }, [request]);
+
+  const create = async () => {
+    if (!address) {
+      onNotify?.("Connect a wallet first");
+      return;
+    }
+    const amt = Number(amount);
+    if (!(amt > 0)) {
+      onNotify?.("Enter an amount");
+      return;
+    }
+    setBusy(true);
+    try {
+      const row = await createPaymentRequest({
+        recipient: address,
+        amount: amt,
+        token,
+        chainId,
+        memo: memo || undefined,
+        expiryMinutes: Number(expiryMinutes) || undefined,
+      });
+      setRequest(row);
+      pushActivity({
+        kind: "request",
+        label: `Receive · ${memo || "no memo"}`,
+        amount: amt,
+        token: token as Activity["token"],
+      });
+      onNotify?.("Payment request created");
+    } catch (e: any) {
+      onNotify?.(e?.message ?? "Failed to create request");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = (v: string, label: string) => {
+    navigator.clipboard.writeText(v);
+    onNotify?.(`${label} copied`);
+  };
+
+  const downloadQr = () => {
+    const svg = qrRef.current;
+    if (!svg) return;
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svg);
+    const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payment-${request?.id?.slice(0, 8) ?? "request"}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const cancel = async (id: string) => {
+    try {
+      await cancelPaymentRequest(id);
+      onNotify?.("Request cancelled");
+      if (request?.id === id) setRequest({ ...request, status: "cancelled" });
+      refresh();
+    } catch (e: any) {
+      onNotify?.(e?.message ?? "Cancel failed");
+    }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
+        <div className="text-sm font-semibold">Request a payment</div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs text-muted-foreground space-y-1">
+            Network
+            <select
+              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={chainId}
+              onChange={(e) => setChainId(Number(e.target.value))}
+            >
+              <option value={42161}>Arbitrum One (mainnet)</option>
+              <option value={421614}>Arbitrum Sepolia (testnet)</option>
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground space-y-1">
+            Token
+            <select
+              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+              value={token}
+              onChange={(e) => setToken(e.target.value as ReceiveToken)}
+            >
+              {RECEIVE_TOKENS.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            min="0"
+            step="0.0001"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <Input
+            type="number"
+            min="0"
+            placeholder="Expiry (min)"
+            value={expiryMinutes}
+            onChange={(e) => setExpiryMinutes(e.target.value)}
+          />
+        </div>
+        <Input
+          placeholder="Memo (optional)"
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+        />
+        <Button onClick={create} className="w-full" disabled={busy || !address}>
+          {busy ? "Generating…" : "Generate payment request"}
+        </Button>
+        <div className="text-[11px] text-muted-foreground">
+          Funds settle to your smart account on {chain?.label}.
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
+        {request ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">Share this request</div>
+              <Badge variant={request.status === "pending" ? "secondary" : "default"}>
+                {request.status}
+              </Badge>
+            </div>
+            <div className="flex justify-center bg-white rounded-lg p-3">
+              <QRCodeSVG
+                ref={qrRef as any}
+                value={payUrl}
+                size={168}
+                includeMargin
+              />
+            </div>
+            <div className="text-xs text-muted-foreground text-center break-all">
+              {request.amount} {request.token} → {shortAddr(request.recipient)}
+              <div className="mt-1">{chain?.label}</div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button size="sm" variant="secondary" onClick={() => copy(payUrl, "Link")}>
+                Copy link
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => copy(request.recipient, "Address")}
+              >
+                Copy address
+              </Button>
+              <Button size="sm" variant="secondary" onClick={downloadQr}>
+                Download QR
+              </Button>
+            </div>
+            {request.status === "pending" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full"
+                onClick={() => cancel(request.id)}
+              >
+                Cancel request
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className="text-xs text-muted-foreground text-center py-12">
+            Generate a request to see the QR code, share link, and payer view.
+          </div>
+        )}
+      </div>
+
+      {recent.length > 0 && (
+        <div className="md:col-span-2 rounded-xl border border-panel-border bg-background/40 p-4">
+          <div className="text-sm font-semibold mb-2">Recent requests</div>
+          <div className="space-y-1 max-h-64 overflow-auto pr-1">
+            {recent.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between text-xs border-b border-panel-border py-2"
+              >
+                <div className="min-w-0 pr-2">
+                  <div className="font-semibold">
+                    {r.amount} {r.token}{" "}
+                    <Badge variant="secondary" className="ml-1">
+                      {r.status}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground truncate">
+                    {r.memo || "no memo"} · chain {r.chain_id}
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <a
+                    href={`/pay/${r.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Open ↗
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
