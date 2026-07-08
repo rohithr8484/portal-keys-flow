@@ -428,7 +428,16 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           </div>
         </TabsContent>
 
-        {/* ANY TOKEN — reuses balance panel */}
+        {/* RECEIVE */}
+        <TabsContent value="receive" className="mt-0">
+          <ReceiveTab
+            address={address}
+            onNotify={onNotify}
+            pushActivity={pushActivity}
+          />
+        </TabsContent>
+
+
         <TabsContent value="token" className="mt-0">
           <div className="rounded-xl border border-panel-border bg-background/40 p-6 text-center">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
