@@ -62,6 +62,22 @@ function assertChain(chainId: number): number {
 }
 
 /**
+ * Convert a number/string amount into a plain fixed-point decimal string
+ * that `ethers.parseUnits` accepts. JS `String(0.00000001)` yields
+ * `"1e-8"` which ethers rejects with `invalid FixedNumber string value`.
+ */
+function toDecimalString(amount: string | number, decimals: number): string {
+  if (typeof amount === "string" && !/e/i.test(amount)) return amount;
+  const n = typeof amount === "number" ? amount : Number(amount);
+  if (!Number.isFinite(n)) throw new Error(`Invalid amount: ${amount}`);
+  // toFixed handles scientific notation; cap at token decimals to avoid overflow
+  let s = n.toFixed(Math.min(decimals, 18));
+  // trim trailing zeros / dangling dot for cleanliness
+  if (s.includes(".")) s = s.replace(/0+$/, "").replace(/\.$/, "");
+  return s || "0";
+}
+
+/**
  * Build batched native (ETH / MATIC / BNB / AVAX / …) split calls.
  * One `{to,data,value}` per recipient — atomic when sent through a
  * Universal Account execute transaction.
@@ -77,7 +93,7 @@ export function buildSplitNativeCalls(params: {
   if (!params.recipients?.length) throw new Error("No recipients");
 
   return params.recipients.map((r) => {
-    const value = ethers.parseUnits(String(r.amount), decimals);
+    const value = ethers.parseUnits(toDecimalString(r.amount, decimals), decimals);
     return {
       to: assertAddress(r.address),
       data: "0x",
@@ -101,7 +117,10 @@ export function buildSplitERC20Calls(params: {
   if (!params.recipients?.length) throw new Error("No recipients");
 
   return params.recipients.map((r) => {
-    const amount = ethers.parseUnits(String(r.amount), params.decimals);
+    const amount = ethers.parseUnits(
+      toDecimalString(r.amount, params.decimals),
+      params.decimals,
+    );
     const data = ERC20_IFACE.encodeFunctionData("transfer", [
       assertAddress(r.address),
       amount,
@@ -109,3 +128,4 @@ export function buildSplitERC20Calls(params: {
     return { to: token, data, value: "0x0" };
   });
 }
+
