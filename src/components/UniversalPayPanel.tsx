@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ethers } from "ethers";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  createPaymentRequest,
+  listRecentRequests,
+  cancelPaymentRequest,
+  CHAIN_META,
+  type PaymentRequestRow,
+} from "@/lib/payment-requests";
 
 type Props = {
   smartAccount: string | null;
