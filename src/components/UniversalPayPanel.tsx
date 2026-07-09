@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { formatDisplayAmount } from "@/lib/amounts";
 import {
   createPaymentRequest,
   listRecentRequests,
@@ -913,7 +914,7 @@ function ReceiveTab({
               />
             </div>
             <div className="text-xs text-muted-foreground text-center break-all">
-              {request.amount} {request.token} → {shortAddr(request.recipient)}
+              {formatDisplayAmount(request.amount)} {request.token} → {shortAddr(request.recipient)}
               <div className="mt-1">{chain?.label}</div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -960,7 +961,7 @@ function ReceiveTab({
               >
                 <div className="min-w-0 pr-2">
                   <div className="font-semibold">
-                    {r.amount} {r.token}{" "}
+                    {formatDisplayAmount(r.amount)} {r.token}{" "}
                     <Badge variant="secondary" className="ml-1">
                       {r.status}
                     </Badge>

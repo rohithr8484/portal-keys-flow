@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { amountForTokenUnits, formatDisplayAmount } from "@/lib/amounts";
 import {
   getPaymentRequest,
   markPaymentPaid,
@@ -93,6 +94,11 @@ function PayRequestPage() {
     return new Date(request.expiry).getTime() < Date.now();
   }, [request]);
 
+  const displayAmount = useMemo(() => {
+    if (!request) return "0";
+    return formatDisplayAmount(request.amount);
+  }, [request]);
+
   const connect = async () => {
     if (!window.ethereum) {
       // Mobile browsers without an injected provider: hand off to the
@@ -163,10 +169,11 @@ function PayRequestPage() {
       const signer = await provider.getSigner();
       setStatus("Awaiting signature…");
       let hash: string;
+      const amountInUnits = amountForTokenUnits(request.amount, tokenInfo.decimals);
       if (tokenInfo.address === "native") {
         const tx = await signer.sendTransaction({
           to: request.recipient,
-          value: ethers.parseUnits(String(request.amount), tokenInfo.decimals),
+          value: ethers.parseUnits(amountInUnits, tokenInfo.decimals),
         });
         setStatus("Broadcasting…");
         setTxHash(tx.hash);
@@ -176,7 +183,7 @@ function PayRequestPage() {
         const contract = new ethers.Contract(tokenInfo.address, ERC20_ABI, signer);
         const tx = await contract.transfer(
           request.recipient,
-          ethers.parseUnits(String(request.amount), tokenInfo.decimals),
+          ethers.parseUnits(amountInUnits, tokenInfo.decimals),
         );
         setStatus("Broadcasting…");
         setTxHash(tx.hash);
@@ -231,26 +238,28 @@ function PayRequestPage() {
 
         <div className="text-center">
           <div className="text-4xl font-bold neon-text">
-            {request.amount} <span className="text-lg align-middle">{request.token}</span>
+            {displayAmount} <span className="text-lg align-middle">{request.token}</span>
           </div>
           {request.memo && (
             <div className="text-sm text-muted-foreground mt-1">{request.memo}</div>
           )}
         </div>
 
-        <div className="rounded-lg border border-panel-border bg-background/40 p-3 text-xs space-y-1">
-          <div className="flex justify-between">
+        <div className="rounded-lg border border-panel-border bg-background/40 p-3 text-xs space-y-2">
+          <div className="grid grid-cols-[5.5rem_1fr] gap-3 items-start">
             <span className="text-muted-foreground">Recipient</span>
-            <span className="font-mono">{request.recipient}</span>
+            <span className="font-mono text-right break-all leading-relaxed">
+              {request.recipient}
+            </span>
           </div>
-          <div className="flex justify-between">
+          <div className="grid grid-cols-[5.5rem_1fr] gap-3 items-start">
             <span className="text-muted-foreground">Network</span>
-            <span>{chain?.label ?? `chain ${request.chain_id}`}</span>
+            <span className="text-right">{chain?.label ?? `chain ${request.chain_id}`}</span>
           </div>
           {request.expiry && (
-            <div className="flex justify-between">
+            <div className="grid grid-cols-[5.5rem_1fr] gap-3 items-start">
               <span className="text-muted-foreground">Expires</span>
-              <span>{new Date(request.expiry).toLocaleString()}</span>
+              <span className="text-right">{new Date(request.expiry).toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -289,7 +298,7 @@ function PayRequestPage() {
               {busy
                 ? status ?? "Working…"
                 : wallet
-                  ? `Pay ${request.amount} ${request.token}`
+                  ? `Pay ${displayAmount} ${request.token}`
                   : "Connect wallet"}
             </Button>
           </>
