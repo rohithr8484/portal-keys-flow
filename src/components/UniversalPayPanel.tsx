@@ -727,7 +727,7 @@ function ReceiveTab({
   const [token, setToken] = useState<ReceiveToken>("USDC");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
-  const [expiryMinutes, setExpiryMinutes] = useState<string>("60");
+  const [expiryMinutes, setExpiryMinutes] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [request, setRequest] = useState<PaymentRequestRow | null>(null);
   const [recent, setRecent] = useState<PaymentRequestRow[]>([]);
@@ -861,7 +861,7 @@ function ReceiveTab({
           <Input
             type="number"
             min="0"
-            placeholder="Expiry (min)"
+            placeholder="Expiry (min, blank = never)"
             value={expiryMinutes}
             onChange={(e) => setExpiryMinutes(e.target.value)}
           />
