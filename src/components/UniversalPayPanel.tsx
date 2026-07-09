@@ -725,6 +725,7 @@ function ReceiveTab({
 }) {
   const [chainId, setChainId] = useState<number>(42161); // Arbitrum One
   const [token, setToken] = useState<ReceiveToken>("USDC");
+  const [invoiceType, setInvoiceType] = useState<string>("Invoice");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [expiryMinutes, setExpiryMinutes] = useState<string>("");
