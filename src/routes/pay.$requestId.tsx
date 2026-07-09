@@ -95,7 +95,20 @@ function PayRequestPage() {
 
   const connect = async () => {
     if (!window.ethereum) {
-      setError("No wallet detected. Install MetaMask or a compatible wallet.");
+      // Mobile browsers without an injected provider: hand off to the
+      // MetaMask (or compatible) mobile app via its deeplink. The app opens
+      // this page inside its in-app browser where window.ethereum exists.
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+      if (isMobile && typeof window !== "undefined") {
+        const host = window.location.host;
+        const path = window.location.pathname + window.location.search;
+        window.location.href = `https://metamask.app.link/dapp/${host}${path}`;
+        return;
+      }
+      setError(
+        "No wallet detected. Open this link inside your MetaMask mobile app browser, or install a wallet extension.",
+      );
       return;
     }
     try {
