@@ -861,7 +861,7 @@ function ReceiveTab({
           <Input
             type="number"
             min="0"
-            placeholder="Expiry (min)"
+            placeholder="Expiry (min, blank = never)"
             value={expiryMinutes}
             onChange={(e) => setExpiryMinutes(e.target.value)}
           />
