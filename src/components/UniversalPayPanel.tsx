@@ -766,12 +766,15 @@ function ReceiveTab({
     }
     setBusy(true);
     try {
+      const composedMemo = memo
+        ? `[${invoiceType}] ${memo}`
+        : `[${invoiceType}]`;
       const row = await createPaymentRequest({
         recipient: address,
         amount: amt,
         token,
         chainId,
-        memo: memo || undefined,
+        memo: composedMemo,
         expiryMinutes: Number(expiryMinutes) || undefined,
       });
       setRequest(row);
