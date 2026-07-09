@@ -725,6 +725,7 @@ function ReceiveTab({
 }) {
   const [chainId, setChainId] = useState<number>(42161); // Arbitrum One
   const [token, setToken] = useState<ReceiveToken>("USDC");
+  const [invoiceType, setInvoiceType] = useState<string>("Invoice");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [expiryMinutes, setExpiryMinutes] = useState<string>("");
@@ -765,12 +766,15 @@ function ReceiveTab({
     }
     setBusy(true);
     try {
+      const composedMemo = memo
+        ? `[${invoiceType}] ${memo}`
+        : `[${invoiceType}]`;
       const row = await createPaymentRequest({
         recipient: address,
         amount: amt,
         token,
         chainId,
-        memo: memo || undefined,
+        memo: composedMemo,
         expiryMinutes: Number(expiryMinutes) || undefined,
       });
       setRequest(row);
@@ -849,6 +853,18 @@ function ReceiveTab({
             </select>
           </label>
         </div>
+        <label className="text-xs text-muted-foreground space-y-1 block">
+          Invoice type
+          <select
+            className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+            value={invoiceType}
+            onChange={(e) => setInvoiceType(e.target.value)}
+          >
+            {["Invoice", "Deposit", "Donation", "Subscription", "Refund", "Tip"].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
         <div className="grid grid-cols-2 gap-2">
           <Input
             type="number"
