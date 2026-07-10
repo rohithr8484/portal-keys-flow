@@ -584,7 +584,7 @@ function ReceiveTab({
   const [token, setToken] = useState<ReceiveToken>("USDC");
   const [invoiceType, setInvoiceType] = useState<string>("Invoice");
   const [amount, setAmount] = useState("");
-  const [memo, setMemo] = useState("");
+  const memo = "";
   const [expiryMinutes, setExpiryMinutes] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [request, setRequest] = useState<PaymentRequestRow | null>(null);
