@@ -68,14 +68,6 @@ function usePersist<T>(key: string, initial: T) {
 }
 
 type Contact = { name: string; address: string };
-type PayRequest = {
-  id: string;
-  amount: number;
-  token: Token;
-  note: string;
-  status: "open" | "paid" | "cancelled";
-  createdAt: number;
-};
 type Activity = {
   id: string;
   kind: "pay" | "receive" | "request";
@@ -99,7 +91,6 @@ const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
   { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC, USDT or ETH — auto-sourced from your assets." },
-  { key: "requests", icon: "🧾", title: "Requests & invoices", desc: "Trackable payment requests with shareable links and QR codes." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
 ] as const;
 
@@ -110,7 +101,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
   const [tab, setTab] = useState<FeatureKey>("pay");
 
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
-  const [requests, setRequests] = usePersist<PayRequest[]>("up_requests", []);
+  
   const [activity, setActivity] = usePersist<Activity[]>("up_activity", []);
 
   const [contactOpen, setContactOpen] = useState(false);
@@ -227,44 +218,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     onNotify?.("Payment queued");
   };
 
-  // ---------- Requests state ----------
-  const [reqAmount, setReqAmount] = useState("");
-  const [reqToken, setReqToken] = useState<Token>("USDC");
-  const [reqNote, setReqNote] = useState("");
-  const createRequest = () => {
-    if (!requireAddress()) return;
-    const amt = Number(reqAmount || "0");
-    if (amt <= 0) {
-      onNotify?.("Enter an amount");
-      return;
-    }
-    const r: PayRequest = {
-      id: crypto.randomUUID(),
-      amount: amt,
-      token: reqToken,
-      note: reqNote,
-      status: "open",
-      createdAt: Date.now(),
-    };
-    setRequests((prev) => [r, ...prev]);
-    pushActivity({ kind: "request", label: `Request · ${reqNote || "no memo"}`, amount: amt, token: reqToken });
-    setReqAmount("");
-    setReqNote("");
-    onNotify?.("Request created");
-  };
-  const requestLink = (r: PayRequest) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const p = new URLSearchParams({
-      to: address,
-      amount: String(r.amount),
-      asset: r.token,
-      id: r.id,
-    });
-    if (r.note) p.set("note", r.note);
-    return `${origin}/?pay=1&${p.toString()}`;
-  };
-  const updateReq = (id: string, status: PayRequest["status"]) =>
-    setRequests((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
+  // ---------- Requests state (removed) ----------
+
 
   // ---------- Contacts state ----------
   const [cName, setCName] = useState("");
@@ -312,7 +267,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       </div>
 
       {/* Feature strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
         {FEATURES.map((f) => (
           <button
             key={f.key}
@@ -464,105 +419,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           </div>
         </TabsContent>
 
-        {/* REQUESTS */}
-        <TabsContent value="requests" className="mt-0">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
-              <div className="text-sm font-semibold">New request</div>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Amount"
-                  value={reqAmount}
-                  onChange={(e) => setReqAmount(e.target.value)}
-                />
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                  value={reqToken}
-                  onChange={(e) => setReqToken(e.target.value as Token)}
-                >
-                  {SETTLEMENT_TOKENS.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
-              <Input
-                placeholder="Memo (optional)"
-                value={reqNote}
-                onChange={(e) => setReqNote(e.target.value)}
-              />
-              <Button onClick={createRequest} className="w-full">
-                Create request
-              </Button>
-            </div>
-
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-2">
-              <div className="text-sm font-semibold">Open requests</div>
-              {requests.length === 0 && (
-                <div className="text-xs text-muted-foreground">
-                  No requests yet.
-                </div>
-              )}
-              <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                {requests.map((r) => (
-                  <div
-                    key={r.id}
-                    className="rounded-lg border border-panel-border bg-background/60 p-3 flex items-start gap-3"
-                  >
-                    <div className="rounded bg-white p-1">
-                      <QRCodeSVG value={requestLink(r)} size={56} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold">
-                        {r.amount} {r.token}{" "}
-                        <Badge
-                          variant={r.status === "paid" ? "default" : "secondary"}
-                          className="ml-1"
-                        >
-                          {r.status}
-                        </Badge>
-                      </div>
-                      <div className="text-[11px] text-muted-foreground truncate">
-                        {r.note || "no memo"}
-                      </div>
-                      <div className="flex gap-2 mt-1">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            navigator.clipboard.writeText(requestLink(r));
-                            onNotify?.("Link copied");
-                          }}
-                        >
-                          Copy link
-                        </Button>
-                        {r.status === "open" && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => updateReq(r.id, "paid")}
-                            >
-                              Mark paid
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => updateReq(r.id, "cancelled")}
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
 
         {/* CONTACTS */}
         <TabsContent value="contacts" className="mt-0">
@@ -728,7 +584,7 @@ function ReceiveTab({
   const [token, setToken] = useState<ReceiveToken>("USDC");
   const [invoiceType, setInvoiceType] = useState<string>("Invoice");
   const [amount, setAmount] = useState("");
-  const [memo, setMemo] = useState("");
+  const memo = "";
   const [expiryMinutes, setExpiryMinutes] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [request, setRequest] = useState<PaymentRequestRow | null>(null);
@@ -861,7 +717,7 @@ function ReceiveTab({
             value={invoiceType}
             onChange={(e) => setInvoiceType(e.target.value)}
           >
-            {["Invoice", "Deposit", "Donation", "Subscription", "Refund", "Tip"].map((t) => (
+            {["Invoice", "Amount", "Deposit", "Donation", "Subscription", "Refund", "Tip"].map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>
@@ -883,11 +739,6 @@ function ReceiveTab({
             onChange={(e) => setExpiryMinutes(e.target.value)}
           />
         </div>
-        <Input
-          placeholder="Memo (optional)"
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-        />
         <Button onClick={create} className="w-full" disabled={busy || !address}>
           {busy ? "Generating…" : "Generate payment request"}
         </Button>
