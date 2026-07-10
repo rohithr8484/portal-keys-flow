@@ -1101,14 +1101,8 @@ export function ParticleUniversalAccount() {
         {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
         {isTestnet && (
           <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div className="text-sm font-semibold neon-text">Game Loop · {methodLabel}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  Each action sends a sponsored UserOp on Arbitrum Sepolia.
-                </div>
-              </div>
-            </div>
+
+
             {platformAddress && (
               <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
                 <div>
