@@ -101,7 +101,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
   const [tab, setTab] = useState<FeatureKey>("pay");
 
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
-  const [requests, setRequests] = usePersist<PayRequest[]>("up_requests", []);
+  
   const [activity, setActivity] = usePersist<Activity[]>("up_activity", []);
 
   const [contactOpen, setContactOpen] = useState(false);
