@@ -68,14 +68,6 @@ function usePersist<T>(key: string, initial: T) {
 }
 
 type Contact = { name: string; address: string };
-type PayRequest = {
-  id: string;
-  amount: number;
-  token: Token;
-  note: string;
-  status: "open" | "paid" | "cancelled";
-  createdAt: number;
-};
 type Activity = {
   id: string;
   kind: "pay" | "receive" | "request";
