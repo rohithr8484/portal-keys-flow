@@ -739,11 +739,6 @@ function ReceiveTab({
             onChange={(e) => setExpiryMinutes(e.target.value)}
           />
         </div>
-        <Input
-          placeholder="Memo (optional)"
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-        />
         <Button onClick={create} className="w-full" disabled={busy || !address}>
           {busy ? "Generating…" : "Generate payment request"}
         </Button>
