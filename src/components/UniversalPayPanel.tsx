@@ -226,44 +226,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     onNotify?.("Payment queued");
   };
 
-  // ---------- Requests state ----------
-  const [reqAmount, setReqAmount] = useState("");
-  const [reqToken, setReqToken] = useState<Token>("USDC");
-  const [reqNote, setReqNote] = useState("");
-  const createRequest = () => {
-    if (!requireAddress()) return;
-    const amt = Number(reqAmount || "0");
-    if (amt <= 0) {
-      onNotify?.("Enter an amount");
-      return;
-    }
-    const r: PayRequest = {
-      id: crypto.randomUUID(),
-      amount: amt,
-      token: reqToken,
-      note: reqNote,
-      status: "open",
-      createdAt: Date.now(),
-    };
-    setRequests((prev) => [r, ...prev]);
-    pushActivity({ kind: "request", label: `Request · ${reqNote || "no memo"}`, amount: amt, token: reqToken });
-    setReqAmount("");
-    setReqNote("");
-    onNotify?.("Request created");
-  };
-  const requestLink = (r: PayRequest) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const p = new URLSearchParams({
-      to: address,
-      amount: String(r.amount),
-      asset: r.token,
-      id: r.id,
-    });
-    if (r.note) p.set("note", r.note);
-    return `${origin}/?pay=1&${p.toString()}`;
-  };
-  const updateReq = (id: string, status: PayRequest["status"]) =>
-    setRequests((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
+  // ---------- Requests state (removed) ----------
+
 
   // ---------- Contacts state ----------
   const [cName, setCName] = useState("");
