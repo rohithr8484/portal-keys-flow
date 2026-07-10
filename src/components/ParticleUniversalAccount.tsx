@@ -1095,77 +1095,14 @@ export function ParticleUniversalAccount() {
       />
 
 
-      {/* GameFi Dashboard — Player Stats */}
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative size-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-lg font-bold glow-pulse">
-              {level}
-              <span className="absolute -bottom-1 -right-1 text-[9px] px-1 rounded bg-background border border-panel-border">LV</span>
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Operator</div>
-              <div className="text-sm font-medium font-mono">{eoa ? short(eoa) : "Unconnected"}</div>
-            </div>
-          </div>
-          <div className="flex-1 min-w-[200px] max-w-md">
-            <div className="flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-              <span>XP · {xp}</span>
-              <span>Next LV · {100 - levelProgress}xp</span>
-            </div>
-            <div className="h-2 rounded-full bg-background/60 overflow-hidden relative">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
-                style={{ width: `${levelProgress}%` }}
-              />
-              <div className="absolute inset-0 shimmer-bar opacity-60" />
-            </div>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard label="Level" value={String(level)} accent="primary" icon="⚡" />
-          <StatCard label="Total XP" value={String(xp)} accent="accent" icon="✦" />
-          <StatCard label="Ops Sent" value={String(txCount)} accent="success" icon="◆" />
-          <StatCard label="Streak" value={`${streak}🔥`} accent="primary" icon="" />
-          <StatCard label="Coins" value={String(coins)} accent="accent" icon="🪙" />
-          <StatCard label="ETH" value={usdc.toFixed(2)} accent="success" icon="Ξ" />
-
-
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <QuestCard
-            title="First Contact"
-            desc="Connect a wallet"
-            done={!!eoa}
-            reward="+10 XP"
-          />
-          <QuestCard
-            title="Sign of Life"
-            desc="Send your first UserOp"
-            done={txCount >= 1}
-            reward="+50 XP"
-          />
-          <QuestCard
-            title="Chain Hopper"
-            desc="Complete 5 operations"
-            done={txCount >= 5}
-            reward="+200 XP"
-          />
-        </div>
 
         {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
         {isTestnet && (
           <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div className="text-sm font-semibold neon-text">Game Loop · {methodLabel}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  Each action sends a sponsored UserOp on Arbitrum Sepolia.
-                </div>
-              </div>
-            </div>
+
+
             {platformAddress && (
               <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
                 <div>
