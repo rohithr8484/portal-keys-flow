@@ -986,18 +986,24 @@ export function ParticleUniversalAccount() {
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
 
-          // ---- Mainnet path: Particle Universal Account transfer ----
+          // ---- Mainnet: single-recipient transfer via Universal Account.
+          // Follows the `sell-evm.ts` pattern: createTransferTransaction →
+          // sign(rootHash) → sendTransaction. Native ETH uses the zero
+          // address per `buy-evm.ts` ("if you want to buy native token,
+          // the address is 0x000...000"). ----
           if (!(ua && eoa)) throw new Error("Connect a wallet first");
           const { CHAIN_ID } = await loadSdk();
-          const TOKENS: Record<string, string | undefined> = {
+          const NATIVE = "0x0000000000000000000000000000000000000000";
+          const TOKENS: Record<"USDC" | "USDT" | "ETH", string> = {
+            // Native (Circle) USDC on Arbitrum One
             USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
             USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-            ETH: undefined,
+            ETH: NATIVE,
           };
           const tx = await ua.createTransferTransaction({
             token: {
               chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
-              ...(TOKENS[token] ? { address: TOKENS[token] } : {}),
+              address: TOKENS[token],
             },
             amount: amount.toString(),
             receiver: recipient,
