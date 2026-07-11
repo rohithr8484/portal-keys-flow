@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
-import {
-  PARTICLE_APP_ID,
-  PARTICLE_CLIENT_KEY,
-  PARTICLE_PROJECT_ID,
-} from "@/lib/particle-config";
+import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib/particle-config";
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
@@ -47,19 +43,14 @@ const ARBITRUM_MAINNET = {
   explorer: "https://arbiscan.io",
 };
 
-const ZERODEV_RPC =
-  "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
+const ZERODEV_RPC = "https://rpc.zerodev.app/api/v3/263a14d6-19fe-4e98-8ba4-02b793c1aa0a/chain/421614";
 
 const UA_7702_PRIVATE_KEY = "ua_7702_pk";
 const UA_PLATFORM_PRIVATE_KEY = "ua_platform_pk";
-const ENTRY_POINT_V07_ADDRESS =
-  "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
+const ENTRY_POINT_V07_ADDRESS = "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as `0x${string}`;
 const QUEST_ENTRYPOINT_DEPOSIT_WEI = BigInt(1_000_000_000_000);
-const PLATFORM_FEE_RECIPIENT =
-  "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb" as `0x${string}`;
-const ENTRY_POINT_INTERFACE = new ethers.Interface([
-  "function depositTo(address account) payable",
-]);
+const PLATFORM_FEE_RECIPIENT = "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb" as `0x${string}`;
+const ENTRY_POINT_INTERFACE = new ethers.Interface(["function depositTo(address account) payable"]);
 
 async function getPlatformWallet() {
   if (typeof window === "undefined") throw new Error("browser-only");
@@ -142,15 +133,12 @@ function Copy({ value }: { value: string }) {
 
 export function ParticleUniversalAccount() {
   const [network, setNetwork] = useState<NetworkMode>("mainnet");
-  const [testnetMethod, setTestnetMethod] =
-    useState<TestnetMethod>("zerodev-7702");
+  const [testnetMethod, setTestnetMethod] = useState<TestnetMethod>("zerodev-7702");
   const [eoa, setEoa] = useState<string | null>(null);
   const [ua, setUa] = useState<any | null>(null);
   const [addresses, setAddresses] = useState<UAAddresses | null>(null);
   const [balance, setBalance] = useState<PrimaryBalance | null>(null);
-  const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(
-    null
-  );
+  const [smartAccountAddress, setSmartAccountAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -171,7 +159,9 @@ export function ParticleUniversalAccount() {
   const [platformBalance, setPlatformBalance] = useState<string | null>(null);
 
   const persistNum = (key: string, v: number) => {
-    try { localStorage.setItem(key, String(v)); } catch {}
+    try {
+      localStorage.setItem(key, String(v));
+    } catch {}
   };
 
   useEffect(() => {
@@ -202,17 +192,23 @@ export function ParticleUniversalAccount() {
   const awardXp = useCallback((amount: number) => {
     setXp((x) => {
       const next = x + amount;
-      try { localStorage.setItem("ua_xp", String(next)); } catch {}
+      try {
+        localStorage.setItem("ua_xp", String(next));
+      } catch {}
       return next;
     });
     setTxCount((c) => {
       const next = c + 1;
-      try { localStorage.setItem("ua_txcount", String(next)); } catch {}
+      try {
+        localStorage.setItem("ua_txcount", String(next));
+      } catch {}
       return next;
     });
     setStreak((s) => {
       const next = s + 1;
-      try { localStorage.setItem("ua_streak", String(next)); } catch {}
+      try {
+        localStorage.setItem("ua_streak", String(next));
+      } catch {}
       return next;
     });
   }, []);
@@ -238,7 +234,6 @@ export function ParticleUniversalAccount() {
       cancelled = true;
     };
   }, [testnetMethod]);
-
 
   const level = Math.floor(xp / 100) + 1;
   const levelProgress = xp % 100;
@@ -361,9 +356,7 @@ export function ParticleUniversalAccount() {
       setBusy("Broadcasting…");
       const result = await ua.sendTransaction(tx, signature);
       awardXp(50);
-      setStatus(
-        `Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`
-      );
+      setStatus(`Sent! View: https://universalx.app/activity/details?id=${result.transactionId}`);
     } catch (e: any) {
       setError(e?.message ?? "Transfer failed");
     } finally {
@@ -449,16 +442,13 @@ export function ParticleUniversalAccount() {
         paymaster: paymasterClient,
         client: publicClient,
         userOperation: {
-          estimateFeesPerGas: async ({ bundlerClient }: any) =>
-            getUserOperationGasPrice(bundlerClient),
+          estimateFeesPerGas: async ({ bundlerClient }: any) => getUserOperationGasPrice(bundlerClient),
         },
       });
 
       setBusy("Sending gasless batched UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account!.encodeCalls([
-          { to: account.address, value: BigInt(0), data: "0x" },
-        ]),
+        callData: await kernelClient.account!.encodeCalls([{ to: account.address, value: BigInt(0), data: "0x" }]),
       });
 
       setBusy("Waiting for confirmation…");
@@ -467,16 +457,13 @@ export function ParticleUniversalAccount() {
       });
 
       awardXp(75);
-      setStatus(
-        `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
-      );
+      setStatus(`UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`);
     } catch (e: any) {
       setError(e?.shortMessage || e?.message || "ZeroDev 7702 failed");
     } finally {
       setBusy(null);
     }
   }, [awardXp]);
-
 
   // ---------- Testnet path 2: ZeroDev + Particle Auth (social login signer) ----------
   const sendZeroDevParticleTx = useCallback(async () => {
@@ -488,12 +475,7 @@ export function ParticleUniversalAccount() {
         { ParticleNetwork },
         { ParticleProvider },
         { signerToEcdsaValidator },
-        {
-          createKernelAccount,
-          createKernelAccountClient,
-          createZeroDevPaymasterClient,
-          getUserOperationGasPrice,
-        },
+        { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient, getUserOperationGasPrice },
         { KERNEL_V3_1, getEntryPoint },
         viem,
         { arbitrumSepolia },
@@ -555,7 +537,6 @@ export function ParticleUniversalAccount() {
       });
       setSmartAccountAddress(account.address);
 
-
       const paymasterClient = createZeroDevPaymasterClient({
         chain: arbitrumSepolia,
         transport: http(ZERODEV_RPC),
@@ -568,16 +549,13 @@ export function ParticleUniversalAccount() {
         paymaster: paymasterClient,
         client: publicClient,
         userOperation: {
-          estimateFeesPerGas: async ({ bundlerClient }: any) =>
-            getUserOperationGasPrice(bundlerClient),
+          estimateFeesPerGas: async ({ bundlerClient }: any) => getUserOperationGasPrice(bundlerClient),
         },
       });
 
       setBusy("Sending gasless UserOp…");
       const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account!.encodeCalls([
-          { to: zeroAddress, value: BigInt(0), data: "0x" },
-        ]),
+        callData: await kernelClient.account!.encodeCalls([{ to: zeroAddress, value: BigInt(0), data: "0x" }]),
       });
 
       const receipt = await kernelClient.waitForUserOperationReceipt({
@@ -585,9 +563,7 @@ export function ParticleUniversalAccount() {
       });
 
       awardXp(75);
-      setStatus(
-        `UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`
-      );
+      setStatus(`UserOp confirmed! Tx: ${ARB_SEPOLIA.explorer}/tx/${receipt.receipt.transactionHash}`);
     } catch (e: any) {
       setError(e?.shortMessage || e?.message || "ZeroDev + Particle failed");
     } finally {
@@ -628,14 +604,12 @@ export function ParticleUniversalAccount() {
         entryPoint: getEntryPoint("0.7"),
         kernelVersion,
       });
-
     } else {
-      const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] =
-        await Promise.all([
-          import("@particle-network/auth"),
-          import("@particle-network/provider"),
-          import("@zerodev/ecdsa-validator"),
-        ]);
+      const [{ ParticleNetwork }, { ParticleProvider }, { signerToEcdsaValidator }] = await Promise.all([
+        import("@particle-network/auth"),
+        import("@particle-network/provider"),
+        import("@zerodev/ecdsa-validator"),
+      ]);
       const { KERNEL_V3_1, getEntryPoint } = zerodevConsts;
       const particle = new ParticleNetwork({
         projectId: PARTICLE_PROJECT_ID,
@@ -673,8 +647,7 @@ export function ParticleUniversalAccount() {
       paymaster: paymasterClient,
       client: publicClient,
       userOperation: {
-        estimateFeesPerGas: async ({ bundlerClient }: any) =>
-          getUserOperationGasPrice(bundlerClient),
+        estimateFeesPerGas: async ({ bundlerClient }: any) => getUserOperationGasPrice(bundlerClient),
       },
     });
     return { kernelClient, publicClient };
@@ -682,12 +655,7 @@ export function ParticleUniversalAccount() {
 
   // ---------- GameFi quest runner ----------
   const runQuest = useCallback(
-    async (
-      key: QuestKey,
-      label: string,
-      direction: "out" | "in",
-      effect: () => void,
-    ) => {
+    async (key: QuestKey, label: string, direction: "out" | "in", effect: () => void) => {
       setQuestBusy(key);
       setError(null);
       setStatus(null);
@@ -744,7 +712,6 @@ export function ParticleUniversalAccount() {
             ? ` (SA has 0 ETH — sent 0-value self-call; fund ${smart} to see a real SA→SA credit)`
             : "";
         setStatus(`${label} confirmed!${note} ${ARB_SEPOLIA.explorer}/tx/${txHash}`);
-
       } catch (e: any) {
         setError(e?.shortMessage || e?.message || `${label} failed`);
       } finally {
@@ -869,9 +836,7 @@ export function ParticleUniversalAccount() {
     [runQuest],
   );
 
-
-  const sendTestnetTx =
-    testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
+  const sendTestnetTx = testnetMethod === "zerodev-7702" ? sendZeroDev7702Tx : sendZeroDevParticleTx;
   const sendDemoTx = isTestnet ? sendTestnetTx : sendMainnetTx;
 
   const totalUsd = useMemo(() => {
@@ -882,10 +847,7 @@ export function ParticleUniversalAccount() {
   // Testnet send actions build their signer on demand.
   const canSend = isTestnet ? true : !!ua;
 
-  const methodLabel =
-    testnetMethod === "zerodev-7702"
-      ? "ZeroDev (EIP-7702)"
-      : "ZeroDev + Particle";
+  const methodLabel = testnetMethod === "zerodev-7702" ? "ZeroDev (EIP-7702)" : "ZeroDev + Particle";
 
   return (
     <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
@@ -893,11 +855,16 @@ export function ParticleUniversalAccount() {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 gamefi-grid opacity-30" />
         <div className="absolute -top-32 left-1/4 size-96 rounded-full bg-primary/25 blur-[120px] float-slow" />
-        <div className="absolute top-40 right-10 size-80 rounded-full bg-accent/25 blur-[120px] float-slow" style={{ animationDelay: "1.5s" }} />
-        <div className="absolute bottom-20 left-10 size-72 rounded-full bg-primary/15 blur-[100px] float-slow" style={{ animationDelay: "3s" }} />
+        <div
+          className="absolute top-40 right-10 size-80 rounded-full bg-accent/25 blur-[120px] float-slow"
+          style={{ animationDelay: "1.5s" }}
+        />
+        <div
+          className="absolute bottom-20 left-10 size-72 rounded-full bg-primary/15 blur-[100px] float-slow"
+          style={{ animationDelay: "3s" }}
+        />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       </div>
-
 
       <header className="mb-10 text-center relative">
         <div className="flex justify-center mb-5">
@@ -907,7 +874,7 @@ export function ParticleUniversalAccount() {
             </div>
             <div className="text-left leading-tight">
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Powered by Particle</div>
-              <div className="text-sm font-bold tracking-tight">OmniQuest Wallet</div>
+              <div className="text-sm font-bold tracking-tight">Paygrid</div>
             </div>
           </div>
         </div>
@@ -922,9 +889,7 @@ export function ParticleUniversalAccount() {
             OmniQuest
           </span>
         </h1>
-        <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
-          One wallet. Every chain.
-        </p>
+        <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">One wallet. Every chain.</p>
 
         <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">
           {(["mainnet", "testnet"] as const).map((n) => (
@@ -944,16 +909,11 @@ export function ParticleUniversalAccount() {
       </header>
 
       <UniversalPayPanel
-        smartAccount={
-          isTestnet
-            ? smartAccountAddress
-            : addresses?.evmSmartAccount ?? (ua ? eoa : null)
-        }
+        smartAccount={isTestnet ? smartAccountAddress : (addresses?.evmSmartAccount ?? (ua ? eoa : null))}
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         onNotify={(msg: string) => setStatus(msg)}
         onPay={async ({ recipient, amount, token }) => {
-          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
-            await import("@/lib/split");
+          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
 
           // ---- Testnet path: gasless kernel userop (send-to-pool style) ----
           if (isTestnet) {
@@ -1010,9 +970,7 @@ export function ParticleUniversalAccount() {
           });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
-          const signature = await signer.signMessage(
-            ethers.getBytes(tx.rootHash),
-          );
+          const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
           const result = await ua.sendTransaction(tx, signature);
           const txId = getSubmittedTxHash(result);
           return {
@@ -1021,8 +979,7 @@ export function ParticleUniversalAccount() {
           };
         }}
         onSplitPay={async ({ recipients, token }) => {
-          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } =
-            await import("@/lib/split");
+          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
 
           // ---- Testnet path: ONE gasless kernel userop batches every leg ----
           if (isTestnet) {
@@ -1056,10 +1013,7 @@ export function ParticleUniversalAccount() {
           if (!(ua && eoa)) throw new Error("Connect a wallet first");
           const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
           const chainId = EVM_CHAINS.arbitrum;
-          const TOKENS: Record<
-            "USDC" | "USDT",
-            { address: string; decimals: number; type: any }
-          > = {
+          const TOKENS: Record<"USDC" | "USDT", { address: string; decimals: number; type: any }> = {
             USDC: {
               // Native (Circle) USDC on Arbitrum One
               address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
@@ -1072,10 +1026,7 @@ export function ParticleUniversalAccount() {
               type: SUPPORTED_TOKEN_TYPE?.USDT,
             },
           };
-          const totalAmount = recipients.reduce(
-            (s, r) => s + Number(r.amount || 0),
-            0,
-          );
+          const totalAmount = recipients.reduce((s, r) => s + Number(r.amount || 0), 0);
           const transactions =
             token === "ETH"
               ? buildSplitNativeCalls({ chainId, recipients })
@@ -1086,28 +1037,19 @@ export function ParticleUniversalAccount() {
                   recipients,
                 });
 
-          const createUniversal =
-            ua.createUniversalTransaction?.bind(ua) ??
-            ua.createExecuteTransaction?.bind(ua);
+          const createUniversal = ua.createUniversalTransaction?.bind(ua) ?? ua.createExecuteTransaction?.bind(ua);
           if (!createUniversal) {
-            throw new Error(
-              "Universal Account SDK missing createUniversalTransaction",
-            );
+            throw new Error("Universal Account SDK missing createUniversalTransaction");
           }
           const uaChainId = CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId;
-          const expectType =
-            token === "ETH"
-              ? SUPPORTED_TOKEN_TYPE?.ETH
-              : TOKENS[token].type;
+          const expectType = token === "ETH" ? SUPPORTED_TOKEN_TYPE?.ETH : TOKENS[token].type;
           const tx = await createUniversal({
             chainId: uaChainId,
             // Tell the UA how much of `token` to source across the user's
             // primary assets to fund every batched leg atomically.
             ...(expectType != null
               ? {
-                  expectTokens: [
-                    { type: expectType, amount: totalAmount.toString() },
-                  ],
+                  expectTokens: [{ type: expectType, amount: totalAmount.toString() }],
                 }
               : {}),
             transactions: transactions.map((c) => ({
@@ -1118,9 +1060,7 @@ export function ParticleUniversalAccount() {
           });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
-          const signature = await signer.signMessage(
-            ethers.getBytes(tx.rootHash),
-          );
+          const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
           const result = await ua.sendTransaction(tx, signature);
           const txId = getSubmittedTxHash(result);
           return {
@@ -1130,15 +1070,10 @@ export function ParticleUniversalAccount() {
         }}
       />
 
-
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
-
-
         {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
         {isTestnet && (
           <div className="mt-6">
-
-
             {platformAddress && (
               <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
                 <div>
@@ -1147,12 +1082,7 @@ export function ParticleUniversalAccount() {
                     {platformAddress} · balance {platformBalance ?? "…"} ETH
                   </div>
                 </div>
-                <a
-                  href={ARB_SEPOLIA.faucet}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline text-primary"
-                >
+                <a href={ARB_SEPOLIA.faucet} target="_blank" rel="noreferrer" className="underline text-primary">
                   Fund via faucet →
                 </a>
               </div>
@@ -1184,19 +1114,15 @@ export function ParticleUniversalAccount() {
                 smartAccount={smartAccountAddress}
                 direction="in"
               />
-
             </div>
           </div>
         )}
       </section>
 
-
-
-
       {missingAppId && !isTestnet && (
         <div className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          <strong className="text-destructive-foreground">App ID missing.</strong>{" "}
-          Set <code>VITE_PARTICLE_APP_ID</code> or edit
+          <strong className="text-destructive-foreground">App ID missing.</strong> Set <code>VITE_PARTICLE_APP_ID</code>{" "}
+          or edit
           <code> src/lib/particle-config.ts</code>.
         </div>
       )}
@@ -1204,8 +1130,8 @@ export function ParticleUniversalAccount() {
       {isTestnet && (
         <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
           <div>
-            <strong className="text-foreground">Testnet mode — Arbitrum Sepolia.</strong>{" "}
-            Gasless UserOps via ZeroDev paymaster. Two signer paths:
+            <strong className="text-foreground">Testnet mode — Arbitrum Sepolia.</strong> Gasless UserOps via ZeroDev
+            paymaster. Two signer paths:
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-foreground">Method:</span>
@@ -1252,9 +1178,7 @@ export function ParticleUniversalAccount() {
             🦊
           </div>
           <h2 className="text-xl font-medium mb-2">Connect your wallet</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            We'll use your EOA as the owner of a smart account.
-          </p>
+          <p className="text-sm text-muted-foreground mb-6">We'll use your EOA as the owner of a smart account.</p>
           <button
             onClick={connect}
             disabled={loading}
@@ -1273,21 +1197,14 @@ export function ParticleUniversalAccount() {
                   <div className="size-3 rounded-sm bg-primary" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">
-                    {isTestnet ? methodLabel : "Universal Account"}
-                  </div>
+                  <div className="text-sm font-medium">{isTestnet ? methodLabel : "Universal Account"}</div>
                   <div className="text-xs text-muted-foreground">
-                    {isTestnet
-                      ? `Arbitrum Sepolia (${ARB_SEPOLIA.chainId})`
-                      : `Owner ${short(eoa ?? undefined)}`}
+                    {isTestnet ? `Arbitrum Sepolia (${ARB_SEPOLIA.chainId})` : `Owner ${short(eoa ?? undefined)}`}
                   </div>
                 </div>
               </div>
               {eoa && (
-                <button
-                  onClick={disconnect}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
+                <button onClick={disconnect} className="text-xs text-muted-foreground hover:text-foreground">
                   Disconnect
                 </button>
               )}
@@ -1295,16 +1212,8 @@ export function ParticleUniversalAccount() {
 
             {isTestnet ? (
               <div className="space-y-3">
-                {eoa && (
-                  <AddressRow label="EOA" value={eoa} loading={false} />
-                )}
-                {smartAccountAddress && (
-                  <AddressRow
-                    label="SA"
-                    value={smartAccountAddress}
-                    loading={false}
-                  />
-                )}
+                {eoa && <AddressRow label="EOA" value={eoa} loading={false} />}
+                {smartAccountAddress && <AddressRow label="SA" value={smartAccountAddress} loading={false} />}
                 <div className="text-xs text-muted-foreground px-1">
                   Bundler/Paymaster: ZeroDev (chain {ARB_SEPOLIA.chainId})
                 </div>
@@ -1312,23 +1221,13 @@ export function ParticleUniversalAccount() {
             ) : (
               <>
                 <div className="space-y-3">
-                  <AddressRow
-                    label="EVM"
-                    value={addresses?.evmSmartAccount ?? ""}
-                    loading={loading && !addresses}
-                  />
-                  <AddressRow
-                    label="SOL"
-                    value={addresses?.solanaSmartAccount ?? ""}
-                    loading={loading && !addresses}
-                  />
+                  <AddressRow label="EVM" value={addresses?.evmSmartAccount ?? ""} loading={loading && !addresses} />
+                  <AddressRow label="SOL" value={addresses?.solanaSmartAccount ?? ""} loading={loading && !addresses} />
                 </div>
 
                 <div className="mt-6 rounded-xl border border-panel-border bg-background/40 p-5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Wallet balance
-                    </span>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">Wallet balance</span>
                     <button
                       onClick={refresh}
                       className="text-xs text-muted-foreground hover:text-foreground"
@@ -1338,9 +1237,7 @@ export function ParticleUniversalAccount() {
                     </button>
                   </div>
                   <div className="text-3xl font-semibold">{totalUsd}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Aggregated across supported chains
-                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Aggregated across supported chains</div>
                 </div>
               </>
             )}
@@ -1348,9 +1245,7 @@ export function ParticleUniversalAccount() {
 
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
-              <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">
-                Transfer
-              </button>
+              <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">Transfer</button>
             </div>
 
             <div className="space-y-4">
@@ -1359,9 +1254,7 @@ export function ParticleUniversalAccount() {
                   <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
                     <div>
-                      <div className="text-sm font-medium">
-                        {isTestnet ? "UserOp" : "USDT"}
-                      </div>
+                      <div className="text-sm font-medium">{isTestnet ? "UserOp" : "USDT"}</div>
                       <div className="text-xs text-muted-foreground">
                         {isTestnet ? "Gasless · ZeroDev" : "Arbitrum"}
                       </div>
@@ -1402,14 +1295,8 @@ export function ParticleUniversalAccount() {
                     : "Sign with MetaMask & Send")}
               </button>
 
-              {status && (
-                <p className="text-xs text-[color:var(--success)] break-all">
-                  {status}
-                </p>
-              )}
-              {error && (
-                <p className="text-xs text-destructive break-all">{error}</p>
-              )}
+              {status && <p className="text-xs text-[color:var(--success)] break-all">{status}</p>}
+              {error && <p className="text-xs text-destructive break-all">{error}</p>}
               <p className="text-[11px] text-muted-foreground text-center">
                 {isTestnet
                   ? testnetMethod === "zerodev-7702"
@@ -1428,31 +1315,17 @@ export function ParticleUniversalAccount() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
-        {label}
-      </div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">{label}</div>
       {children}
     </div>
   );
 }
 
-function AddressRow({
-  label,
-  value,
-  loading,
-}: {
-  label: string;
-  value: string;
-  loading: boolean;
-}) {
+function AddressRow({ label, value, loading }: { label: string; value: string; loading: boolean }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-      <div className="text-xs font-medium text-muted-foreground w-10">
-        {label}
-      </div>
-      <div className="flex-1 font-mono text-sm">
-        {loading ? "Loading…" : short(value)}
-      </div>
+      <div className="text-xs font-medium text-muted-foreground w-10">{label}</div>
+      <div className="flex-1 font-mono text-sm">{loading ? "Loading…" : short(value)}</div>
       {value && <Copy value={value} />}
     </div>
   );
@@ -1479,9 +1352,7 @@ function StatCard({
     <div className="relative overflow-hidden rounded-xl border border-panel-border bg-background/50 p-3 hover:border-primary/50 transition-colors group">
       <div className="absolute -right-4 -top-4 size-16 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition" />
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {label}
-        </span>
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
         {icon && <span className={`text-xs ${accentClass}`}>{icon}</span>}
       </div>
       <div className="text-xl font-bold tabular-nums neon-text">{value}</div>
@@ -1489,17 +1360,7 @@ function StatCard({
   );
 }
 
-function QuestCard({
-  title,
-  desc,
-  done,
-  reward,
-}: {
-  title: string;
-  desc: string;
-  done: boolean;
-  reward: string;
-}) {
+function QuestCard({ title, desc, done, reward }: { title: string; desc: string; done: boolean; reward: string }) {
   return (
     <div
       className={`relative rounded-xl border p-3 transition-all ${
@@ -1513,9 +1374,7 @@ function QuestCard({
           <div className="flex items-center gap-2 mb-0.5">
             <span
               className={`size-4 rounded-full flex items-center justify-center text-[10px] ${
-                done
-                  ? "bg-[color:var(--success)] text-background"
-                  : "border border-panel-border text-muted-foreground"
+                done ? "bg-[color:var(--success)] text-background" : "border border-panel-border text-muted-foreground"
               }`}
             >
               {done ? "✓" : "○"}
@@ -1581,9 +1440,7 @@ function GameActionCard({
         {busy ? "Sending UserOp…" : `${emoji} ${title}`}
       </button>
       <div className="mt-2 rounded-md border border-panel-border bg-background/40 px-2 py-1.5">
-        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
-          Smart Account · {dirLabel}
-        </div>
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Smart Account · {dirLabel}</div>
         {smartAccount ? (
           <div className="flex items-center gap-1">
             <a
@@ -1598,9 +1455,7 @@ function GameActionCard({
             <Copy value={smartAccount} />
           </div>
         ) : (
-          <div className="text-[10px] text-muted-foreground italic">
-            click to derive on first run
-          </div>
+          <div className="text-[10px] text-muted-foreground italic">click to derive on first run</div>
         )}
       </div>
       {txHash && (
@@ -1617,4 +1472,3 @@ function GameActionCard({
     </div>
   );
 }
-
