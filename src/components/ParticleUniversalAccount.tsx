@@ -886,7 +886,7 @@ export function ParticleUniversalAccount() {
 
         <h1 className="text-5xl sm:text-6xl font-black tracking-tighter neon-text">
           <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent [background-size:200%_auto] animate-[shimmer_4s_linear_infinite]">
-            OmniQuest
+            Paygrid
           </span>
         </h1>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">One wallet. Every chain.</p>
