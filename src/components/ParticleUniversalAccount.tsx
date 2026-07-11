@@ -1042,23 +1042,34 @@ export function ParticleUniversalAccount() {
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
 
-          // ---- Mainnet path: batched Universal Account execute transaction ----
+          // ---- Mainnet: batch every leg into ONE Universal Account tx.
+          // Uses the createUniversalTransaction + expectTokens pattern from
+          // the Particle reference `custom-transaction-evm-no-money.ts`, so
+          // the UA sources the exact token amount from any chain the user
+          // holds (native USDC on Arbitrum One by default). ----
           if (!(ua && eoa)) throw new Error("Connect a wallet first");
-          const { CHAIN_ID } = await loadSdk();
+          const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
           const chainId = EVM_CHAINS.arbitrum;
           const TOKENS: Record<
             "USDC" | "USDT",
-            { address: string; decimals: number }
+            { address: string; decimals: number; type: any }
           > = {
             USDC: {
+              // Native (Circle) USDC on Arbitrum One
               address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
               decimals: 6,
+              type: SUPPORTED_TOKEN_TYPE?.USDC,
             },
             USDT: {
               address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
               decimals: 6,
+              type: SUPPORTED_TOKEN_TYPE?.USDT,
             },
           };
+          const totalAmount = recipients.reduce(
+            (s, r) => s + Number(r.amount || 0),
+            0,
+          );
           const transactions =
             token === "ETH"
               ? buildSplitNativeCalls({ chainId, recipients })
@@ -1068,17 +1079,36 @@ export function ParticleUniversalAccount() {
                   decimals: TOKENS[token].decimals,
                   recipients,
                 });
-          const create =
-            ua.createExecuteTransaction?.bind(ua) ??
-            ua.createUniversalTransaction?.bind(ua);
-          if (!create) {
+
+          const createUniversal =
+            ua.createUniversalTransaction?.bind(ua) ??
+            ua.createExecuteTransaction?.bind(ua);
+          if (!createUniversal) {
             throw new Error(
-              "Universal Account SDK missing execute/universal transaction builder",
+              "Universal Account SDK missing createUniversalTransaction",
             );
           }
-          const tx = await create({
-            chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId,
-            transactions,
+          const uaChainId = CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId;
+          const expectType =
+            token === "ETH"
+              ? SUPPORTED_TOKEN_TYPE?.ETH
+              : TOKENS[token].type;
+          const tx = await createUniversal({
+            chainId: uaChainId,
+            // Tell the UA how much of `token` to source across the user's
+            // primary assets to fund every batched leg atomically.
+            ...(expectType != null
+              ? {
+                  expectTokens: [
+                    { type: expectType, amount: totalAmount.toString() },
+                  ],
+                }
+              : {}),
+            transactions: transactions.map((c) => ({
+              to: c.to,
+              data: c.data,
+              value: c.value,
+            })),
           });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
