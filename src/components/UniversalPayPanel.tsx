@@ -31,7 +31,7 @@ type Props = {
   onPay?: (args: {
     recipient: string;
     amount: number;
-    token: "USDC" | "USDT" | "ETH";
+    token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
   /**
@@ -40,12 +40,12 @@ type Props = {
    */
   onSplitPay?: (args: {
     recipients: { address: string; amount: number }[];
-    token: "USDC" | "USDT" | "ETH";
+    token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
 };
 
-const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
+const SETTLEMENT_TOKENS = ["USDC", "ETH"] as const;
 type Token = (typeof SETTLEMENT_TOKENS)[number];
 
 // ---- Persistence helpers ----
