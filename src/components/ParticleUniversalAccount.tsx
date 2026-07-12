@@ -1012,17 +1012,12 @@ export function ParticleUniversalAccount() {
           if (!(ua && eoa)) throw new Error("Connect a wallet first");
           const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
           const chainId = EVM_CHAINS.arbitrum;
-          const TOKENS: Record<"USDC" | "USDT", { address: string; decimals: number; type: any }> = {
+          const TOKENS: Record<"USDC", { address: string; decimals: number; type: any }> = {
             USDC: {
               // Native (Circle) USDC on Arbitrum One
               address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
               decimals: 6,
               type: SUPPORTED_TOKEN_TYPE?.USDC,
-            },
-            USDT: {
-              address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-              decimals: 6,
-              type: SUPPORTED_TOKEN_TYPE?.USDT,
             },
           };
           const totalAmount = recipients.reduce((s, r) => s + Number(r.amount || 0), 0);
