@@ -40,10 +40,9 @@ export const Route = createFileRoute("/pay/$requestId")({
   ),
 });
 
-const ERC20_ABI = [
+const ERC20_IFACE = new ethers.Interface([
   "function transfer(address to, uint256 amount) returns (bool)",
-  "function decimals() view returns (uint8)",
-];
+]);
 
 declare global {
   interface Window {
