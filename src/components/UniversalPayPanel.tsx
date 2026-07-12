@@ -568,7 +568,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
 // -------- Receive tab: create payment request + QR + share link --------
 
-const RECEIVE_TOKENS = ["ETH", "USDC", "USDT"] as const;
+const RECEIVE_TOKENS = ["ETH", "USDC"] as const;
 type ReceiveToken = (typeof RECEIVE_TOKENS)[number];
 
 function ReceiveTab({
