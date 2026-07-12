@@ -954,10 +954,9 @@ export function ParticleUniversalAccount() {
           if (!(ua && eoa)) throw new Error("Connect a wallet first");
           const { CHAIN_ID } = await loadSdk();
           const NATIVE = "0x0000000000000000000000000000000000000000";
-          const TOKENS: Record<"USDC" | "USDT" | "ETH", string> = {
+          const TOKENS: Record<"USDC" | "ETH", string> = {
             // Native (Circle) USDC on Arbitrum One
             USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-            USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
             ETH: NATIVE,
           };
           const tx = await ua.createTransferTransaction({
