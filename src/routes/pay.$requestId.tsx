@@ -42,12 +42,82 @@ export const Route = createFileRoute("/pay/$requestId")({
 
 const ERC20_IFACE = new ethers.Interface([
   "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address account) view returns (uint256)",
 ]);
 
 declare global {
   interface Window {
     ethereum?: any;
   }
+}
+
+function formatTokenUnits(value: bigint, decimals: number): string {
+  return formatDisplayAmount(ethers.formatUnits(value, decimals));
+}
+
+async function readErc20Balance(tokenAddress: string, account: string): Promise<bigint> {
+  const ethereum = window.ethereum;
+  if (!ethereum) throw new Error("Wallet not ready");
+  const data = ERC20_IFACE.encodeFunctionData("balanceOf", [account]);
+  const result = await ethereum.request({
+    method: "eth_call",
+    params: [{ to: tokenAddress, data }, "latest"],
+  });
+  const decoded = ERC20_IFACE.decodeFunctionResult("balanceOf", result);
+  const balance = decoded[0];
+  return typeof balance === "bigint" ? balance : BigInt(balance.toString());
+}
+
+async function sendInjectedWalletTransaction(tx: {
+  from: string;
+  to: string;
+  value?: string;
+  data?: string;
+}): Promise<string> {
+  const ethereum = window.ethereum;
+  if (!ethereum) throw new Error("Wallet not ready");
+  const hash = await ethereum.request({
+    method: "eth_sendTransaction",
+    params: [tx],
+  });
+  return String(hash);
+}
+
+function collectErrorMessages(value: unknown, out: string[] = [], seen = new Set<object>()): string[] {
+  if (!value) return out;
+  if (typeof value === "string") {
+    out.push(value);
+    if ((value.startsWith("{") && value.endsWith("}")) || (value.startsWith("[") && value.endsWith("]"))) {
+      try {
+        collectErrorMessages(JSON.parse(value), out, seen);
+      } catch {}
+    }
+    return out;
+  }
+  if (typeof value !== "object") return out;
+  if (seen.has(value)) return out;
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  for (const key of ["shortMessage", "reason", "message", "data", "error", "info", "body", "cause"]) {
+    collectErrorMessages(record[key], out, seen);
+  }
+  return out;
+}
+
+function walletErrorMessage(error: unknown, token: string, chainLabel: string): string {
+  const messages = collectErrorMessages(error);
+  const readable = messages.find((msg) => /transfer amount exceeds balance/i.test(msg))
+    ?? messages.find((msg) => /insufficient funds|insufficient balance/i.test(msg))
+    ?? messages.find((msg) => !/could not coalesce error/i.test(msg));
+
+  if (readable && /transfer amount exceeds balance/i.test(readable)) {
+    return `Connected wallet does not have enough ${token} on ${chainLabel}. Switch to the funded account or add ${token}, then try again.`;
+  }
+  if (readable && /insufficient funds|insufficient balance/i.test(readable)) {
+    return `Connected wallet does not have enough funds on ${chainLabel}. Add funds or switch accounts, then try again.`;
+  }
+  if (readable) return readable;
+  return "Wallet returned an unreadable RPC error. Please reconnect the funded wallet and try again.";
 }
 
 function PayRequestPage() {
@@ -98,7 +168,23 @@ function PayRequestPage() {
     return formatDisplayAmount(request.amount);
   }, [request]);
 
-  const connect = async () => {
+  useEffect(() => {
+    const ethereum = window.ethereum;
+    if (!ethereum?.on) return;
+    const onAccountsChanged = (accounts: string[]) => {
+      setWallet(accounts[0] ? ethers.getAddress(accounts[0]) : null);
+      setError(null);
+      setStatus(accounts[0] ? "Wallet connected. Review payment, then tap Pay." : null);
+    };
+    ethereum.on("accountsChanged", onAccountsChanged);
+    return () => {
+      ethereum.removeListener?.("accountsChanged", onAccountsChanged);
+    };
+  }, []);
+
+  const connect = async (): Promise<string | null> => {
+    setError(null);
+    setStatus("Connecting wallet…");
     if (!window.ethereum) {
       // Mobile browsers without an injected provider: hand off to the
       // MetaMask (or compatible) mobile app via its deeplink. The app opens
@@ -109,20 +195,26 @@ function PayRequestPage() {
         const host = window.location.host;
         const path = window.location.pathname + window.location.search;
         window.location.href = `https://metamask.app.link/dapp/${host}${path}`;
-        return;
+        return null;
       }
       setError(
         "No wallet detected. Open this link inside your MetaMask mobile app browser, or install a wallet extension.",
       );
-      return;
+      setStatus(null);
+      return null;
     }
     try {
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      setWallet(accounts[0] ?? null);
+      const account = accounts[0] ? ethers.getAddress(accounts[0]) : null;
+      setWallet(account);
+      setStatus(account ? "Wallet connected. Review payment, then tap Pay." : null);
+      return account;
     } catch (e: any) {
       setError(e?.message ?? "Wallet connect failed");
+      setStatus(null);
+      return null;
     }
   };
 
@@ -166,36 +258,54 @@ function PayRequestPage() {
       await ensureChain();
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      const payer = ethers.getAddress(await signer.getAddress());
+      setWallet(payer);
       setStatus("Awaiting signature…");
       let hash: string;
       const amountInUnits = amountForTokenUnits(request.amount, tokenInfo.decimals);
+      const amountWei = ethers.parseUnits(amountInUnits, tokenInfo.decimals);
+      const recipient = ethers.getAddress(request.recipient);
       if (tokenInfo.address === "native") {
-        const tx = await signer.sendTransaction({
-          to: request.recipient,
-          value: ethers.parseUnits(amountInUnits, tokenInfo.decimals),
+        const nativeBalance = await provider.getBalance(payer);
+        if (nativeBalance < amountWei) {
+          throw new Error(
+            `Connected wallet has ${formatTokenUnits(nativeBalance, tokenInfo.decimals)} ${request.token} on ${chain.label}. Request needs ${displayAmount} ${request.token}.`,
+          );
+        }
+        const txHash = await sendInjectedWalletTransaction({
+          from: payer,
+          to: recipient,
+          value: ethers.toQuantity(amountWei),
         });
         setStatus("Broadcasting…");
-        setTxHash(tx.hash);
-        await tx.wait();
-        hash = tx.hash;
+        setTxHash(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
+        hash = txHash;
       } else {
-        // Encode the ERC-20 transfer and let the wallet handle gas
-        // estimation (mirrors the native ETH branch). Using
-        // `ethers.Contract().transfer(...)` triggers a provider-side
-        // eth_estimateGas that some RPCs return as a malformed error,
-        // surfacing in ethers v6 as "could not coalesce error".
+        const tokenBalance = await readErc20Balance(tokenInfo.address, payer);
+        if (tokenBalance < amountWei) {
+          throw new Error(
+            `Connected wallet has ${formatTokenUnits(tokenBalance, tokenInfo.decimals)} ${request.token} on ${chain.label}. Request needs ${displayAmount} ${request.token}. Switch to the funded account or add ${request.token}, then try again.`,
+          );
+        }
+        // Use the injected wallet RPC directly for ERC-20 sends. This avoids
+        // ethers v6 wrapping wallet/RPC failures as "could not coalesce error"
+        // and lets MetaMask own gas estimation/signing after our balance check.
         const data = ERC20_IFACE.encodeFunctionData("transfer", [
-          request.recipient,
-          ethers.parseUnits(amountInUnits, tokenInfo.decimals),
+          recipient,
+          amountWei,
         ]);
-        const tx = await signer.sendTransaction({
+        const txHash = await sendInjectedWalletTransaction({
+          from: payer,
           to: tokenInfo.address,
           data,
         });
         setStatus("Broadcasting…");
-        setTxHash(tx.hash);
-        await tx.wait();
-        hash = tx.hash;
+        setTxHash(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
+        hash = txHash;
       }
       setStatus("Confirming…");
       await markPaymentPaid(request.id, hash);
@@ -203,7 +313,7 @@ function PayRequestPage() {
       setStatus("Payment confirmed");
       router.invalidate();
     } catch (e: any) {
-      setError(e?.shortMessage ?? e?.message ?? "Payment failed");
+      setError(walletErrorMessage(e, request.token, chain.label));
       setStatus(null);
     } finally {
       setBusy(false);
@@ -301,7 +411,7 @@ function PayRequestPage() {
                 Paying from {wallet.slice(0, 6)}…{wallet.slice(-4)}
               </div>
             ) : null}
-            <Button className="w-full" onClick={pay} disabled={disabled}>
+            <Button className="w-full" onClick={wallet ? pay : connect} disabled={disabled}>
               {busy
                 ? status ?? "Working…"
                 : wallet
