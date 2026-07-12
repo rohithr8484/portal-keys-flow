@@ -279,7 +279,8 @@ function PayRequestPage() {
         });
         setStatus("Broadcasting…");
         setTxHash(txHash);
-        await provider.waitForTransaction(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
         hash = txHash;
       } else {
         const tokenBalance = await readErc20Balance(tokenInfo.address, payer);
@@ -302,7 +303,8 @@ function PayRequestPage() {
         });
         setStatus("Broadcasting…");
         setTxHash(txHash);
-        await provider.waitForTransaction(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
         hash = txHash;
       }
       setStatus("Confirming…");
