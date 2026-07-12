@@ -56,8 +56,10 @@ function formatTokenUnits(value: bigint, decimals: number): string {
 }
 
 async function readErc20Balance(tokenAddress: string, account: string): Promise<bigint> {
+  const ethereum = window.ethereum;
+  if (!ethereum) throw new Error("Wallet not ready");
   const data = ERC20_IFACE.encodeFunctionData("balanceOf", [account]);
-  const result = await window.ethereum.request({
+  const result = await ethereum.request({
     method: "eth_call",
     params: [{ to: tokenAddress, data }, "latest"],
   });
@@ -72,7 +74,9 @@ async function sendInjectedWalletTransaction(tx: {
   value?: string;
   data?: string;
 }): Promise<string> {
-  const hash = await window.ethereum.request({
+  const ethereum = window.ethereum;
+  if (!ethereum) throw new Error("Wallet not ready");
+  const hash = await ethereum.request({
     method: "eth_sendTransaction",
     params: [tx],
   });
