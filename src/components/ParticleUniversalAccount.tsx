@@ -1248,7 +1248,7 @@ export function ParticleUniversalAccount() {
                   <div className="flex items-center gap-3">
                     <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
                     <div>
-                      <div className="text-sm font-medium">{isTestnet ? "UserOp" : "USDT"}</div>
+                      <div className="text-sm font-medium">{isTestnet ? "UserOp" : "USDC"}</div>
                       <div className="text-xs text-muted-foreground">
                         {isTestnet ? "Gasless · ZeroDev" : "Arbitrum"}
                       </div>
