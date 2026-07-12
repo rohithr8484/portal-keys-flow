@@ -31,7 +31,7 @@ type Props = {
   onPay?: (args: {
     recipient: string;
     amount: number;
-    token: "USDC" | "USDT" | "ETH";
+    token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
   /**
@@ -40,12 +40,12 @@ type Props = {
    */
   onSplitPay?: (args: {
     recipients: { address: string; amount: number }[];
-    token: "USDC" | "USDT" | "ETH";
+    token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
 };
 
-const SETTLEMENT_TOKENS = ["USDC", "USDT", "ETH"] as const;
+const SETTLEMENT_TOKENS = ["USDC", "ETH"] as const;
 type Token = (typeof SETTLEMENT_TOKENS)[number];
 
 // ---- Persistence helpers ----
@@ -90,7 +90,7 @@ function shortHash(hash: string) {
 const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
-  { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC, USDT or ETH — auto-sourced from your assets." },
+  { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
 ] as const;
 
@@ -568,7 +568,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
 // -------- Receive tab: create payment request + QR + share link --------
 
-const RECEIVE_TOKENS = ["ETH", "USDC", "USDT"] as const;
+const RECEIVE_TOKENS = ["ETH", "USDC"] as const;
 type ReceiveToken = (typeof RECEIVE_TOKENS)[number];
 
 function ReceiveTab({

@@ -40,10 +40,9 @@ export const Route = createFileRoute("/pay/$requestId")({
   ),
 });
 
-const ERC20_ABI = [
+const ERC20_IFACE = new ethers.Interface([
   "function transfer(address to, uint256 amount) returns (bool)",
-  "function decimals() view returns (uint8)",
-];
+]);
 
 declare global {
   interface Window {
@@ -180,11 +179,19 @@ function PayRequestPage() {
         await tx.wait();
         hash = tx.hash;
       } else {
-        const contract = new ethers.Contract(tokenInfo.address, ERC20_ABI, signer);
-        const tx = await contract.transfer(
+        // Encode the ERC-20 transfer and let the wallet handle gas
+        // estimation (mirrors the native ETH branch). Using
+        // `ethers.Contract().transfer(...)` triggers a provider-side
+        // eth_estimateGas that some RPCs return as a malformed error,
+        // surfacing in ethers v6 as "could not coalesce error".
+        const data = ERC20_IFACE.encodeFunctionData("transfer", [
           request.recipient,
           ethers.parseUnits(amountInUnits, tokenInfo.decimals),
-        );
+        ]);
+        const tx = await signer.sendTransaction({
+          to: tokenInfo.address,
+          data,
+        });
         setStatus("Broadcasting…");
         setTxHash(tx.hash);
         await tx.wait();
