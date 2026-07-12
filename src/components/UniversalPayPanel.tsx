@@ -90,7 +90,7 @@ function shortHash(hash: string) {
 const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
-  { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC, USDT or ETH — auto-sourced from your assets." },
+  { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
 ] as const;
 
