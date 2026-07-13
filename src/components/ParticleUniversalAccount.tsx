@@ -157,7 +157,11 @@ export function ParticleUniversalAccount() {
   const [streak, setStreak] = useState<number>(0);
   const [platformAddress, setPlatformAddress] = useState<string | null>(null);
   const [platformBalance, setPlatformBalance] = useState<string | null>(null);
-  const [testnetSignedIn, setTestnetSignedIn] = useState<boolean>(false);
+  const [testnetSignedIn, setTestnetSignedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const method = (localStorage.getItem("ua_testnet_method") as TestnetMethod) || "zerodev-7702";
+    return localStorage.getItem(`ua_signed_in_${method}`) === "1";
+  });
   const [signingIn, setSigningIn] = useState<boolean>(false);
 
 
@@ -254,17 +258,17 @@ export function ParticleUniversalAccount() {
     if (network !== "testnet") setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-    setTestnetSignedIn(false);
+    // Do NOT clear testnetSignedIn here — user only signs out via explicit "Sign out".
   }, [network]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("ua_testnet_method", testnetMethod);
+      // Restore signed-in state for the newly selected method rather than clearing it.
+      setTestnetSignedIn(localStorage.getItem(`ua_signed_in_${testnetMethod}`) === "1");
     }
-    setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-    setTestnetSignedIn(false);
   }, [testnetMethod]);
 
 
@@ -293,7 +297,10 @@ export function ParticleUniversalAccount() {
     setSmartAccountAddress(null);
     setStatus(null);
     setTestnetSignedIn(false);
-  }, []);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`ua_signed_in_${testnetMethod}`);
+    }
+  }, [testnetMethod]);
 
   // Testnet sign-in — derives smart account for the chosen method without sending.
   const signInTestnet = useCallback(
@@ -327,6 +334,9 @@ export function ParticleUniversalAccount() {
           setSmartAccountAddress(accounts[0]);
         }
         setTestnetSignedIn(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`ua_signed_in_${method}`, "1");
+        }
         setStatus("Signed in.");
       } catch (e: any) {
         setError(e?.shortMessage || e?.message || "Sign in failed");
@@ -1132,7 +1142,8 @@ export function ParticleUniversalAccount() {
                 </a>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Send to Pool & Claim Rewards buttons intentionally hidden — logic preserved in playGame/claimRewards. */}
+            <div className="hidden grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
                 emoji="🏊"
                 title="Send to Pool"
