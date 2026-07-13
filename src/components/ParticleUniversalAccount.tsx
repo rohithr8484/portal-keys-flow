@@ -1217,24 +1217,55 @@ export function ParticleUniversalAccount() {
         </div>
       )}
 
-      {!eoa && !isTestnet ? (
+      {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
         <div className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-10 text-center">
           <div className="mx-auto size-14 rounded-2xl bg-primary/15 flex items-center justify-center text-2xl mb-4">
-            🦊
+            {isTestnet ? "🔐" : "🦊"}
           </div>
-          <h2 className="text-xl font-medium mb-2">Connect your wallet</h2>
-          <p className="text-sm text-muted-foreground mb-6">We'll use your EOA as the owner of a smart account.</p>
-          <button
-            onClick={connect}
-            disabled={loading}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-          >
-            {loading ? "Connecting…" : "Connect MetaMask"}
-          </button>
+          <h2 className="text-xl font-medium mb-2">
+            {isTestnet ? "Sign in to continue" : "Connect your wallet"}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            {isTestnet
+              ? "Pick a signing method to unlock your smart account on Arbitrum Sepolia."
+              : "We'll use your EOA as the owner of a smart account."}
+          </p>
+
+          {isTestnet ? (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+              <button
+                onClick={() => signInTestnet("zerodev-7702")}
+                disabled={signingIn}
+                className="flex-1 inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+              >
+                {signingIn && testnetMethod === "zerodev-7702"
+                  ? "Signing in…"
+                  : "Sign in with ZeroDev (EIP-7702)"}
+              </button>
+              <button
+                onClick={() => signInTestnet("zerodev-particle")}
+                disabled={signingIn}
+                className="flex-1 inline-flex items-center justify-center rounded-xl border border-panel-border bg-background/60 px-5 py-3 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+              >
+                {signingIn && testnetMethod === "zerodev-particle"
+                  ? "Signing in…"
+                  : "Sign in with ZeroDev + Particle"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={connect}
+              disabled={loading}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+            >
+              {loading ? "Connecting…" : "Sign in with MetaMask"}
+            </button>
+          )}
+
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+        <div className="grid gap-6">
           <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -1248,16 +1279,13 @@ export function ParticleUniversalAccount() {
                   </div>
                 </div>
               </div>
-              {eoa && (
-                <button onClick={disconnect} className="text-xs text-muted-foreground hover:text-foreground">
-                  Disconnect
-                </button>
-              )}
+              <button onClick={disconnect} className="text-xs text-muted-foreground hover:text-foreground">
+                Sign out
+              </button>
             </div>
 
             {isTestnet ? (
               <div className="space-y-3">
-                {eoa && <AddressRow label="EOA" value={eoa} loading={false} />}
                 {smartAccountAddress && <AddressRow label="SA" value={smartAccountAddress} loading={false} />}
                 <div className="text-xs text-muted-foreground px-1">
                   Bundler/Paymaster: ZeroDev (chain {ARB_SEPOLIA.chainId})
@@ -1286,74 +1314,14 @@ export function ParticleUniversalAccount() {
                 </div>
               </>
             )}
-          </section>
 
-          <section className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
-            <div className="inline-flex rounded-lg bg-background/50 p-1 mb-6">
-              <button className="px-4 py-1.5 text-sm rounded-md bg-primary text-primary-foreground">Transfer</button>
-            </div>
-
-            <div className="space-y-4">
-              <Field label={isTestnet ? "Send" : "Withdraw"}>
-                <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-gradient-to-br from-primary to-accent" />
-                    <div>
-                      <div className="text-sm font-medium">{isTestnet ? "UserOp" : "USDC"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {isTestnet ? "Gasless · ZeroDev" : "Arbitrum"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium">
-                    {isTestnet ? (testnetMethod === "zerodev-7702" ? "2 calls" : "1 call") : "0.10"}
-                  </div>
-                </div>
-              </Field>
-
-              {!isTestnet && (
-                <>
-                  <div className="flex justify-center">
-                    <div className="size-8 rounded-full border border-panel-border bg-background/60 flex items-center justify-center text-muted-foreground">
-                      ↓
-                    </div>
-                  </div>
-                  <Field label="To your EOA">
-                    <div className="flex items-center justify-between rounded-xl border border-panel-border bg-background/40 px-4 py-3">
-                      <div className="text-sm font-mono">{short(eoa ?? "")}</div>
-                      <div className="text-xs text-muted-foreground">MetaMask</div>
-                    </div>
-                  </Field>
-                </>
-              )}
-
-              <button
-                onClick={sendDemoTx}
-                disabled={!canSend || !!busy}
-                className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-              >
-                {busy ??
-                  (isTestnet
-                    ? testnetMethod === "zerodev-7702"
-                      ? "Send sponsored EntryPoint UserOp"
-                      : "Login with Particle & send gasless UserOp"
-                    : "Sign with MetaMask & Send")}
-              </button>
-
-              {status && <p className="text-xs text-[color:var(--success)] break-all">{status}</p>}
-              {error && <p className="text-xs text-destructive break-all">{error}</p>}
-              <p className="text-[11px] text-muted-foreground text-center">
-                {isTestnet
-                  ? testnetMethod === "zerodev-7702"
-                    ? "Uses the persisted EIP-7702 account and a sponsored EntryPoint UserOp via ZeroDev."
-                    : "Particle Auth signer → ZeroDev ECDSA validator → sponsored Kernel UserOp."
-                  : "Signs rootHash with MetaMask, then submits via Particle."}
-              </p>
-            </div>
+            {status && <p className="mt-4 text-xs text-[color:var(--success)] break-all">{status}</p>}
+            {error && <p className="mt-4 text-xs text-destructive break-all">{error}</p>}
           </section>
         </div>
       )}
     </div>
+
   );
 }
 
