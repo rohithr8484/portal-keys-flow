@@ -254,6 +254,7 @@ export function ParticleUniversalAccount() {
     if (network !== "testnet") setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
+    setTestnetSignedIn(false);
   }, [network]);
 
   useEffect(() => {
@@ -263,7 +264,9 @@ export function ParticleUniversalAccount() {
     setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
+    setTestnetSignedIn(false);
   }, [testnetMethod]);
+
 
   const connect = useCallback(async () => {
     setError(null);
