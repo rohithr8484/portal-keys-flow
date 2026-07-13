@@ -258,17 +258,17 @@ export function ParticleUniversalAccount() {
     if (network !== "testnet") setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-    setTestnetSignedIn(false);
+    // Do NOT clear testnetSignedIn here — user only signs out via explicit "Sign out".
   }, [network]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("ua_testnet_method", testnetMethod);
+      // Restore signed-in state for the newly selected method rather than clearing it.
+      setTestnetSignedIn(localStorage.getItem(`ua_signed_in_${testnetMethod}`) === "1");
     }
-    setSmartAccountAddress(null);
     setStatus(null);
     setError(null);
-    setTestnetSignedIn(false);
   }, [testnetMethod]);
 
 
