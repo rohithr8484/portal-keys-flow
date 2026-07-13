@@ -1112,7 +1112,7 @@ export function ParticleUniversalAccount() {
             // primary assets to fund every batched leg atomically.
             ...(expectType != null
               ? {
-                  expectTokens: [{ type: expectType, amount: totalAmount.toString() }],
+                  expectTokens: [{ type: expectType, amount: totalAmount }],
                 }
               : {}),
             transactions: transactions.map((c) => ({
