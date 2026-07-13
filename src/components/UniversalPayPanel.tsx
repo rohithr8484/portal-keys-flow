@@ -159,7 +159,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       eachLabel: amounts[0] ? formatDisplayAmount(amounts[0]) : "0",
       totalLabel: amountText ? formatDisplayAmount(amountText) : "0",
     };
-  }, [payRecipients, payAmount, paySplit]);
+  }, [payRecipients, payAmount, paySplit, payToken]);
 
   const [payBusy, setPayBusy] = useState(false);
   const submitPay = async () => {
