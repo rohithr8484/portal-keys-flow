@@ -297,7 +297,10 @@ export function ParticleUniversalAccount() {
     setSmartAccountAddress(null);
     setStatus(null);
     setTestnetSignedIn(false);
-  }, []);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`ua_signed_in_${testnetMethod}`);
+    }
+  }, [testnetMethod]);
 
   // Testnet sign-in — derives smart account for the chosen method without sending.
   const signInTestnet = useCallback(
