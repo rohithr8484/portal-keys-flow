@@ -323,9 +323,8 @@ export function ParticleUniversalAccount() {
           const particleProvider = new ParticleProvider(particle.auth);
           const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
           if (!accounts?.[0]) throw new Error("Particle returned no account");
-          // Derive Kernel SA so downstream panels have the address ready.
-          const { kernelClient } = await buildKernelClient();
-          setSmartAccountAddress(kernelClient.account!.address);
+          // Kernel SA is derived lazily on first payment; show the signer EOA for now.
+          setSmartAccountAddress(accounts[0]);
         }
         setTestnetSignedIn(true);
         setStatus("Signed in.");
@@ -335,8 +334,9 @@ export function ParticleUniversalAccount() {
         setSigningIn(false);
       }
     },
-    [buildKernelClient],
+    [],
   );
+
 
 
   // Initialize Universal Account (mainnet only)
