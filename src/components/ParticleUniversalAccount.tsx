@@ -292,7 +292,52 @@ export function ParticleUniversalAccount() {
     setBalance(null);
     setSmartAccountAddress(null);
     setStatus(null);
+    setTestnetSignedIn(false);
   }, []);
+
+  // Testnet sign-in — derives smart account for the chosen method without sending.
+  const signInTestnet = useCallback(
+    async (method: TestnetMethod) => {
+      setSigningIn(true);
+      setError(null);
+      setStatus(null);
+      try {
+        if (method === "zerodev-7702") {
+          const account = await getLocal7702Account();
+          setSmartAccountAddress(account.address);
+        } else {
+          const [{ ParticleNetwork }, { ParticleProvider }] = await Promise.all([
+            import("@particle-network/auth"),
+            import("@particle-network/provider"),
+          ]);
+          const particle = new ParticleNetwork({
+            projectId: PARTICLE_PROJECT_ID,
+            clientKey: PARTICLE_CLIENT_KEY,
+            appId: PARTICLE_APP_ID,
+            chainName: "arbitrum" as any,
+            chainId: ARB_SEPOLIA.chainId,
+          });
+          if (!particle.auth.isLogin()) {
+            await particle.auth.login();
+          }
+          const particleProvider = new ParticleProvider(particle.auth);
+          const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
+          if (!accounts?.[0]) throw new Error("Particle returned no account");
+          // Derive Kernel SA so downstream panels have the address ready.
+          const { kernelClient } = await buildKernelClient();
+          setSmartAccountAddress(kernelClient.account!.address);
+        }
+        setTestnetSignedIn(true);
+        setStatus("Signed in.");
+      } catch (e: any) {
+        setError(e?.shortMessage || e?.message || "Sign in failed");
+      } finally {
+        setSigningIn(false);
+      }
+    },
+    [buildKernelClient],
+  );
+
 
   // Initialize Universal Account (mainnet only)
   useEffect(() => {
