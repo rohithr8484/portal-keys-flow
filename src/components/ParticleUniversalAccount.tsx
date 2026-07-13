@@ -1132,7 +1132,8 @@ export function ParticleUniversalAccount() {
                 </a>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Send to Pool & Claim Rewards buttons intentionally hidden — logic preserved in playGame/claimRewards. */}
+            <div className="hidden grid grid-cols-1 md:grid-cols-3 gap-3">
               <GameActionCard
                 emoji="🏊"
                 title="Send to Pool"
