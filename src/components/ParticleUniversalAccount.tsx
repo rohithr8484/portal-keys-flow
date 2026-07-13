@@ -334,6 +334,9 @@ export function ParticleUniversalAccount() {
           setSmartAccountAddress(accounts[0]);
         }
         setTestnetSignedIn(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`ua_signed_in_${method}`, "1");
+        }
         setStatus("Signed in.");
       } catch (e: any) {
         setError(e?.shortMessage || e?.message || "Sign in failed");
