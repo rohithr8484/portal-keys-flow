@@ -92,6 +92,11 @@ function getTxUrl(hashOrId: string | undefined, explorer: string) {
     : `https://universalx.app/activity/details?id=${hashOrId}`;
 }
 
+function isParticleCustomTxMaintenance(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /system\s+maint/i.test(message) && /send|transfer|sell/i.test(message);
+}
+
 function isStoredPrivateKey(value: string | null): value is `0x${string}` {
   return /^0x[0-9a-fA-F]{64}$/.test(value ?? "");
 }
@@ -1081,6 +1086,10 @@ export function ParticleUniversalAccount() {
               type: SUPPORTED_TOKEN_TYPE?.USDC,
             },
           };
+          const TRANSFER_TOKEN_ADDRESSES: Record<"USDC" | "ETH", string> = {
+            USDC: TOKENS.USDC.address,
+            ETH: "0x0000000000000000000000000000000000000000",
+          };
           const { decimalAmountToUnits, unitsToDecimalAmount } = await import("@/lib/amounts");
           // Sum as fixed-point decimal string to avoid scientific notation
           // (e.g. 2e-12) which viem/parseUnits rejects.
@@ -1106,30 +1115,59 @@ export function ParticleUniversalAccount() {
           }
           const uaChainId = CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId;
           const expectType = token === "ETH" ? SUPPORTED_TOKEN_TYPE?.ETH : TOKENS[token].type;
-          const tx = await createUniversal({
-            chainId: uaChainId,
-            // Tell the UA how much of `token` to source across the user's
-            // primary assets to fund every batched leg atomically.
-            ...(expectType != null
-              ? {
-                  expectTokens: [{ type: expectType, amount: totalAmount }],
-                }
-              : {}),
-            transactions: transactions.map((c) => ({
-              to: c.to,
-              data: c.data,
-              value: c.value,
-            })),
-          });
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
-          const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-          const result = await ua.sendTransaction(tx, signature);
-          const txId = getSubmittedTxHash(result);
-          return {
-            txId,
-            txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
-          };
+          try {
+            const tx = await createUniversal({
+              chainId: uaChainId,
+              // Tell the UA how much of `token` to source across the user's
+              // primary assets to fund every batched leg atomically.
+              ...(expectType != null
+                ? {
+                    expectTokens: [{ type: expectType, amount: totalAmount }],
+                  }
+                : {}),
+              transactions: transactions.map((c) => ({
+                to: c.to,
+                data: c.data,
+                value: c.value,
+              })),
+            });
+            const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
+            const result = await ua.sendTransaction(tx, signature);
+            const txId = getSubmittedTxHash(result);
+            return {
+              txId,
+              txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
+            };
+          } catch (e) {
+            if (!isParticleCustomTxMaintenance(e)) throw e;
+
+            // Particle's custom transaction route can be temporarily disabled.
+            // In that case, keep Pay/Split usable through the officially
+            // suggested transfer route, one Universal Account transfer per leg.
+            const txIds: string[] = [];
+            for (const recipient of recipients) {
+              const tx = await ua.createTransferTransaction({
+                token: {
+                  chainId: uaChainId,
+                  address: TRANSFER_TOKEN_ADDRESSES[token],
+                },
+                amount: recipient.amount,
+                receiver: recipient.address,
+              });
+              const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
+              const result = await ua.sendTransaction(tx, signature);
+              const txId = getSubmittedTxHash(result);
+              if (txId) txIds.push(txId);
+            }
+
+            const firstTx = txIds[0];
+            return {
+              txId: txIds.join(", ") || undefined,
+              txUrl: getTxUrl(firstTx, ARBITRUM_MAINNET.explorer),
+            };
+          }
         }}
       />
 
