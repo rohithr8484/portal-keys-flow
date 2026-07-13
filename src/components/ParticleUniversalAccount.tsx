@@ -157,6 +157,9 @@ export function ParticleUniversalAccount() {
   const [streak, setStreak] = useState<number>(0);
   const [platformAddress, setPlatformAddress] = useState<string | null>(null);
   const [platformBalance, setPlatformBalance] = useState<string | null>(null);
+  const [testnetSignedIn, setTestnetSignedIn] = useState<boolean>(false);
+  const [signingIn, setSigningIn] = useState<boolean>(false);
+
 
   const persistNum = (key: string, v: number) => {
     try {
