@@ -1081,7 +1081,15 @@ export function ParticleUniversalAccount() {
               type: SUPPORTED_TOKEN_TYPE?.USDC,
             },
           };
-          const totalAmount = recipients.reduce((s, r) => s + Number(r.amount || 0), 0);
+          const { expandScientificAmount } = await import("@/lib/amounts");
+          // Sum as fixed-point decimal string to avoid scientific notation
+          // (e.g. 2e-12) which viem/parseUnits rejects.
+          const decimalsForTotal = token === "ETH" ? 18 : TOKENS[token].decimals;
+          const totalWei = recipients.reduce(
+            (s, r) => s + ethers.parseUnits(expandScientificAmount(r.amount ?? "0"), decimalsForTotal),
+            0n,
+          );
+          const totalAmount = ethers.formatUnits(totalWei, decimalsForTotal);
           const transactions =
             token === "ETH"
               ? buildSplitNativeCalls({ chainId, recipients })
@@ -1104,7 +1112,7 @@ export function ParticleUniversalAccount() {
             // primary assets to fund every batched leg atomically.
             ...(expectType != null
               ? {
-                  expectTokens: [{ type: expectType, amount: totalAmount.toString() }],
+                  expectTokens: [{ type: expectType, amount: totalAmount }],
                 }
               : {}),
             transactions: transactions.map((c) => ({
