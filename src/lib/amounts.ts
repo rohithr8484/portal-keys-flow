@@ -44,3 +44,77 @@ export function amountForTokenUnits(value: string | number, decimals: number): s
 
   return expanded;
 }
+
+function decimalPrecisionMessage(tokenLabel: string, decimals: number): string {
+  const minimum = decimals > 0 ? `0.${"0".repeat(Math.max(decimals - 1, 0))}1` : "1";
+  return `${tokenLabel} supports up to ${decimals} decimal places. Enter at least ${minimum} ${tokenLabel}, or choose ETH for very small amounts.`;
+}
+
+/**
+ * Convert a user-entered decimal amount into integer token units without ever
+ * passing through JS Number. This prevents values like `0.0000000002` from
+ * becoming `2e-10` before viem/ethers parse them.
+ */
+export function decimalAmountToUnits(
+  value: string | number,
+  decimals: number,
+  tokenLabel = "token",
+): bigint {
+  const expanded = formatDisplayAmount(value).replace(/^\+/, "");
+
+  if (!/^(?:\d+|\d*\.\d+)$/.test(expanded)) {
+    throw new Error(`Invalid ${tokenLabel} amount.`);
+  }
+
+  const [whole = "0", fraction = ""] = expanded.split(".");
+  if (fraction.length > decimals) {
+    throw new Error(decimalPrecisionMessage(tokenLabel, decimals));
+  }
+
+  const wholeUnits = BigInt(whole || "0") * 10n ** BigInt(decimals);
+  const fractionalUnits = BigInt((fraction || "").padEnd(decimals, "0") || "0");
+  return wholeUnits + fractionalUnits;
+}
+
+export function unitsToDecimalAmount(units: bigint, decimals: number): string {
+  const sign = units < 0n ? "-" : "";
+  const absolute = units < 0n ? -units : units;
+  const base = 10n ** BigInt(decimals);
+  const whole = absolute / base;
+  const fraction = absolute % base;
+
+  if (fraction === 0n || decimals === 0) return `${sign}${whole.toString()}`;
+
+  const fractionText = fraction
+    .toString()
+    .padStart(decimals, "0")
+    .replace(/0+$/, "");
+
+  return `${sign}${whole.toString()}.${fractionText}`;
+}
+
+export function splitDecimalAmountEvenly(
+  total: string | number,
+  count: number,
+  decimals: number,
+  tokenLabel = "token",
+): string[] {
+  if (!Number.isInteger(count) || count <= 0) throw new Error("Add at least one recipient.");
+
+  const totalUnits = decimalAmountToUnits(total, decimals, tokenLabel);
+  if (totalUnits <= 0n) throw new Error("Enter an amount greater than zero.");
+
+  const recipientCount = BigInt(count);
+  const base = totalUnits / recipientCount;
+  const remainder = totalUnits % recipientCount;
+
+  if (base === 0n) {
+    throw new Error(
+      `${tokenLabel} amount is too small to split across ${count} recipients at ${decimals}-decimal precision.`,
+    );
+  }
+
+  return Array.from({ length: count }, (_, index) =>
+    unitsToDecimalAmount(base + (BigInt(index) < remainder ? 1n : 0n), decimals),
+  );
+}

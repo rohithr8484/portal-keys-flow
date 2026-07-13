@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { formatDisplayAmount } from "@/lib/amounts";
+import { amountForTokenUnits, decimalAmountToUnits, formatDisplayAmount, splitDecimalAmountEvenly } from "@/lib/amounts";
 import {
   createPaymentRequest,
   listRecentRequests,
@@ -30,7 +30,7 @@ type Props = {
   /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
     recipient: string;
-    amount: number;
+    amount: string;
     token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
@@ -39,7 +39,7 @@ type Props = {
    * Account transaction requiring ONE signature.
    */
   onSplitPay?: (args: {
-    recipients: { address: string; amount: number }[];
+    recipients: { address: string; amount: string }[];
     token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
@@ -47,6 +47,7 @@ type Props = {
 
 const SETTLEMENT_TOKENS = ["USDC", "ETH"] as const;
 type Token = (typeof SETTLEMENT_TOKENS)[number];
+const TOKEN_DECIMALS: Record<Token, number> = { USDC: 6, ETH: 18 };
 
 // ---- Persistence helpers ----
 function usePersist<T>(key: string, initial: T) {
@@ -72,7 +73,7 @@ type Activity = {
   id: string;
   kind: "pay" | "receive" | "request";
   label: string;
-  amount: number;
+  amount: string | number;
   token: Token;
   at: number;
   hash?: string;
@@ -130,35 +131,66 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       .map((s) => s.trim())
       .filter(Boolean);
     const valid = list.filter((s) => ethers.isAddress(s));
-    const total = Number(payAmount || "0");
-    const each = paySplit && valid.length ? total / valid.length : total;
-    return { list, valid, total, each };
-  }, [payRecipients, payAmount, paySplit]);
+    const decimals = TOKEN_DECIMALS[payToken];
+    const amountText = payAmount.trim();
+    let amounts: string[] = [];
+    let error: string | null = null;
+    let hasPositiveAmount = false;
+
+    try {
+      if (amountText) {
+        hasPositiveAmount = decimalAmountToUnits(amountText, decimals, payToken) > 0n;
+        if (valid.length) {
+          amounts = paySplit
+            ? splitDecimalAmountEvenly(amountText, valid.length, decimals, payToken)
+            : valid.map(() => amountForTokenUnits(amountText, decimals));
+        }
+      }
+    } catch (e: any) {
+      error = e?.message ?? "Invalid amount";
+    }
+
+    return {
+      list,
+      valid,
+      hasPositiveAmount,
+      amounts,
+      error,
+      eachLabel: amounts[0] ? formatDisplayAmount(amounts[0]) : "0",
+      totalLabel: amountText ? formatDisplayAmount(amountText) : "0",
+    };
+  }, [payRecipients, payAmount, paySplit, payToken]);
 
   const [payBusy, setPayBusy] = useState(false);
   const submitPay = async () => {
     if (!requireAddress()) return;
-    if (payPreview.valid.length === 0 || payPreview.total <= 0) {
+    if (payPreview.valid.length === 0 || !payPreview.hasPositiveAmount) {
       onNotify?.("Add a valid recipient and amount");
       return;
     }
-    const each = paySplit ? payPreview.total / payPreview.valid.length : payPreview.total;
+    if (payPreview.error) {
+      onNotify?.(payPreview.error);
+      return;
+    }
 
     // Batched split: one signature, one Universal Account tx.
     if (paySplit && payPreview.valid.length > 1 && onSplitPay) {
       setPayBusy(true);
       try {
         onNotify?.(
-          `Batching ${payPreview.valid.length} transfers of ${each.toFixed(4)} ${payToken}…`,
+          `Batching ${payPreview.valid.length} transfers of ${payPreview.eachLabel} ${payToken}…`,
         );
         const res = await onSplitPay({
-          recipients: payPreview.valid.map((address) => ({ address, amount: each })),
+          recipients: payPreview.valid.map((address, index) => ({
+            address,
+            amount: payPreview.amounts[index],
+          })),
           token: payToken,
         });
         pushActivity({
           kind: "pay",
           label: `Split × ${payPreview.valid.length} in one tx`,
-          amount: payPreview.total,
+          amount: payPreview.totalLabel,
           token: payToken,
           hash: res?.txId,
           txUrl: res?.txUrl,
@@ -181,13 +213,14 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     if (onPay) {
       setPayBusy(true);
       try {
-        for (const to of payPreview.valid) {
-          onNotify?.(`Signing transfer of ${each.toFixed(4)} ${payToken} → ${shortAddr(to)}…`);
-          const res = await onPay({ recipient: to, amount: each, token: payToken });
+        for (const [index, to] of payPreview.valid.entries()) {
+          const amount = payPreview.amounts[index];
+          onNotify?.(`Signing transfer of ${formatDisplayAmount(amount)} ${payToken} → ${shortAddr(to)}…`);
+          const res = await onPay({ recipient: to, amount, token: payToken });
           pushActivity({
             kind: "pay",
             label: `Sent to ${shortAddr(to)}`,
-            amount: each,
+            amount,
             token: payToken,
             hash: res?.txId,
             txUrl: res?.txUrl,
@@ -210,7 +243,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       label: paySplit
         ? `Split to ${payPreview.valid.length} recipients`
         : `Sent to ${shortAddr(payPreview.valid[0])}`,
-      amount: payPreview.total,
+      amount: payPreview.totalLabel,
       token: payToken,
     });
     setPayAmount("");
@@ -352,10 +385,13 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                 <span>
                   {paySplit ? "Each" : "Send"}:{" "}
                   <span className="text-foreground">
-                    {payPreview.each.toFixed(4)} {payToken}
+                    {payPreview.eachLabel} {payToken}
                   </span>
                 </span>
               </div>
+              {payPreview.error && (
+                <div className="text-xs text-destructive">{payPreview.error}</div>
+              )}
               <Button onClick={submitPay} className="w-full" disabled={payBusy}>
                 {payBusy ? "Broadcasting…" : paySplit ? "Split payment" : "Send payment"}
               </Button>
