@@ -421,6 +421,15 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           </div>
         </TabsContent>
 
+        {/* HOTELS */}
+        <TabsContent value="hotels" className="mt-0">
+          <HotelsTab
+            onNotify={onNotify}
+            onPay={onPay}
+            pushActivity={pushActivity}
+          />
+        </TabsContent>
+
         {/* RECEIVE */}
         <TabsContent value="receive" className="mt-0">
           <ReceiveTab
