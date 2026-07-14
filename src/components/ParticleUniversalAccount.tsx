@@ -1230,46 +1230,21 @@ export function ParticleUniversalAccount() {
       )}
 
       {isTestnet && (
-        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-2">
           <div>
             <strong className="text-foreground">Testnet mode — Arbitrum Sepolia.</strong> Gasless UserOps via ZeroDev
-            paymaster. Two signer paths:
+            paymaster.
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-foreground">Method:</span>
-            <div className="inline-flex rounded-md border border-panel-border bg-background/40 p-1">
-              {(
-                [
-                  ["zerodev-7702", "ZeroDev (EIP-7702)"],
-                  ["zerodev-particle", "ZeroDev + Particle"],
-                ] as const
-              ).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setTestnetMethod(k)}
-                  className={`px-3 py-1 text-xs rounded transition ${
-                    testnetMethod === k
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="text-[11px]">
+            One wallet per browser: your EIP-7702 Kernel smart account address is derived from a locally-persisted key and reused every time you sign in.
             <a
-              className="text-xs text-primary hover:underline ml-1"
+              className="text-primary hover:underline ml-2"
               href={ARB_SEPOLIA.faucet}
               target="_blank"
               rel="noreferrer"
             >
               Get test ETH ↗
             </a>
-          </div>
-          <div className="text-[11px]">
-            {testnetMethod === "zerodev-7702"
-              ? "Uses the EIP-7702 Kernel smart account; UserOps are sponsored, so the confirmed tx is funded by 0x4337002C... into the EntryPoint."
-              : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
       )}
