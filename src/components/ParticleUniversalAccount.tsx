@@ -1264,24 +1264,13 @@ export function ParticleUniversalAccount() {
           </p>
 
           {isTestnet ? (
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+            <div className="flex justify-center max-w-md mx-auto">
               <button
                 onClick={() => signInTestnet("zerodev-7702")}
                 disabled={signingIn}
-                className="flex-1 inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
               >
-                {signingIn && testnetMethod === "zerodev-7702"
-                  ? "Signing in…"
-                  : "Sign in with ZeroDev (EIP-7702)"}
-              </button>
-              <button
-                onClick={() => signInTestnet("zerodev-particle")}
-                disabled={signingIn}
-                className="flex-1 inline-flex items-center justify-center rounded-xl border border-panel-border bg-background/60 px-5 py-3 text-sm font-medium hover:bg-background transition disabled:opacity-50"
-              >
-                {signingIn && testnetMethod === "zerodev-particle"
-                  ? "Signing in…"
-                  : "Sign in with ZeroDev + Particle"}
+                {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
               </button>
             </div>
           ) : (
