@@ -182,9 +182,11 @@ export function ParticleUniversalAccount() {
     if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
       setNetwork(storedNetwork);
     }
-    if (storedMethod === "zerodev-7702" || storedMethod === "zerodev-particle") {
-      setTestnetMethod(storedMethod);
+    // Only one testnet signer path is supported now — force 7702 regardless of legacy storage.
+    if (storedMethod !== "zerodev-7702") {
+      localStorage.setItem("ua_testnet_method", "zerodev-7702");
     }
+    setTestnetMethod("zerodev-7702");
     setCoins(Number(localStorage.getItem("ua_coins") || 0));
     setUsdc(Number(localStorage.getItem("ua_usdc") || 0));
     setXp(Number(localStorage.getItem("ua_xp") || 0));
@@ -1230,46 +1232,21 @@ export function ParticleUniversalAccount() {
       )}
 
       {isTestnet && (
-        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-3">
+        <div className="mb-6 rounded-xl border border-panel-border bg-panel/60 p-4 text-sm text-muted-foreground space-y-2">
           <div>
             <strong className="text-foreground">Testnet mode — Arbitrum Sepolia.</strong> Gasless UserOps via ZeroDev
-            paymaster. Two signer paths:
+            paymaster.
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-foreground">Method:</span>
-            <div className="inline-flex rounded-md border border-panel-border bg-background/40 p-1">
-              {(
-                [
-                  ["zerodev-7702", "ZeroDev (EIP-7702)"],
-                  ["zerodev-particle", "ZeroDev + Particle"],
-                ] as const
-              ).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setTestnetMethod(k)}
-                  className={`px-3 py-1 text-xs rounded transition ${
-                    testnetMethod === k
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="text-[11px]">
+            One wallet per browser: your EIP-7702 Kernel smart account address is derived from a locally-persisted key and reused every time you sign in.
             <a
-              className="text-xs text-primary hover:underline ml-1"
+              className="text-primary hover:underline ml-2"
               href={ARB_SEPOLIA.faucet}
               target="_blank"
               rel="noreferrer"
             >
               Get test ETH ↗
             </a>
-          </div>
-          <div className="text-[11px]">
-            {testnetMethod === "zerodev-7702"
-              ? "Uses the EIP-7702 Kernel smart account; UserOps are sponsored, so the confirmed tx is funded by 0x4337002C... into the EntryPoint."
-              : "Uses Particle Auth (social login) as the ECDSA signer for a Kernel V3.1 smart account — no MetaMask required."}
           </div>
         </div>
       )}
@@ -1289,24 +1266,13 @@ export function ParticleUniversalAccount() {
           </p>
 
           {isTestnet ? (
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+            <div className="flex justify-center max-w-md mx-auto">
               <button
                 onClick={() => signInTestnet("zerodev-7702")}
                 disabled={signingIn}
-                className="flex-1 inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
               >
-                {signingIn && testnetMethod === "zerodev-7702"
-                  ? "Signing in…"
-                  : "Sign in with ZeroDev (EIP-7702)"}
-              </button>
-              <button
-                onClick={() => signInTestnet("zerodev-particle")}
-                disabled={signingIn}
-                className="flex-1 inline-flex items-center justify-center rounded-xl border border-panel-border bg-background/60 px-5 py-3 text-sm font-medium hover:bg-background transition disabled:opacity-50"
-              >
-                {signingIn && testnetMethod === "zerodev-particle"
-                  ? "Signing in…"
-                  : "Sign in with ZeroDev + Particle"}
+                {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
               </button>
             </div>
           ) : (

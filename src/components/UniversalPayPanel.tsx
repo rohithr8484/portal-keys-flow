@@ -91,6 +91,7 @@ function shortHash(hash: string) {
 const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
+  { key: "hotels", icon: "🏨", title: "Hotels (India)", desc: "Book curated stays across Indian cities — pay in USDC or ETH from your wallet." },
   { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
 ] as const;
@@ -300,7 +301,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       </div>
 
       {/* Feature strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
         {FEATURES.map((f) => (
           <button
             key={f.key}
@@ -418,6 +419,15 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
               </p>
             </div>
           </div>
+        </TabsContent>
+
+        {/* HOTELS */}
+        <TabsContent value="hotels" className="mt-0">
+          <HotelsTab
+            onNotify={onNotify}
+            onPay={onPay}
+            pushActivity={pushActivity}
+          />
         </TabsContent>
 
         {/* RECEIVE */}
@@ -875,4 +885,198 @@ function ReceiveTab({
     </div>
   );
 }
+
+// -------- Hotels tab: curated Indian city stays with wallet-pay in USDC/ETH --------
+
+type Hotel = {
+  id: string;
+  name: string;
+  city: string;
+  tagline: string;
+  usdc: string; // amount in USDC
+  eth: string; // amount in ETH
+  emoji: string;
+  bookingAddress: string; // where funds settle for this listing
+};
+
+// Demo settlement address (platform treasury). Each listing withdraws
+// funds from the connected wallet directly to this address on pay.
+const HOTEL_BOOKING_ADDRESS = "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb";
+
+const HOTEL_LISTINGS: Hotel[] = [
+  {
+    id: "mum-01",
+    name: "Marine Drive Skyline Suites",
+    city: "Mumbai, Maharashtra",
+    tagline: "Sea-facing rooms steps from the Queen's Necklace promenade.",
+    usdc: "120",
+    eth: "0.045",
+    emoji: "🌊",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "del-01",
+    name: "Chandni Chowk Heritage Haveli",
+    city: "New Delhi",
+    tagline: "Restored 19th-century haveli in Old Delhi's spice quarter.",
+    usdc: "95",
+    eth: "0.036",
+    emoji: "🕌",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "blr-01",
+    name: "Indiranagar Garden Lofts",
+    city: "Bengaluru, Karnataka",
+    tagline: "Boutique lofts in the cafe belt — fast Wi-Fi, quiet mornings.",
+    usdc: "80",
+    eth: "0.03",
+    emoji: "🌿",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "jai-01",
+    name: "Amber Fort View Palace",
+    city: "Jaipur, Rajasthan",
+    tagline: "Pink-city rooftop with direct sightlines to the Amber Fort.",
+    usdc: "140",
+    eth: "0.052",
+    emoji: "🏰",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "goa-01",
+    name: "Anjuna Cliff Beach Villas",
+    city: "Goa",
+    tagline: "Cliffside villa with a private path to Anjuna beach.",
+    usdc: "160",
+    eth: "0.06",
+    emoji: "🌴",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "udr-01",
+    name: "Lake Pichola Floating Retreat",
+    city: "Udaipur, Rajasthan",
+    tagline: "Suites on the water with sunrise views of the City Palace.",
+    usdc: "210",
+    eth: "0.078",
+    emoji: "⛵",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+];
+
+function HotelsTab({
+  onNotify,
+  onPay,
+  pushActivity,
+}: {
+  onNotify?: (msg: string) => void;
+  onPay?: Props["onPay"];
+  pushActivity: (a: Omit<Activity, "id" | "at">) => void;
+}) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  const bookHotel = async (hotel: Hotel, token: Token) => {
+    if (!onPay) {
+      onNotify?.("Connect a wallet first");
+      return;
+    }
+    const amount = token === "USDC" ? hotel.usdc : hotel.eth;
+    const key = `${hotel.id}:${token}`;
+    setBusyKey(key);
+    onNotify?.(
+      `Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`,
+    );
+    try {
+      const res = await onPay({
+        recipient: hotel.bookingAddress,
+        amount,
+        token,
+        memo: `Hotel booking · ${hotel.name} · ${hotel.city}`,
+      });
+      pushActivity({
+        kind: "pay",
+        label: `Booked ${hotel.name}`,
+        amount,
+        token,
+        hash: res?.txId,
+        txUrl: res?.txUrl,
+      });
+      onNotify?.(
+        res?.txId
+          ? `Booking confirmed — tx ${res.txId}`
+          : `Booking submitted for ${hotel.name}`,
+      );
+    } catch (e: any) {
+      onNotify?.(e?.message ?? "Booking failed");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-panel-border bg-background/40 p-4">
+        <div className="text-sm font-semibold mb-1">Curated stays across India</div>
+        <div className="text-[11px] text-muted-foreground">
+          Every listing settles instantly to the property's booking wallet.
+          Pick USDC for stable pricing or ETH for a native settlement.
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {HOTEL_LISTINGS.map((hotel) => {
+          const usdcBusy = busyKey === `${hotel.id}:USDC`;
+          const ethBusy = busyKey === `${hotel.id}:ETH`;
+          const anyBusy = busyKey !== null;
+          return (
+            <div
+              key={hotel.id}
+              className="rounded-xl border border-panel-border bg-background/40 p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="size-11 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center text-2xl">
+                  {hotel.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold truncate">
+                    {hotel.name}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {hotel.city}
+                  </div>
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground leading-relaxed">
+                {hotel.tagline}
+              </div>
+              <div className="text-[10px] font-mono text-muted-foreground truncate">
+                → {shortAddr(hotel.bookingAddress)}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-auto">
+                <Button
+                  size="sm"
+                  onClick={() => bookHotel(hotel, "USDC")}
+                  disabled={anyBusy}
+                >
+                  {usdcBusy ? "Paying…" : `Pay ${hotel.usdc} USDC`}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => bookHotel(hotel, "ETH")}
+                  disabled={anyBusy}
+                >
+                  {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
