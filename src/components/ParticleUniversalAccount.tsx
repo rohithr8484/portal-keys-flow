@@ -987,14 +987,21 @@ export function ParticleUniversalAccount() {
           if (isTestnet) {
             const { kernelClient } = await buildKernelClient();
             const chainId = EVM_CHAINS.arbitrumSepolia;
+            // Native (Circle) USDC on Arbitrum Sepolia. When token === "USDC"
+            // we MUST encode an ERC-20 transfer — sending the USDC amount as
+            // native ETH value would revert during simulation with reason 0x
+            // (the smart account has nowhere near that much ETH).
+            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
             const calls =
               token === "ETH"
                 ? buildSplitNativeCalls({
                     chainId,
                     recipients: [{ address: recipient, amount }],
                   })
-                : buildSplitNativeCalls({
+                : buildSplitERC20Calls({
                     chainId,
+                    tokenAddress: ARB_SEPOLIA_USDC,
+                    decimals: 6,
                     recipients: [{ address: recipient, amount }],
                   });
             const userOpHash = await (kernelClient as any).sendUserOperation({
@@ -1014,6 +1021,7 @@ export function ParticleUniversalAccount() {
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
 
+
           // ---- Mainnet: single-recipient transfer via Universal Account.
           // Follows the `sell-evm.ts` pattern: createTransferTransaction →
           // sign(rootHash) → sendTransaction. Native ETH uses the zero
@@ -1027,23 +1035,34 @@ export function ParticleUniversalAccount() {
             USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
             ETH: NATIVE,
           };
-          const tx = await ua.createTransferTransaction({
-            token: {
-              chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
-              address: TOKENS[token],
-            },
-            amount: amount.toString(),
-            receiver: recipient,
-          });
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-          const result = await ua.sendTransaction(tx, signature);
-          const txId = getSubmittedTxHash(result);
-          return {
-            txId,
-            txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
-          };
+          try {
+            const tx = await ua.createTransferTransaction({
+              token: {
+                chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+                address: TOKENS[token],
+              },
+              amount: amount.toString(),
+              receiver: recipient,
+            });
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
+            const result = await ua.sendTransaction(tx, signature);
+            const txId = getSubmittedTxHash(result);
+            return {
+              txId,
+              txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
+            };
+          } catch (e: any) {
+            const msg = String(e?.message ?? e ?? "");
+            if (/simulate user operation|insufficient|not enough/i.test(msg)) {
+              throw new Error(
+                `Universal Account can't source ${amount} ${token} across your assets. Fund the smart account with ${token} on any supported chain and try again.`,
+              );
+            }
+            throw e;
+          }
+
         }}
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
@@ -1052,9 +1071,18 @@ export function ParticleUniversalAccount() {
           if (isTestnet) {
             const { kernelClient } = await buildKernelClient();
             const chainId = EVM_CHAINS.arbitrumSepolia;
-            // Testnet split follows the Send-to-Pool path: native ETH calls are
-            // encoded in one Kernel UserOp, preserving duplicate recipients.
-            const calls = buildSplitNativeCalls({ chainId, recipients });
+            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
+            // Testnet split preserves duplicate recipients. USDC is encoded
+            // as ERC-20 transfers so amounts aren't misread as native value.
+            const calls =
+              token === "ETH"
+                ? buildSplitNativeCalls({ chainId, recipients })
+                : buildSplitERC20Calls({
+                    chainId,
+                    tokenAddress: ARB_SEPOLIA_USDC,
+                    decimals: 6,
+                    recipients,
+                  });
             const userOpHash = await (kernelClient as any).sendUserOperation({
               callData: await kernelClient.account!.encodeCalls(
                 calls.map((c) => ({
@@ -1071,6 +1099,7 @@ export function ParticleUniversalAccount() {
             awardXp(50);
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
+
 
           // ---- Mainnet: batch every leg into ONE Universal Account tx.
           // Uses the createUniversalTransaction + expectTokens pattern from
