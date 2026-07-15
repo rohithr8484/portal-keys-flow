@@ -1022,46 +1022,56 @@ export function ParticleUniversalAccount() {
           }
 
 
-          // ---- Mainnet: single-recipient transfer via Universal Account.
-          // Follows the `sell-evm.ts` pattern: createTransferTransaction →
-          // sign(rootHash) → sendTransaction. Native ETH uses the zero
-          // address per `buy-evm.ts` ("if you want to buy native token,
-          // the address is 0x000...000"). ----
-          if (!(ua && eoa)) throw new Error("Connect a wallet first");
-          const { CHAIN_ID } = await loadSdk();
-          const NATIVE = "0x0000000000000000000000000000000000000000";
-          const TOKENS: Record<"USDC" | "ETH", string> = {
-            // Native (Circle) USDC on Arbitrum One
-            USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-            ETH: NATIVE,
-          };
+          // ---- Mainnet: send directly from the connected MetaMask EOA on
+          // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
+          // funds straight from the user's wallet instead of relying on the
+          // Universal Account to source primary assets. ----
+          const ARB_ONE_HEX = "0xa4b1";
+          const ARB_ONE_USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+          if (!window.ethereum) throw new Error("MetaMask not detected");
           try {
-            const tx = await ua.createTransferTransaction({
-              token: {
-                chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
-                address: TOKENS[token],
-              },
-              amount: amount.toString(),
-              receiver: recipient,
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: ARB_ONE_HEX }],
             });
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-            const result = await ua.sendTransaction(tx, signature);
-            const txId = getSubmittedTxHash(result);
-            return {
-              txId,
-              txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
-            };
-          } catch (e: any) {
-            const msg = String(e?.message ?? e ?? "");
-            if (/simulate user operation|insufficient|not enough/i.test(msg)) {
-              throw new Error(
-                `Universal Account can't source ${amount} ${token} across your assets. Fund the smart account with ${token} on any supported chain and try again.`,
-              );
+          } catch (err: any) {
+            if (err?.code === 4902) {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: ARB_ONE_HEX,
+                  chainName: "Arbitrum One",
+                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                  rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+                  blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
+                }],
+              });
+            } else {
+              throw err;
             }
-            throw e;
           }
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const from = ethers.getAddress(await signer.getAddress());
+          const to = ethers.getAddress(recipient);
+          let txHash: string;
+          if (token === "ETH") {
+            const wei = ethers.parseEther(amount.toString());
+            txHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [{ from, to, value: ethers.toQuantity(wei) }],
+            });
+          } else {
+            const units = ethers.parseUnits(amount.toString(), 6);
+            const iface = new ethers.Interface(["function transfer(address,uint256)"]);
+            const data = iface.encodeFunctionData("transfer", [to, units]);
+            txHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [{ from, to: ARB_ONE_USDC, data }],
+            });
+          }
+          await provider.waitForTransaction(txHash);
+          return { txId: txHash, txUrl: `${ARBITRUM_MAINNET.explorer}/tx/${txHash}` };
 
         }}
         onSplitPay={async ({ recipients, token }) => {
