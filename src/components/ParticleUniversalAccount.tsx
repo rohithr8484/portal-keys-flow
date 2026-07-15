@@ -1035,23 +1035,34 @@ export function ParticleUniversalAccount() {
             USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
             ETH: NATIVE,
           };
-          const tx = await ua.createTransferTransaction({
-            token: {
-              chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
-              address: TOKENS[token],
-            },
-            amount: amount.toString(),
-            receiver: recipient,
-          });
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-          const result = await ua.sendTransaction(tx, signature);
-          const txId = getSubmittedTxHash(result);
-          return {
-            txId,
-            txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
-          };
+          try {
+            const tx = await ua.createTransferTransaction({
+              token: {
+                chainId: CHAIN_ID.ARBITRUM_MAINNET_ONE,
+                address: TOKENS[token],
+              },
+              amount: amount.toString(),
+              receiver: recipient,
+            });
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
+            const result = await ua.sendTransaction(tx, signature);
+            const txId = getSubmittedTxHash(result);
+            return {
+              txId,
+              txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
+            };
+          } catch (e: any) {
+            const msg = String(e?.message ?? e ?? "");
+            if (/simulate user operation|insufficient|not enough/i.test(msg)) {
+              throw new Error(
+                `Universal Account can't source ${amount} ${token} across your assets. Fund the smart account with ${token} on any supported chain and try again.`,
+              );
+            }
+            throw e;
+          }
+
         }}
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
