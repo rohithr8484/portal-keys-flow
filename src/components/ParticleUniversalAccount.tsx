@@ -987,14 +987,21 @@ export function ParticleUniversalAccount() {
           if (isTestnet) {
             const { kernelClient } = await buildKernelClient();
             const chainId = EVM_CHAINS.arbitrumSepolia;
+            // Native (Circle) USDC on Arbitrum Sepolia. When token === "USDC"
+            // we MUST encode an ERC-20 transfer — sending the USDC amount as
+            // native ETH value would revert during simulation with reason 0x
+            // (the smart account has nowhere near that much ETH).
+            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
             const calls =
               token === "ETH"
                 ? buildSplitNativeCalls({
                     chainId,
                     recipients: [{ address: recipient, amount }],
                   })
-                : buildSplitNativeCalls({
+                : buildSplitERC20Calls({
                     chainId,
+                    tokenAddress: ARB_SEPOLIA_USDC,
+                    decimals: 6,
                     recipients: [{ address: recipient, amount }],
                   });
             const userOpHash = await (kernelClient as any).sendUserOperation({
@@ -1013,6 +1020,7 @@ export function ParticleUniversalAccount() {
             awardXp(25);
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
+
 
           // ---- Mainnet: single-recipient transfer via Universal Account.
           // Follows the `sell-evm.ts` pattern: createTransferTransaction →
