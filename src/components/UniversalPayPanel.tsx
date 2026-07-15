@@ -1028,7 +1028,6 @@ function HotelsTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {HOTEL_LISTINGS.map((hotel) => {
-          const usdcBusy = busyKey === `${hotel.id}:USDC`;
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
           return (
@@ -1055,17 +1054,10 @@ function HotelsTab({
               <div className="text-[10px] font-mono text-muted-foreground truncate">
                 → {shortAddr(hotel.bookingAddress)}
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-auto">
+              <div className="mt-auto">
                 <Button
                   size="sm"
-                  onClick={() => bookHotel(hotel, "USDC")}
-                  disabled={anyBusy}
-                >
-                  {usdcBusy ? "Paying…" : `Pay ${hotel.usdc} USDC`}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
+                  className="w-full"
                   onClick={() => bookHotel(hotel, "ETH")}
                   disabled={anyBusy}
                 >
