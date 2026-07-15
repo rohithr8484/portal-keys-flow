@@ -1028,7 +1028,6 @@ function HotelsTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {HOTEL_LISTINGS.map((hotel) => {
-          const usdcBusy = busyKey === `${hotel.id}:USDC`;
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
           return (
