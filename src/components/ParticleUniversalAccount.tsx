@@ -1111,106 +1111,67 @@ export function ParticleUniversalAccount() {
           }
 
 
-          // ---- Mainnet: batch every leg into ONE Universal Account tx.
-          // Uses the createUniversalTransaction + expectTokens pattern from
-          // the Particle reference `custom-transaction-evm-no-money.ts`, so
-          // the UA sources the exact token amount from any chain the user
-          // holds (native USDC on Arbitrum One by default). ----
-          if (!(ua && eoa)) throw new Error("Connect a wallet first");
-          const { CHAIN_ID, SUPPORTED_TOKEN_TYPE } = await loadSdk();
-          const chainId = EVM_CHAINS.arbitrum;
-          const TOKENS: Record<"USDC", { address: string; decimals: number; type: any }> = {
-            USDC: {
-              // Native (Circle) USDC on Arbitrum One
-              address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-              decimals: 6,
-              type: SUPPORTED_TOKEN_TYPE?.USDC,
-            },
-          };
-          const TRANSFER_TOKEN_ADDRESSES: Record<"USDC" | "ETH", string> = {
-            USDC: TOKENS.USDC.address,
-            ETH: "0x0000000000000000000000000000000000000000",
-          };
-          const { decimalAmountToUnits, unitsToDecimalAmount } = await import("@/lib/amounts");
-          // Sum as fixed-point decimal string to avoid scientific notation
-          // (e.g. 2e-12) which viem/parseUnits rejects.
-          const decimalsForTotal = token === "ETH" ? 18 : TOKENS[token].decimals;
-          const totalWei = recipients.reduce(
-            (s, r) => s + decimalAmountToUnits(r.amount ?? "0", decimalsForTotal, token),
-            0n,
-          );
-          const totalAmount = unitsToDecimalAmount(totalWei, decimalsForTotal);
-          const transactions =
-            token === "ETH"
-              ? buildSplitNativeCalls({ chainId, recipients })
-              : buildSplitERC20Calls({
-                  chainId,
-                  tokenAddress: TOKENS[token].address,
-                  decimals: TOKENS[token].decimals,
-                  recipients,
-                });
-
-          const createUniversal = ua.createUniversalTransaction?.bind(ua) ?? ua.createExecuteTransaction?.bind(ua);
-          if (!createUniversal) {
-            throw new Error("Universal Account SDK missing createUniversalTransaction");
-          }
-          const uaChainId = CHAIN_ID.ARBITRUM_MAINNET_ONE ?? chainId;
-          const expectType = token === "ETH" ? SUPPORTED_TOKEN_TYPE?.ETH : TOKENS[token].type;
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
+          // ---- Mainnet: send every recipient directly from the connected
+          // MetaMask EOA on Arbitrum One (same approach as /pay/:requestId).
+          // Each leg is a normal wallet transaction, so funds come from the
+          // user's own ETH/USDC balance rather than the Universal Account's
+          // sourced primary assets. ----
+          const ARB_ONE_HEX = "0xa4b1";
+          const ARB_ONE_USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+          if (!window.ethereum) throw new Error("MetaMask not detected");
           try {
-            const tx = await createUniversal({
-              chainId: uaChainId,
-              // Tell the UA how much of `token` to source across the user's
-              // primary assets to fund every batched leg atomically.
-              ...(expectType != null
-                ? {
-                    expectTokens: [{ type: expectType, amount: totalAmount }],
-                  }
-                : {}),
-              transactions: transactions.map((c) => ({
-                to: c.to,
-                data: c.data,
-                value: c.value,
-              })),
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: ARB_ONE_HEX }],
             });
-            const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-            const result = await ua.sendTransaction(tx, signature);
-            const txId = getSubmittedTxHash(result);
-            return {
-              txId,
-              txUrl: getTxUrl(txId, ARBITRUM_MAINNET.explorer),
-            };
-          } catch (e) {
-            if (!isParticleCustomTxMaintenance(e)) throw e;
-
-            // Particle's custom transaction route can be temporarily disabled.
-            // In that case, keep Pay/Split usable through the officially
-            // suggested transfer route, one Universal Account transfer per leg.
-            const txIds: string[] = [];
-            for (const recipient of recipients) {
-              const tx = await ua.createTransferTransaction({
-                token: {
-                  chainId: uaChainId,
-                  address: TRANSFER_TOKEN_ADDRESSES[token],
-                },
-                amount: recipient.amount,
-                receiver: recipient.address,
+          } catch (err: any) {
+            if (err?.code === 4902) {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: ARB_ONE_HEX,
+                  chainName: "Arbitrum One",
+                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                  rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+                  blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
+                }],
               });
-              const signature = await signer.signMessage(ethers.getBytes(tx.rootHash));
-              const result = await ua.sendTransaction(tx, signature);
-              const txId = getSubmittedTxHash(result);
-              if (txId) txIds.push(txId);
+            } else {
+              throw err;
             }
-
-            const firstTx = txIds[0];
-            return {
-              txId: txIds.join(", ") || undefined,
-              txUrl: getTxUrl(firstTx, ARBITRUM_MAINNET.explorer),
-            };
           }
+          const providerMain = new ethers.BrowserProvider(window.ethereum);
+          const signerMain = await providerMain.getSigner();
+          const fromMain = ethers.getAddress(await signerMain.getAddress());
+          const erc20 = new ethers.Interface(["function transfer(address,uint256)"]);
+          const hashes: string[] = [];
+          for (const r of recipients) {
+            const to = ethers.getAddress(r.address);
+            let hash: string;
+            if (token === "ETH") {
+              const wei = ethers.parseEther(String(r.amount));
+              hash = await window.ethereum.request({
+                method: "eth_sendTransaction",
+                params: [{ from: fromMain, to, value: ethers.toQuantity(wei) }],
+              });
+            } else {
+              const units = ethers.parseUnits(String(r.amount), 6);
+              const data = erc20.encodeFunctionData("transfer", [to, units]);
+              hash = await window.ethereum.request({
+                method: "eth_sendTransaction",
+                params: [{ from: fromMain, to: ARB_ONE_USDC, data }],
+              });
+            }
+            await providerMain.waitForTransaction(hash);
+            hashes.push(hash);
+          }
+          return {
+            txId: hashes.join(", "),
+            txUrl: hashes[0] ? `${ARBITRUM_MAINNET.explorer}/tx/${hashes[0]}` : undefined,
+          };
         }}
       />
+
 
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
         {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
