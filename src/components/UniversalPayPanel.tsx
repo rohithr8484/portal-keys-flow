@@ -1055,17 +1055,10 @@ function HotelsTab({
               <div className="text-[10px] font-mono text-muted-foreground truncate">
                 → {shortAddr(hotel.bookingAddress)}
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-auto">
+              <div className="mt-auto">
                 <Button
                   size="sm"
-                  onClick={() => bookHotel(hotel, "USDC")}
-                  disabled={anyBusy}
-                >
-                  {usdcBusy ? "Paying…" : `Pay ${hotel.usdc} USDC`}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
+                  className="w-full"
                   onClick={() => bookHotel(hotel, "ETH")}
                   disabled={anyBusy}
                 >
