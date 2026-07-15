@@ -1060,9 +1060,18 @@ export function ParticleUniversalAccount() {
           if (isTestnet) {
             const { kernelClient } = await buildKernelClient();
             const chainId = EVM_CHAINS.arbitrumSepolia;
-            // Testnet split follows the Send-to-Pool path: native ETH calls are
-            // encoded in one Kernel UserOp, preserving duplicate recipients.
-            const calls = buildSplitNativeCalls({ chainId, recipients });
+            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
+            // Testnet split preserves duplicate recipients. USDC is encoded
+            // as ERC-20 transfers so amounts aren't misread as native value.
+            const calls =
+              token === "ETH"
+                ? buildSplitNativeCalls({ chainId, recipients })
+                : buildSplitERC20Calls({
+                    chainId,
+                    tokenAddress: ARB_SEPOLIA_USDC,
+                    decimals: 6,
+                    recipients,
+                  });
             const userOpHash = await (kernelClient as any).sendUserOperation({
               callData: await kernelClient.account!.encodeCalls(
                 calls.map((c) => ({
@@ -1079,6 +1088,7 @@ export function ParticleUniversalAccount() {
             awardXp(50);
             return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
           }
+
 
           // ---- Mainnet: batch every leg into ONE Universal Account tx.
           // Uses the createUniversalTransaction + expectTokens pattern from
