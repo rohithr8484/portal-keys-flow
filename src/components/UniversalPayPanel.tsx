@@ -358,6 +358,11 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                   </Button>
                 </div>
               </div>
+              <Input
+                placeholder="Name (e.g. Team dinner, Alice, Rent March)"
+                value={payName}
+                onChange={(e) => setPayName(e.target.value)}
+              />
               <Textarea
                 rows={3}
                 placeholder="0xabc…, 0xdef… (comma or newline separated)"
