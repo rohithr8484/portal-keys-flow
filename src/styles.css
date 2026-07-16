@@ -68,8 +68,9 @@
 
   html, body {
     background:
-      radial-gradient(ellipse at 20% 0%, oklch(0.85 0.10 305 / 40%), transparent 55%),
-      radial-gradient(ellipse at 80% 100%, oklch(0.85 0.08 270 / 40%), transparent 55%),
+      radial-gradient(ellipse at 20% 0%, oklch(0.30 0.14 305 / 45%), transparent 55%),
+      radial-gradient(ellipse at 80% 100%, oklch(0.24 0.10 260 / 50%), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, oklch(0.10 0.03 290 / 40%), transparent 70%),
       var(--color-background);
     background-attachment: fixed;
     color: var(--color-foreground);
