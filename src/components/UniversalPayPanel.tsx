@@ -192,7 +192,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
         });
         pushActivity({
           kind: "pay",
-          label: `Split × ${payPreview.valid.length} in one tx`,
+          label: payName.trim()
+            ? `${payName.trim()} · split × ${payPreview.valid.length}`
+            : `Split × ${payPreview.valid.length} in one tx`,
           amount: payPreview.totalLabel,
           token: payToken,
           hash: res?.txId,
