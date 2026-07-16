@@ -224,7 +224,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           const res = await onPay({ recipient: to, amount, token: payToken });
           pushActivity({
             kind: "pay",
-            label: `Sent to ${shortAddr(to)}`,
+            label: payName.trim()
+              ? `${payName.trim()} · ${shortAddr(to)}`
+              : `Sent to ${shortAddr(to)}`,
             amount,
             token: payToken,
             hash: res?.txId,
