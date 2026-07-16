@@ -970,82 +970,101 @@ function ReceiveTab({
   );
 }
 
-// -------- Hotels tab: curated Indian city stays with wallet-pay in USDC/ETH --------
+// -------- Tourist packages tab: curated India tours with wallet-pay in ETH --------
 
 type Hotel = {
   id: string;
   name: string;
   city: string;
   tagline: string;
-  usdc: string; // amount in USDC
-  eth: string; // amount in ETH
-  emoji: string;
-  bookingAddress: string; // where funds settle for this listing
+  usdc: string;
+  eth: string;
+  image: string;
+  bookingAddress: string;
 };
 
-// Demo settlement address (platform treasury). Each listing withdraws
-// funds from the connected wallet directly to this address on pay.
+// Demo settlement address (platform treasury).
 const HOTEL_BOOKING_ADDRESS = "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb";
 
 const HOTEL_LISTINGS: Hotel[] = [
   {
-    id: "mum-01",
-    name: "Marine Drive Skyline Suites",
-    city: "Mumbai, Maharashtra",
-    tagline: "Sea-facing rooms steps from the Queen's Necklace promenade.",
-    usdc: "1.20",
-    eth: "0.00045",
-    emoji: "🌊",
+    id: "golden-triangle",
+    name: "The Golden Triangle (5D/4N)",
+    city: "Delhi → Agra → Jaipur",
+    tagline: "Taj Mahal, Agra Fort, Amber Fort and Qutub Minar in one loop.",
+    usdc: "1.80",
+    eth: "0.00062",
+    image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
   {
-    id: "del-01",
-    name: "Chandni Chowk Heritage Haveli",
-    city: "New Delhi",
-    tagline: "Restored 19th-century haveli in Old Delhi's spice quarter.",
-    usdc: "0.95",
-    eth: "0.00036",
-    emoji: "🕌",
+    id: "enchanting-kerala",
+    name: "Enchanting Kerala (7D/6N)",
+    city: "Cochin → Munnar → Thekkady → Alleppey",
+    tagline: "Backwater houseboats, tea gardens and Periyar Wildlife Sanctuary.",
+    usdc: "2.40",
+    eth: "0.00088",
+    image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
   {
-    id: "blr-01",
-    name: "Indiranagar Garden Lofts",
-    city: "Bengaluru, Karnataka",
-    tagline: "Boutique lofts in the cafe belt — fast Wi-Fi, quiet mornings.",
-    usdc: "0.80",
-    eth: "0.00030",
-    emoji: "🌿",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "jai-01",
-    name: "Amber Fort View Palace",
-    city: "Jaipur, Rajasthan",
-    tagline: "Pink-city rooftop with direct sightlines to the Amber Fort.",
-    usdc: "1.40",
-    eth: "0.00052",
-    emoji: "🏰",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "goa-01",
-    name: "Anjuna Cliff Beach Villas",
-    city: "Goa",
-    tagline: "Cliffside villa with a private path to Anjuna beach.",
-    usdc: "1.60",
-    eth: "0.00060",
-    emoji: "🌴",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "udr-01",
-    name: "Lake Pichola Floating Retreat",
-    city: "Udaipur, Rajasthan",
-    tagline: "Suites on the water with sunrise views of the City Palace.",
+    id: "kashmir-valley",
+    name: "Kashmir Valley Retreat (6D/5N)",
+    city: "Srinagar → Gulmarg → Pahalgam",
+    tagline: "Dal Lake shikaras, the Gulmarg Gondola and Betaab Valley.",
     usdc: "2.10",
     eth: "0.00078",
-    emoji: "⛵",
+    image: "https://images.unsplash.com/photo-1566837945700-30057527ade0?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "spiritual-temple",
+    name: "Spiritual & Temple Circuit",
+    city: "Varanasi → Prayagraj → Ayodhya",
+    tagline: "Ganga Aarti, Kashi Vishwanath and the new Ram Mandir.",
+    usdc: "1.55",
+    eth: "0.00058",
+    image: "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "rajasthan-royal",
+    name: "Rajasthan Royal Tour (6D/5N)",
+    city: "Jaipur → Jodhpur → Udaipur",
+    tagline: "Mehrangarh Fort, City Palace and sunset on Lake Pichola.",
+    usdc: "2.00",
+    eth: "0.00074",
+    image: "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "goa-beach",
+    name: "Goa Beach Escape (4D/3N)",
+    city: "North & South Goa",
+    tagline: "Beaches, water sports, nightlife and Portuguese heritage.",
+    usdc: "1.30",
+    eth: "0.00048",
+    image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "north-east",
+    name: "North East Explorer (6D/5N)",
+    city: "Gangtok → Pelling → Darjeeling",
+    tagline: "Himalayan panoramas, monasteries and tea estates.",
+    usdc: "1.90",
+    eth: "0.00070",
+    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "andaman",
+    name: "Andaman Island Getaway (5D/4N)",
+    city: "Port Blair → Havelock → Neil Island",
+    tagline: "Radhanagar Beach, snorkeling and scuba diving.",
+    usdc: "2.60",
+    eth: "0.00096",
+    image: "https://images.unsplash.com/photo-1586500036706-41963de24d8b?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
 ];
@@ -1078,7 +1097,7 @@ function HotelsTab({
         recipient: hotel.bookingAddress,
         amount,
         token,
-        memo: `Hotel booking · ${hotel.name} · ${hotel.city}`,
+        memo: `Package booking · ${hotel.name}`,
       });
       pushActivity({
         kind: "pay",
@@ -1102,51 +1121,55 @@ function HotelsTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-panel-border bg-background/40 p-4">
-        <div className="text-sm font-semibold mb-1">Curated stays across India</div>
+      <div className="rounded-xl border border-panel-border bg-panel/60 p-4">
+        <div className="text-sm font-semibold mb-1">Curated tourist packages across India</div>
         <div className="text-[11px] text-muted-foreground">
-          Every listing settles instantly to the property's booking wallet.
-          Pick USDC for stable pricing or ETH for a native settlement.
+          Every itinerary settles instantly to the operator's booking wallet
+          when you pay with ETH.
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {HOTEL_LISTINGS.map((hotel) => {
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
           return (
             <div
               key={hotel.id}
-              className="rounded-xl border border-panel-border bg-background/40 p-4 flex flex-col gap-3"
+              className="rounded-xl border border-panel-border bg-panel/60 overflow-hidden flex flex-col hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-start gap-3">
-                <div className="size-11 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center text-2xl">
-                  {hotel.emoji}
+              <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
+                <img
+                  src={hotel.image}
+                  alt={hotel.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+              </div>
+              <div className="p-4 flex-1 flex flex-col gap-2">
+                <div className="text-sm font-semibold leading-snug">
+                  {hotel.name}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate">
-                    {hotel.name}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {hotel.city}
-                  </div>
+                <div className="text-[11px] text-primary font-medium">
+                  {hotel.city}
                 </div>
-              </div>
-              <div className="text-[11px] text-muted-foreground leading-relaxed">
-                {hotel.tagline}
-              </div>
-              <div className="text-[10px] font-mono text-muted-foreground truncate">
-                → {shortAddr(hotel.bookingAddress)}
-              </div>
-              <div className="mt-auto">
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => bookHotel(hotel, "ETH")}
-                  disabled={anyBusy}
-                >
-                  {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
-                </Button>
+                <div className="text-[11px] text-muted-foreground leading-relaxed">
+                  {hotel.tagline}
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground truncate">
+                  → {shortAddr(hotel.bookingAddress)}
+                </div>
+                <div className="mt-auto pt-2">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => bookHotel(hotel, "ETH")}
+                    disabled={anyBusy}
+                  >
+                    {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
+                  </Button>
+                </div>
               </div>
             </div>
           );
@@ -1155,5 +1178,82 @@ function HotelsTab({
     </div>
   );
 }
+
+// -------- FAQ tab --------
+
+const FAQ_ITEMS = [
+  {
+    q: "What is Paygrid?",
+    a: "Paygrid is a smart-account wallet UX layered on Particle Universal Accounts. You sign in once, then send, split, and receive value across supported chains with a single balance.",
+  },
+  {
+    q: "Which networks are supported?",
+    a: "Payments and requests settle on Arbitrum One in mainnet mode and Arbitrum Sepolia in testnet mode. The Universal Account can source funds from any chain Particle indexes.",
+  },
+  {
+    q: "Which tokens can I move?",
+    a: "USDC and ETH are the two settlement tokens. Your Universal Account picks the cheapest source assets you already hold and delivers the token the recipient asked for.",
+  },
+  {
+    q: "Do splits require multiple signatures?",
+    a: "No. A split is a single atomic Universal Account transaction. Everyone in the list settles together or nothing settles — one signature covers the batch.",
+  },
+  {
+    q: "How does Receive work?",
+    a: "Generate a request from the Receive tab. You get a QR code and a share link that opens a payer view where the sender pays directly from their wallet on the chosen chain.",
+  },
+  {
+    q: "Are the tourist packages real bookings?",
+    a: "The listings are demo itineraries wired to a platform treasury address so you can experience the end-to-end pay flow. Extending them to a real operator only requires swapping the booking address.",
+  },
+  {
+    q: "What are the fees?",
+    a: "Paygrid does not add a protocol fee. You pay the underlying network gas plus whatever Particle needs to source funds across chains when routing is required.",
+  },
+  {
+    q: "Where does my activity live?",
+    a: "The activity feed is stored locally in your browser. On-chain transactions remain independently verifiable on Arbiscan through the tx link on each entry.",
+  },
+];
+
+function FaqTab() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className="rounded-xl border border-panel-border bg-panel/60 p-5">
+      <div className="text-sm font-semibold mb-1">Frequently asked questions</div>
+      <div className="text-[11px] text-muted-foreground mb-4">
+        Everything you need to know about Paygrid, in one place.
+      </div>
+      <div className="space-y-2">
+        {FAQ_ITEMS.map((item, i) => {
+          const isOpen = open === i;
+          return (
+            <div
+              key={item.q}
+              className="rounded-lg border border-panel-border bg-background/40 overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="w-full flex items-center justify-between gap-3 text-left px-4 py-3 hover:bg-background/60 transition-colors cursor-pointer"
+              >
+                <span className="text-sm font-medium">{item.q}</span>
+                <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>
+                  +
+                </span>
+              </button>
+              {isOpen && (
+                <div className="px-4 pb-4 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 
