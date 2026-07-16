@@ -571,53 +571,90 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       </Tabs>
 
       {/* Activity feed */}
-      <div className="mt-6">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-          Recent activity
+      <div className="mt-8 rounded-2xl border border-panel-border bg-panel/70 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Activity
+            </div>
+            <div className="text-sm font-semibold">Recent transactions</div>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
+            {activity.length} event{activity.length === 1 ? "" : "s"}
+          </span>
         </div>
         {activity.length === 0 ? (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground text-center py-8 border border-dashed border-panel-border rounded-lg">
             Your payment history will appear here.
           </div>
         ) : (
-          <div className="space-y-1 max-h-40 overflow-auto pr-1">
-            {activity.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between text-xs border-b border-panel-border py-1"
-              >
-                <span className="min-w-0 pr-2">
-                  <Badge variant="secondary" className="mr-2">
-                    {a.kind}
-                  </Badge>
-                  {a.label}
-                  {a.hash && (
-                    <a
-                      href={a.txUrl ?? "#"}
-                      target={a.txUrl ? "_blank" : undefined}
-                      rel={a.txUrl ? "noreferrer" : undefined}
-                      className="ml-2 font-mono text-[color:var(--success)] hover:underline"
-                      title={a.hash}
-                      onClick={(event) => {
-                        if (!a.txUrl) event.preventDefault();
-                      }}
-                    >
-                      ✓ tx {shortHash(a.hash)} ↗
-                    </a>
-                  )}
-                </span>
-                <span className="text-muted-foreground">
-                  {a.amount} {a.token} ·{" "}
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            ))}
+          <div className="space-y-2 max-h-72 overflow-auto pr-1">
+            {activity.map((a) => {
+              const kindIcon =
+                a.kind === "pay" ? "↗" : a.kind === "receive" ? "↘" : "🧾";
+              const kindColor =
+                a.kind === "pay"
+                  ? "text-primary"
+                  : a.kind === "receive"
+                  ? "text-[color:var(--success)]"
+                  : "text-accent";
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 rounded-lg border border-panel-border bg-background/40 px-3 py-2.5 hover:border-primary/40 transition-colors"
+                >
+                  <div className={`size-9 rounded-lg bg-background/60 border border-panel-border flex items-center justify-center text-base ${kindColor}`}>
+                    {kindIcon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="uppercase text-[9px]">
+                        {a.kind}
+                      </Badge>
+                      <span className="text-xs font-medium truncate">
+                        {a.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                      <span>
+                        {new Date(a.at).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {a.hash && (
+                        <a
+                          href={a.txUrl ?? "#"}
+                          target={a.txUrl ? "_blank" : undefined}
+                          rel={a.txUrl ? "noreferrer" : undefined}
+                          className="font-mono text-[color:var(--success)] hover:underline"
+                          title={a.hash}
+                          onClick={(event) => {
+                            if (!a.txUrl) event.preventDefault();
+                          }}
+                        >
+                          ✓ {shortHash(a.hash)} ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold">
+                      {a.amount}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {a.token}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
 
       {/* Contact picker */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
