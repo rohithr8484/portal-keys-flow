@@ -91,9 +91,10 @@ function shortHash(hash: string) {
 const FEATURES = [
   { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
   { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
-  { key: "hotels", icon: "🏨", title: "Hotels (India)", desc: "Book curated stays across Indian cities — pay in USDC or ETH from your wallet." },
+  { key: "hotels", icon: "🧳", title: "Tourist packages", desc: "Book curated India tours — pay in USDC or ETH from your wallet." },
   { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets." },
   { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
+  { key: "faq", icon: "❓", title: "FAQ", desc: "How Paygrid works — fees, chains, and settlement." },
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
@@ -123,6 +124,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
   // ---------- Pay & Split state ----------
   const [payToken, setPayToken] = useState<Token>("USDC");
+  const [payName, setPayName] = useState("");
   const [payRecipients, setPayRecipients] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [paySplit, setPaySplit] = useState(true);
@@ -190,7 +192,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
         });
         pushActivity({
           kind: "pay",
-          label: `Split × ${payPreview.valid.length} in one tx`,
+          label: payName.trim()
+            ? `${payName.trim()} · split × ${payPreview.valid.length}`
+            : `Split × ${payPreview.valid.length} in one tx`,
           amount: payPreview.totalLabel,
           token: payToken,
           hash: res?.txId,
@@ -220,7 +224,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           const res = await onPay({ recipient: to, amount, token: payToken });
           pushActivity({
             kind: "pay",
-            label: `Sent to ${shortAddr(to)}`,
+            label: payName.trim()
+              ? `${payName.trim()} · ${shortAddr(to)}`
+              : `Sent to ${shortAddr(to)}`,
             amount,
             token: payToken,
             hash: res?.txId,
@@ -356,6 +362,11 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                   </Button>
                 </div>
               </div>
+              <Input
+                placeholder="Name (e.g. Team dinner, Alice, Rent March)"
+                value={payName}
+                onChange={(e) => setPayName(e.target.value)}
+              />
               <Textarea
                 rows={3}
                 placeholder="0xabc…, 0xdef… (comma or newline separated)"
@@ -469,8 +480,20 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
         {/* CONTACTS */}
         <TabsContent value="contacts" className="mt-0">
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
-              <div className="text-sm font-semibold">Save a contact</div>
+            <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(cName || cAddr || "new")}&backgroundType=gradientLinear`}
+                  alt="Avatar preview"
+                  className="size-14 rounded-full border border-panel-border bg-background/60"
+                />
+                <div>
+                  <div className="text-sm font-semibold">Save a contact</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    A unique avatar is generated from name & address.
+                  </div>
+                </div>
+              </div>
               <Input
                 placeholder="Name"
                 value={cName}
@@ -481,11 +504,26 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                 value={cAddr}
                 onChange={(e) => setCAddr(e.target.value)}
               />
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {["alpha", "nova", "kite", "lumen", "orbit"].map((seed) => (
+                    <img
+                      key={seed}
+                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${seed}&backgroundType=gradientLinear`}
+                      alt=""
+                      className="size-7 rounded-full border-2 border-panel/80"
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Sample avatars
+                </span>
+              </div>
               <Button onClick={addContact} className="w-full">
                 Add contact
               </Button>
             </div>
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-2">
+            <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-2">
               <div className="text-sm font-semibold">Saved</div>
               {contacts.length === 0 && (
                 <div className="text-xs text-muted-foreground">
@@ -495,15 +533,22 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
               {contacts.map((c) => (
                 <div
                   key={c.address}
-                  className="flex items-center justify-between border-b border-panel-border py-1 text-xs"
+                  className="flex items-center justify-between border-b border-panel-border py-2 text-xs"
                 >
-                  <div>
-                    <div className="font-semibold">{c.name}</div>
-                    <div className="font-mono text-muted-foreground">
-                      {shortAddr(c.address)}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(c.name + c.address)}&backgroundType=gradientLinear`}
+                      alt=""
+                      className="size-9 rounded-full border border-panel-border shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{c.name}</div>
+                      <div className="font-mono text-muted-foreground truncate">
+                        {shortAddr(c.address)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
                     <Button size="sm" onClick={() => pickContact(c)}>
                       Pay
                     </Button>
@@ -521,56 +566,99 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
           </div>
         </TabsContent>
 
+        {/* FAQ */}
+        <TabsContent value="faq" className="mt-0">
+          <FaqTab />
+        </TabsContent>
+
+
       </Tabs>
 
       {/* Activity feed */}
-      <div className="mt-6">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-          Recent activity
+      <div className="mt-8 rounded-2xl border border-panel-border bg-panel/70 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              Activity
+            </div>
+            <div className="text-sm font-semibold">Recent transactions</div>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
+            {activity.length} event{activity.length === 1 ? "" : "s"}
+          </span>
         </div>
         {activity.length === 0 ? (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground text-center py-8 border border-dashed border-panel-border rounded-lg">
             Your payment history will appear here.
           </div>
         ) : (
-          <div className="space-y-1 max-h-40 overflow-auto pr-1">
-            {activity.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between text-xs border-b border-panel-border py-1"
-              >
-                <span className="min-w-0 pr-2">
-                  <Badge variant="secondary" className="mr-2">
-                    {a.kind}
-                  </Badge>
-                  {a.label}
-                  {a.hash && (
-                    <a
-                      href={a.txUrl ?? "#"}
-                      target={a.txUrl ? "_blank" : undefined}
-                      rel={a.txUrl ? "noreferrer" : undefined}
-                      className="ml-2 font-mono text-[color:var(--success)] hover:underline"
-                      title={a.hash}
-                      onClick={(event) => {
-                        if (!a.txUrl) event.preventDefault();
-                      }}
-                    >
-                      ✓ tx {shortHash(a.hash)} ↗
-                    </a>
-                  )}
-                </span>
-                <span className="text-muted-foreground">
-                  {a.amount} {a.token} ·{" "}
-                  {new Date(a.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            ))}
+          <div className="space-y-2 max-h-72 overflow-auto pr-1">
+            {activity.map((a) => {
+              const kindIcon =
+                a.kind === "pay" ? "↗" : a.kind === "receive" ? "↘" : "🧾";
+              const kindColor =
+                a.kind === "pay"
+                  ? "text-primary"
+                  : a.kind === "receive"
+                  ? "text-[color:var(--success)]"
+                  : "text-accent";
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 rounded-lg border border-panel-border bg-background/40 px-3 py-2.5 hover:border-primary/40 transition-colors"
+                >
+                  <div className={`size-9 rounded-lg bg-background/60 border border-panel-border flex items-center justify-center text-base ${kindColor}`}>
+                    {kindIcon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="uppercase text-[9px]">
+                        {a.kind}
+                      </Badge>
+                      <span className="text-xs font-medium truncate">
+                        {a.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
+                      <span>
+                        {new Date(a.at).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {a.hash && (
+                        <a
+                          href={a.txUrl ?? "#"}
+                          target={a.txUrl ? "_blank" : undefined}
+                          rel={a.txUrl ? "noreferrer" : undefined}
+                          className="font-mono text-[color:var(--success)] hover:underline"
+                          title={a.hash}
+                          onClick={(event) => {
+                            if (!a.txUrl) event.preventDefault();
+                          }}
+                        >
+                          ✓ {shortHash(a.hash)} ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold">
+                      {a.amount}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {a.token}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
 
       {/* Contact picker */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
@@ -886,82 +974,101 @@ function ReceiveTab({
   );
 }
 
-// -------- Hotels tab: curated Indian city stays with wallet-pay in USDC/ETH --------
+// -------- Tourist packages tab: curated India tours with wallet-pay in ETH --------
 
 type Hotel = {
   id: string;
   name: string;
   city: string;
   tagline: string;
-  usdc: string; // amount in USDC
-  eth: string; // amount in ETH
-  emoji: string;
-  bookingAddress: string; // where funds settle for this listing
+  usdc: string;
+  eth: string;
+  image: string;
+  bookingAddress: string;
 };
 
-// Demo settlement address (platform treasury). Each listing withdraws
-// funds from the connected wallet directly to this address on pay.
+// Demo settlement address (platform treasury).
 const HOTEL_BOOKING_ADDRESS = "0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb";
 
 const HOTEL_LISTINGS: Hotel[] = [
   {
-    id: "mum-01",
-    name: "Marine Drive Skyline Suites",
-    city: "Mumbai, Maharashtra",
-    tagline: "Sea-facing rooms steps from the Queen's Necklace promenade.",
-    usdc: "1.20",
-    eth: "0.00045",
-    emoji: "🌊",
+    id: "golden-triangle",
+    name: "The Golden Triangle (5D/4N)",
+    city: "Delhi → Agra → Jaipur",
+    tagline: "Taj Mahal, Agra Fort, Amber Fort and Qutub Minar in one loop.",
+    usdc: "1.80",
+    eth: "0.00062",
+    image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
   {
-    id: "del-01",
-    name: "Chandni Chowk Heritage Haveli",
-    city: "New Delhi",
-    tagline: "Restored 19th-century haveli in Old Delhi's spice quarter.",
-    usdc: "0.95",
-    eth: "0.00036",
-    emoji: "🕌",
+    id: "enchanting-kerala",
+    name: "Enchanting Kerala (7D/6N)",
+    city: "Cochin → Munnar → Thekkady → Alleppey",
+    tagline: "Backwater houseboats, tea gardens and Periyar Wildlife Sanctuary.",
+    usdc: "2.40",
+    eth: "0.00088",
+    image: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
   {
-    id: "blr-01",
-    name: "Indiranagar Garden Lofts",
-    city: "Bengaluru, Karnataka",
-    tagline: "Boutique lofts in the cafe belt — fast Wi-Fi, quiet mornings.",
-    usdc: "0.80",
-    eth: "0.00030",
-    emoji: "🌿",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "jai-01",
-    name: "Amber Fort View Palace",
-    city: "Jaipur, Rajasthan",
-    tagline: "Pink-city rooftop with direct sightlines to the Amber Fort.",
-    usdc: "1.40",
-    eth: "0.00052",
-    emoji: "🏰",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "goa-01",
-    name: "Anjuna Cliff Beach Villas",
-    city: "Goa",
-    tagline: "Cliffside villa with a private path to Anjuna beach.",
-    usdc: "1.60",
-    eth: "0.00060",
-    emoji: "🌴",
-    bookingAddress: HOTEL_BOOKING_ADDRESS,
-  },
-  {
-    id: "udr-01",
-    name: "Lake Pichola Floating Retreat",
-    city: "Udaipur, Rajasthan",
-    tagline: "Suites on the water with sunrise views of the City Palace.",
+    id: "kashmir-valley",
+    name: "Kashmir Valley Retreat (6D/5N)",
+    city: "Srinagar → Gulmarg → Pahalgam",
+    tagline: "Dal Lake shikaras, the Gulmarg Gondola and Betaab Valley.",
     usdc: "2.10",
     eth: "0.00078",
-    emoji: "⛵",
+    image: "https://images.unsplash.com/photo-1566837945700-30057527ade0?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "spiritual-temple",
+    name: "Spiritual & Temple Circuit",
+    city: "Varanasi → Prayagraj → Ayodhya",
+    tagline: "Ganga Aarti, Kashi Vishwanath and the new Ram Mandir.",
+    usdc: "1.55",
+    eth: "0.00058",
+    image: "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "rajasthan-royal",
+    name: "Rajasthan Royal Tour (6D/5N)",
+    city: "Jaipur → Jodhpur → Udaipur",
+    tagline: "Mehrangarh Fort, City Palace and sunset on Lake Pichola.",
+    usdc: "2.00",
+    eth: "0.00074",
+    image: "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "goa-beach",
+    name: "Goa Beach Escape (4D/3N)",
+    city: "North & South Goa",
+    tagline: "Beaches, water sports, nightlife and Portuguese heritage.",
+    usdc: "1.30",
+    eth: "0.00048",
+    image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "north-east",
+    name: "North East Explorer (6D/5N)",
+    city: "Gangtok → Pelling → Darjeeling",
+    tagline: "Himalayan panoramas, monasteries and tea estates.",
+    usdc: "1.90",
+    eth: "0.00070",
+    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+  },
+  {
+    id: "andaman",
+    name: "Andaman Island Getaway (5D/4N)",
+    city: "Port Blair → Havelock → Neil Island",
+    tagline: "Radhanagar Beach, snorkeling and scuba diving.",
+    usdc: "2.60",
+    eth: "0.00096",
+    image: "https://images.unsplash.com/photo-1586500036706-41963de24d8b?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
 ];
@@ -994,7 +1101,7 @@ function HotelsTab({
         recipient: hotel.bookingAddress,
         amount,
         token,
-        memo: `Hotel booking · ${hotel.name} · ${hotel.city}`,
+        memo: `Package booking · ${hotel.name}`,
       });
       pushActivity({
         kind: "pay",
@@ -1018,51 +1125,55 @@ function HotelsTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-panel-border bg-background/40 p-4">
-        <div className="text-sm font-semibold mb-1">Curated stays across India</div>
+      <div className="rounded-xl border border-panel-border bg-panel/60 p-4">
+        <div className="text-sm font-semibold mb-1">Curated tourist packages across India</div>
         <div className="text-[11px] text-muted-foreground">
-          Every listing settles instantly to the property's booking wallet.
-          Pick USDC for stable pricing or ETH for a native settlement.
+          Every itinerary settles instantly to the operator's booking wallet
+          when you pay with ETH.
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {HOTEL_LISTINGS.map((hotel) => {
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
           return (
             <div
               key={hotel.id}
-              className="rounded-xl border border-panel-border bg-background/40 p-4 flex flex-col gap-3"
+              className="rounded-xl border border-panel-border bg-panel/60 overflow-hidden flex flex-col hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-start gap-3">
-                <div className="size-11 rounded-lg bg-gradient-to-br from-primary/25 to-accent/25 flex items-center justify-center text-2xl">
-                  {hotel.emoji}
+              <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
+                <img
+                  src={hotel.image}
+                  alt={hotel.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+              </div>
+              <div className="p-4 flex-1 flex flex-col gap-2">
+                <div className="text-sm font-semibold leading-snug">
+                  {hotel.name}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate">
-                    {hotel.name}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {hotel.city}
-                  </div>
+                <div className="text-[11px] text-primary font-medium">
+                  {hotel.city}
                 </div>
-              </div>
-              <div className="text-[11px] text-muted-foreground leading-relaxed">
-                {hotel.tagline}
-              </div>
-              <div className="text-[10px] font-mono text-muted-foreground truncate">
-                → {shortAddr(hotel.bookingAddress)}
-              </div>
-              <div className="mt-auto">
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={() => bookHotel(hotel, "ETH")}
-                  disabled={anyBusy}
-                >
-                  {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
-                </Button>
+                <div className="text-[11px] text-muted-foreground leading-relaxed">
+                  {hotel.tagline}
+                </div>
+                <div className="text-[10px] font-mono text-muted-foreground truncate">
+                  → {shortAddr(hotel.bookingAddress)}
+                </div>
+                <div className="mt-auto pt-2">
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={() => bookHotel(hotel, "ETH")}
+                    disabled={anyBusy}
+                  >
+                    {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
+                  </Button>
+                </div>
               </div>
             </div>
           );
@@ -1071,5 +1182,82 @@ function HotelsTab({
     </div>
   );
 }
+
+// -------- FAQ tab --------
+
+const FAQ_ITEMS = [
+  {
+    q: "What is Paygrid?",
+    a: "Paygrid is a smart-account wallet UX layered on Particle Universal Accounts. You sign in once, then send, split, and receive value across supported chains with a single balance.",
+  },
+  {
+    q: "Which networks are supported?",
+    a: "Payments and requests settle on Arbitrum One in mainnet mode and Arbitrum Sepolia in testnet mode. The Universal Account can source funds from any chain Particle indexes.",
+  },
+  {
+    q: "Which tokens can I move?",
+    a: "USDC and ETH are the two settlement tokens. Your Universal Account picks the cheapest source assets you already hold and delivers the token the recipient asked for.",
+  },
+  {
+    q: "Do splits require multiple signatures?",
+    a: "No. A split is a single atomic Universal Account transaction. Everyone in the list settles together or nothing settles — one signature covers the batch.",
+  },
+  {
+    q: "How does Receive work?",
+    a: "Generate a request from the Receive tab. You get a QR code and a share link that opens a payer view where the sender pays directly from their wallet on the chosen chain.",
+  },
+  {
+    q: "Are the tourist packages real bookings?",
+    a: "The listings are demo itineraries wired to a platform treasury address so you can experience the end-to-end pay flow. Extending them to a real operator only requires swapping the booking address.",
+  },
+  {
+    q: "What are the fees?",
+    a: "Paygrid does not add a protocol fee. You pay the underlying network gas plus whatever Particle needs to source funds across chains when routing is required.",
+  },
+  {
+    q: "Where does my activity live?",
+    a: "The activity feed is stored locally in your browser. On-chain transactions remain independently verifiable on Arbiscan through the tx link on each entry.",
+  },
+];
+
+function FaqTab() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className="rounded-xl border border-panel-border bg-panel/60 p-5">
+      <div className="text-sm font-semibold mb-1">Frequently asked questions</div>
+      <div className="text-[11px] text-muted-foreground mb-4">
+        Everything you need to know about Paygrid, in one place.
+      </div>
+      <div className="space-y-2">
+        {FAQ_ITEMS.map((item, i) => {
+          const isOpen = open === i;
+          return (
+            <div
+              key={item.q}
+              className="rounded-lg border border-panel-border bg-background/40 overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="w-full flex items-center justify-between gap-3 text-left px-4 py-3 hover:bg-background/60 transition-colors cursor-pointer"
+              >
+                <span className="text-sm font-medium">{item.q}</span>
+                <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>
+                  +
+                </span>
+              </button>
+              {isOpen && (
+                <div className="px-4 pb-4 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 
