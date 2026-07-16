@@ -124,6 +124,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
   // ---------- Pay & Split state ----------
   const [payToken, setPayToken] = useState<Token>("USDC");
+  const [payName, setPayName] = useState("");
   const [payRecipients, setPayRecipients] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [paySplit, setPaySplit] = useState(true);
