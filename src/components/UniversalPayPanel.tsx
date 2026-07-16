@@ -476,8 +476,20 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
         {/* CONTACTS */}
         <TabsContent value="contacts" className="mt-0">
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
-              <div className="text-sm font-semibold">Save a contact</div>
+            <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(cName || cAddr || "new")}&backgroundType=gradientLinear`}
+                  alt="Avatar preview"
+                  className="size-14 rounded-full border border-panel-border bg-background/60"
+                />
+                <div>
+                  <div className="text-sm font-semibold">Save a contact</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    A unique avatar is generated from name & address.
+                  </div>
+                </div>
+              </div>
               <Input
                 placeholder="Name"
                 value={cName}
@@ -488,11 +500,26 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                 value={cAddr}
                 onChange={(e) => setCAddr(e.target.value)}
               />
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {["alpha", "nova", "kite", "lumen", "orbit"].map((seed) => (
+                    <img
+                      key={seed}
+                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${seed}&backgroundType=gradientLinear`}
+                      alt=""
+                      className="size-7 rounded-full border-2 border-panel/80"
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Sample avatars
+                </span>
+              </div>
               <Button onClick={addContact} className="w-full">
                 Add contact
               </Button>
             </div>
-            <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-2">
+            <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-2">
               <div className="text-sm font-semibold">Saved</div>
               {contacts.length === 0 && (
                 <div className="text-xs text-muted-foreground">
@@ -502,15 +529,22 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
               {contacts.map((c) => (
                 <div
                   key={c.address}
-                  className="flex items-center justify-between border-b border-panel-border py-1 text-xs"
+                  className="flex items-center justify-between border-b border-panel-border py-2 text-xs"
                 >
-                  <div>
-                    <div className="font-semibold">{c.name}</div>
-                    <div className="font-mono text-muted-foreground">
-                      {shortAddr(c.address)}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(c.name + c.address)}&backgroundType=gradientLinear`}
+                      alt=""
+                      className="size-9 rounded-full border border-panel-border shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate">{c.name}</div>
+                      <div className="font-mono text-muted-foreground truncate">
+                        {shortAddr(c.address)}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 shrink-0">
                     <Button size="sm" onClick={() => pickContact(c)}>
                       Pay
                     </Button>
@@ -527,6 +561,12 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
             </div>
           </div>
         </TabsContent>
+
+        {/* FAQ */}
+        <TabsContent value="faq" className="mt-0">
+          <FaqTab />
+        </TabsContent>
+
 
       </Tabs>
 
