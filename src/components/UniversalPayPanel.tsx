@@ -22,10 +22,17 @@ import {
   CHAIN_META,
   type PaymentRequestRow,
 } from "@/lib/payment-requests";
+import {
+  logOnchainActivity,
+  ACTIVITY_NETWORKS,
+  type ActivityNetwork,
+} from "@/lib/activity-tracker";
 
 type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
+  /** Which chain the tracker contract should write to. */
+  network?: ActivityNetwork;
   onNotify?: (msg: string) => void;
   /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
@@ -78,6 +85,11 @@ type Activity = {
   at: number;
   hash?: string;
   txUrl?: string;
+  /** On-chain tracker log tx hash (DAppActivityTracker.logActivity). */
+  trackerHash?: string;
+  trackerUrl?: string;
+  trackerNetwork?: ActivityNetwork;
+  trackerStatus?: "pending" | "ok" | "failed";
 };
 
 function shortAddr(a: string) {
@@ -99,7 +111,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network = "mainnet", onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
   const [tab, setTab] = useState<FeatureKey>("pay");
 
@@ -109,10 +121,41 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
   const [contactOpen, setContactOpen] = useState(false);
 
-  const pushActivity = (a: Omit<Activity, "id" | "at">) =>
-    setActivity((prev) =>
-      [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30),
-    );
+  const trackerCfg = ACTIVITY_NETWORKS[network];
+
+  const pushActivity = (a: Omit<Activity, "id" | "at">) => {
+    const id = crypto.randomUUID();
+    const entry: Activity = {
+      ...a,
+      id,
+      at: Date.now(),
+      trackerNetwork: network,
+      trackerStatus: "pending",
+    };
+    setActivity((prev) => [entry, ...prev].slice(0, 30));
+
+    // Fire-and-forget: mirror this event onto the DAppActivityTracker
+    // contract on the currently-selected network. Failures never block
+    // the local feed — they just flip the badge to "failed".
+    const activityType = `${a.kind}:${a.token}`;
+    void logOnchainActivity(network, String(a.label ?? ""), activityType)
+      .then((res) => {
+        setActivity((prev) =>
+          prev.map((it) =>
+            it.id === id
+              ? { ...it, trackerHash: res.hash, trackerUrl: res.explorerUrl, trackerStatus: "ok" }
+              : it,
+          ),
+        );
+      })
+      .catch((err) => {
+        setActivity((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, trackerStatus: "failed" } : it)),
+        );
+        onNotify?.(`Tracker log skipped: ${err?.shortMessage ?? err?.message ?? "unknown error"}`);
+      });
+  };
+
 
   const requireAddress = () => {
     if (!address) {
@@ -575,13 +618,23 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
       </Tabs>
 
       {/* Activity feed */}
-      <div className="mt-8 rounded-2xl border border-panel-border bg-panel/70 p-5">
-        <div className="flex items-center justify-between mb-3">
+      <div className="mt-8 rounded-2xl border border-panel-border bg-gradient-to-br from-panel/80 to-panel/40 p-5 shadow-[0_0_40px_-20px_var(--primary)]">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Activity
             </div>
             <div className="text-sm font-semibold">Recent transactions</div>
+            <a
+              href={`${trackerCfg.explorer}/address/${trackerCfg.address}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+              title="On-chain tracker contract"
+            >
+              <span className="size-1.5 rounded-full bg-[color:var(--success)] animate-pulse" />
+              Tracker · {trackerCfg.label} · {shortAddr(trackerCfg.address)} ↗
+            </a>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
             {activity.length} event{activity.length === 1 ? "" : "s"}
@@ -640,6 +693,27 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                           }}
                         >
                           ✓ {shortHash(a.hash)} ↗
+                        </a>
+                      )}
+                      {a.trackerStatus === "pending" && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-panel-border text-muted-foreground">
+                          ⛓ logging…
+                        </span>
+                      )}
+                      {a.trackerStatus === "failed" && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-destructive/40 text-destructive">
+                          ⛓ log failed
+                        </span>
+                      )}
+                      {a.trackerStatus === "ok" && a.trackerHash && a.trackerUrl && (
+                        <a
+                          href={a.trackerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[9px] px-1.5 py-0.5 rounded border border-primary/40 text-primary hover:bg-primary/10 font-mono"
+                          title={`Tracker tx ${a.trackerHash}`}
+                        >
+                          ⛓ on-chain ↗
                         </a>
                       )}
                     </div>
