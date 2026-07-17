@@ -111,7 +111,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network = "mainnet", onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
   const [tab, setTab] = useState<FeatureKey>("pay");
 
@@ -121,10 +121,41 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
 
   const [contactOpen, setContactOpen] = useState(false);
 
-  const pushActivity = (a: Omit<Activity, "id" | "at">) =>
-    setActivity((prev) =>
-      [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30),
-    );
+  const trackerCfg = ACTIVITY_NETWORKS[network];
+
+  const pushActivity = (a: Omit<Activity, "id" | "at">) => {
+    const id = crypto.randomUUID();
+    const entry: Activity = {
+      ...a,
+      id,
+      at: Date.now(),
+      trackerNetwork: network,
+      trackerStatus: "pending",
+    };
+    setActivity((prev) => [entry, ...prev].slice(0, 30));
+
+    // Fire-and-forget: mirror this event onto the DAppActivityTracker
+    // contract on the currently-selected network. Failures never block
+    // the local feed — they just flip the badge to "failed".
+    const activityType = `${a.kind}:${a.token}`;
+    void logOnchainActivity(network, String(a.label ?? ""), activityType)
+      .then((res) => {
+        setActivity((prev) =>
+          prev.map((it) =>
+            it.id === id
+              ? { ...it, trackerHash: res.hash, trackerUrl: res.explorerUrl, trackerStatus: "ok" }
+              : it,
+          ),
+        );
+      })
+      .catch((err) => {
+        setActivity((prev) =>
+          prev.map((it) => (it.id === id ? { ...it, trackerStatus: "failed" } : it)),
+        );
+        onNotify?.(`Tracker log skipped: ${err?.shortMessage ?? err?.message ?? "unknown error"}`);
+      });
+  };
+
 
   const requireAddress = () => {
     if (!address) {
