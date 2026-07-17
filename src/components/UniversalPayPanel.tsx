@@ -618,13 +618,23 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network = "mainnet
       </Tabs>
 
       {/* Activity feed */}
-      <div className="mt-8 rounded-2xl border border-panel-border bg-panel/70 p-5">
-        <div className="flex items-center justify-between mb-3">
+      <div className="mt-8 rounded-2xl border border-panel-border bg-gradient-to-br from-panel/80 to-panel/40 p-5 shadow-[0_0_40px_-20px_var(--primary)]">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Activity
             </div>
             <div className="text-sm font-semibold">Recent transactions</div>
+            <a
+              href={`${trackerCfg.explorer}/address/${trackerCfg.address}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+              title="On-chain tracker contract"
+            >
+              <span className="size-1.5 rounded-full bg-[color:var(--success)] animate-pulse" />
+              Tracker · {trackerCfg.label} · {shortAddr(trackerCfg.address)} ↗
+            </a>
           </div>
           <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
             {activity.length} event{activity.length === 1 ? "" : "s"}
