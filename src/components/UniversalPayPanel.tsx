@@ -85,6 +85,11 @@ type Activity = {
   at: number;
   hash?: string;
   txUrl?: string;
+  /** On-chain tracker log tx hash (DAppActivityTracker.logActivity). */
+  trackerHash?: string;
+  trackerUrl?: string;
+  trackerNetwork?: ActivityNetwork;
+  trackerStatus?: "pending" | "ok" | "failed";
 };
 
 function shortAddr(a: string) {
