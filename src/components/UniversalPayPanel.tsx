@@ -695,6 +695,27 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network = "mainnet
                           ✓ {shortHash(a.hash)} ↗
                         </a>
                       )}
+                      {a.trackerStatus === "pending" && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-panel-border text-muted-foreground">
+                          ⛓ logging…
+                        </span>
+                      )}
+                      {a.trackerStatus === "failed" && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-destructive/40 text-destructive">
+                          ⛓ log failed
+                        </span>
+                      )}
+                      {a.trackerStatus === "ok" && a.trackerHash && a.trackerUrl && (
+                        <a
+                          href={a.trackerUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[9px] px-1.5 py-0.5 rounded border border-primary/40 text-primary hover:bg-primary/10 font-mono"
+                          title={`Tracker tx ${a.trackerHash}`}
+                        >
+                          ⛓ on-chain ↗
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
