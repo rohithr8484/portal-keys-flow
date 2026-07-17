@@ -31,6 +31,8 @@ import {
 type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
+  /** Which chain the tracker contract should write to. */
+  network?: ActivityNetwork;
   onNotify?: (msg: string) => void;
   /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
