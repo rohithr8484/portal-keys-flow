@@ -22,6 +22,11 @@ import {
   CHAIN_META,
   type PaymentRequestRow,
 } from "@/lib/payment-requests";
+import {
+  logOnchainActivity,
+  ACTIVITY_NETWORKS,
+  type ActivityNetwork,
+} from "@/lib/activity-tracker";
 
 type Props = {
   smartAccount: string | null;
