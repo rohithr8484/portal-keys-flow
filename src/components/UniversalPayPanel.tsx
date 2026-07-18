@@ -26,6 +26,8 @@ import {
 type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
+  /** Which contract to write to when "Store on-chain" is clicked. */
+  network?: "mainnet" | "testnet";
   onNotify?: (msg: string) => void;
   /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
@@ -99,9 +101,12 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
+  const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
+  const [storingId, setStoringId] = useState<string | null>(null);
+  const [storedMap, setStoredMap] = usePersist<Record<string, { hash: string; explorer: string; network: "mainnet" | "testnet" }>>("up_stored_activity", {});
 
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
   
@@ -113,6 +118,27 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
     setActivity((prev) =>
       [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30),
     );
+
+  const storeActivity = async (entry: Activity) => {
+    setStoringId(entry.id);
+    try {
+      const { storeActivityOnChain, TRACKERS } = await import("@/lib/activity-tracker");
+      const name = entry.label?.trim() || `${entry.kind} ${entry.amount} ${entry.token}`;
+      const activityType = `${entry.kind}:${entry.token}`;
+      const cfg = TRACKERS[activeNetwork];
+      onNotify?.(`Storing on ${cfg.chainName}…`);
+      const receipt = await storeActivityOnChain(activeNetwork, name, activityType);
+      setStoredMap((prev) => ({
+        ...prev,
+        [entry.id]: { hash: receipt.hash, explorer: receipt.explorer, network: activeNetwork },
+      }));
+      onNotify?.(`Stored on-chain on ${cfg.chainName}.`);
+    } catch (e: any) {
+      onNotify?.(e?.shortMessage ?? e?.message ?? "Failed to store on-chain");
+    } finally {
+      setStoringId(null);
+    }
+  };
 
   const requireAddress = () => {
     if (!address) {
@@ -583,9 +609,14 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
             </div>
             <div className="text-sm font-semibold">Recent transactions</div>
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
-            {activity.length} event{activity.length === 1 ? "" : "s"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary/30 text-primary/90">
+              Store target: {activeNetwork === "mainnet" ? "Arbitrum One" : "Arbitrum Sepolia"}
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
+              {activity.length} event{activity.length === 1 ? "" : "s"}
+            </span>
+          </div>
         </div>
         {activity.length === 0 ? (
           <div className="text-xs text-muted-foreground text-center py-8 border border-dashed border-panel-border rounded-lg">
@@ -644,13 +675,32 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, o
                       )}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-sm font-semibold">
-                      {a.amount}
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                    <div>
+                      <div className="text-sm font-semibold">{a.amount}</div>
+                      <div className="text-[10px] text-muted-foreground">{a.token}</div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {a.token}
-                    </div>
+                    {storedMap[a.id] ? (
+                      <a
+                        href={storedMap[a.id].explorer}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] px-2 py-1 rounded-md border border-[color:var(--success)]/50 text-[color:var(--success)] hover:bg-[color:var(--success)]/10 transition"
+                        title={`Stored on ${storedMap[a.id].network}`}
+                      >
+                        ⛓ On-chain ↗
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => storeActivity(a)}
+                        disabled={storingId === a.id}
+                        className="text-[10px] px-2 py-1 rounded-md border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title={`Store this entry on ${activeNetwork === "mainnet" ? "Arbitrum One" : "Arbitrum Sepolia"}`}
+                      >
+                        {storingId === a.id ? "Storing…" : "Store on-chain"}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

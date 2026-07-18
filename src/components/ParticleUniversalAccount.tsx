@@ -979,6 +979,7 @@ export function ParticleUniversalAccount() {
       <UniversalPayPanel
         smartAccount={isTestnet ? smartAccountAddress : (addresses?.evmSmartAccount ?? (ua ? eoa : null))}
         unifiedUsd={balance?.totalAmountInUSD ?? null}
+        network={isTestnet ? "testnet" : "mainnet"}
         onNotify={(msg: string) => setStatus(msg)}
         onPay={async ({ recipient, amount, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
