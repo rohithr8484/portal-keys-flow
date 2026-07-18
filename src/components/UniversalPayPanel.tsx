@@ -609,6 +609,15 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
             </div>
             <div className="text-sm font-semibold">Recent transactions</div>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary/30 text-primary/90">
+              Store target: {activeNetwork === "mainnet" ? "Arbitrum One" : "Arbitrum Sepolia"}
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
+              {activity.length} event{activity.length === 1 ? "" : "s"}
+            </span>
+          </div>
+        </div>
           <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
             {activity.length} event{activity.length === 1 ? "" : "s"}
           </span>
