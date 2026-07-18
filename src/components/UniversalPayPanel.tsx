@@ -670,13 +670,32 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                       )}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-sm font-semibold">
-                      {a.amount}
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                    <div>
+                      <div className="text-sm font-semibold">{a.amount}</div>
+                      <div className="text-[10px] text-muted-foreground">{a.token}</div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {a.token}
-                    </div>
+                    {storedMap[a.id] ? (
+                      <a
+                        href={storedMap[a.id].explorer}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] px-2 py-1 rounded-md border border-[color:var(--success)]/50 text-[color:var(--success)] hover:bg-[color:var(--success)]/10 transition"
+                        title={`Stored on ${storedMap[a.id].network}`}
+                      >
+                        ⛓ On-chain ↗
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => storeActivity(a)}
+                        disabled={storingId === a.id}
+                        className="text-[10px] px-2 py-1 rounded-md border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        title={`Store this entry on ${activeNetwork === "mainnet" ? "Arbitrum One" : "Arbitrum Sepolia"}`}
+                      >
+                        {storingId === a.id ? "Storing…" : "Store on-chain"}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
