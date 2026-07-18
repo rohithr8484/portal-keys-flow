@@ -101,9 +101,12 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay }: Props) {
   const address = smartAccount ?? "";
+  const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
+  const [storingId, setStoringId] = useState<string | null>(null);
+  const [storedMap, setStoredMap] = usePersist<Record<string, { hash: string; explorer: string; network: "mainnet" | "testnet" }>>("up_stored_activity", {});
 
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
   
