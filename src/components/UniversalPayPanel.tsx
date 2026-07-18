@@ -618,10 +618,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
             </span>
           </div>
         </div>
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-panel-border text-muted-foreground">
-            {activity.length} event{activity.length === 1 ? "" : "s"}
-          </span>
-        </div>
         {activity.length === 0 ? (
           <div className="text-xs text-muted-foreground text-center py-8 border border-dashed border-panel-border rounded-lg">
             Your payment history will appear here.
