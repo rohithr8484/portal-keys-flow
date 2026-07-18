@@ -26,6 +26,8 @@ import {
 type Props = {
   smartAccount: string | null;
   unifiedUsd: number | null;
+  /** Which contract to write to when "Store on-chain" is clicked. */
+  network?: "mainnet" | "testnet";
   onNotify?: (msg: string) => void;
   /** Single-recipient transfer through the Universal Account. */
   onPay?: (args: {
