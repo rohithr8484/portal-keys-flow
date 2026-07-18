@@ -119,6 +119,27 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
       [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30),
     );
 
+  const storeActivity = async (entry: Activity) => {
+    setStoringId(entry.id);
+    try {
+      const { storeActivityOnChain, TRACKERS } = await import("@/lib/activity-tracker");
+      const name = entry.label?.trim() || `${entry.kind} ${entry.amount} ${entry.token}`;
+      const activityType = `${entry.kind}:${entry.token}`;
+      const cfg = TRACKERS[activeNetwork];
+      onNotify?.(`Storing on ${cfg.chainName}…`);
+      const receipt = await storeActivityOnChain(activeNetwork, name, activityType);
+      setStoredMap((prev) => ({
+        ...prev,
+        [entry.id]: { hash: receipt.hash, explorer: receipt.explorer, network: activeNetwork },
+      }));
+      onNotify?.(`Stored on-chain on ${cfg.chainName}.`);
+    } catch (e: any) {
+      onNotify?.(e?.shortMessage ?? e?.message ?? "Failed to store on-chain");
+    } finally {
+      setStoringId(null);
+    }
+  };
+
   const requireAddress = () => {
     if (!address) {
       onNotify?.("Connect a wallet first");
