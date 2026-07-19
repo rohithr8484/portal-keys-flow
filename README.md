@@ -263,37 +263,42 @@ These public client-side credentials are required for Particle Network Universal
 # Project Structure
 
 ```text
-src/
-├── app/
-│   ├── page.tsx
-│   ├── layout.tsx
-│   └── globals.css
+├── contracts/
+│   └── DAppActivityTracker.sol
 │
-├── components/
-│   ├── PayModal
-│   ├── SplitModal
-│   ├── ReceiveModal
-│   ├── TravelPackages
-│   ├── Contacts
-│   ├── Activity
-│   ├── Transactions
-│   ├── FAQ
-│   ├── QRCode
-│   └── DestinationCard
-│
-├── hooks/
-│   ├── usePayments.ts
-│   ├── useActivity.ts
-│   ├── useTransactions.ts
-│   ├── useContacts.ts
-│   ├── usePackages.ts
-│   └── useUniversalAccount.ts
-│
-└── lib/
-    ├── constants.ts
-    ├── particle.ts
-    ├── links.ts
-    └── utils.ts
+├── src/
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── ParticleUniversalAccount.tsx
+│   │   └── UniversalPayPanel.tsx
+│   │
+│   ├── hooks/
+│   │   └── use-mobile.tsx
+│   │
+│   ├── integrations/
+│   │   └── supabase/
+│   │
+│   ├── lib/
+│   │   ├── api/
+│   │   ├── activity-tracker.ts
+│   │   ├── amounts.ts
+│   │   ├── config.server.ts
+│   │   ├── error-capture.ts
+│   │   ├── error-page.ts
+│   │   ├── lovable-error-reporting.ts
+│   │   ├── particle-config.ts
+│   │   ├── payment-requests.ts
+│   │   ├── split.ts
+│   │   └── utils.ts
+│   │
+│   ├── routes/
+│   │   ├── README.md
+│   │   ├── __root.tsx
+│   │   ├── index.tsx
+│   │   └── pay.$requestId.tsx
+│   │
+│   └── types/
+│       └── particle-sdk.d.ts
 ```
 
 ---
