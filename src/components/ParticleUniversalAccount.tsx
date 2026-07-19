@@ -181,11 +181,11 @@ export function ParticleUniversalAccount() {
     if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
       setNetwork(storedNetwork);
     }
-    // Only one testnet signer path is supported now — force 7702 regardless of legacy storage.
-    if (storedMethod !== "zerodev-7702") {
-      localStorage.setItem("ua_testnet_method", "zerodev-7702");
+    if (storedMethod === "zerodev-7702" || storedMethod === "zerodev-particle") {
+      setTestnetMethod(storedMethod);
+    } else {
+      setTestnetMethod("zerodev-7702");
     }
-    setTestnetMethod("zerodev-7702");
     setCoins(Number(localStorage.getItem("ua_coins") || 0));
     setUsdc(Number(localStorage.getItem("ua_usdc") || 0));
     setXp(Number(localStorage.getItem("ua_xp") || 0));
