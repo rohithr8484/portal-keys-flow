@@ -31,7 +31,7 @@ The platform includes:
 
 ---
 
-# Pay with USDC & ETH
+## Pay with USDC & ETH
 
 Make secure crypto payments in **USDC** or **ETH** to hotels, restaurants, cafés, transport providers, tour operators, local guides, and fellow travelers accepting USDC and ETH
 
