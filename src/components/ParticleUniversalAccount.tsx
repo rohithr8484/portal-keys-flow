@@ -1339,7 +1339,7 @@ export function ParticleUniversalAccount() {
                     disabled={signingIn}
                     className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50"
                   >
-                    {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
+                    {signingIn ? "Signing in…" : "Sign in with Metamask"}
                   </button>
                   <button
                     onClick={() => signInTestnet("zerodev-particle")}
