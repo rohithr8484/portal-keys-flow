@@ -854,9 +854,18 @@ function ReceiveTab({
             value={invoiceType}
             onChange={(e) => setInvoiceType(e.target.value)}
           >
-            {["Food", "Accomodation", "TV Subscription", "Refund", "Tip"].map((t) => (
-              <option key={t}>{t}</option>
-            ))}
+            <option value="Invoice">🧾 Invoice</option>
+            <option value="Food">🍽️ Food</option>
+            <option value="Accomodation">🏨 Accomodation</option>
+            <option value="TV Subscription">📺 TV Subscription</option>
+            <option value="Refund">↩️ Refund</option>
+            <option value="Tip">💰 Tip</option>
+            <option value="Salary">💼 Salary</option>
+            <option value="Rent">🔑 Rent</option>
+            <option value="Freelance">🧑‍💻 Freelance</option>
+            <option value="Donation">❤️ Donation</option>
+            <option value="Service">🛠️ Service</option>
+            <option value="Product">📦 Product</option>
           </select>
         </label>
         <div className="grid grid-cols-2 gap-2">
