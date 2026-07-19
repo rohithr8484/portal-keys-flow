@@ -553,10 +553,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
           </div>
         </TabsContent>
 
-        {/* FAQ */}
-        <TabsContent value="faq" className="mt-0">
-          <FaqTab />
-        </TabsContent>
       </Tabs>
 
       {/* Activity feed */}
