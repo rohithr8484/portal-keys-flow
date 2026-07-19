@@ -202,12 +202,10 @@ Particle Universal Account  +  ZeroDev
 PayGrid Dashboard
         │
  ┌────────────┬─────────────┬──────────────┬─────────────┐
- │            │             │              │
- ▼            ▼             ▼              ▼
-Pay      Split Bills   Packages      Receive
-        │
-        ▼
-Preview → Confirm → Complete
+ │            │             │              │             |
+ ▼            ▼             ▼              ▼             ▼             
+Pay      Split Bills   Packages      Receive          Contacts
+        
 ```
 
 Users connect their wallet through **Particle Network Universal Accounts**.
