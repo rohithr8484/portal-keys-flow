@@ -1176,7 +1176,9 @@ function HotelsTab({
         value: 0n,
         abi: viem.erc20Abi,
         functionName: "transfer",
-        args: [hotel.bookingAddress as `0x${string}`, FLEX.AMOUNT],
+        // FLEX.AMOUNT is a routing placeholder that the router substitutes at
+        // execution time with the actual amount deposited by the payer.
+        args: [hotel.bookingAddress as `0x${string}`, FLEX.AMOUNT as unknown as bigint],
       });
       const { smartRoutingAddress, estimatedFees } = await createSmartRoutingAddress({
         destChain: viemChains.arbitrum,
