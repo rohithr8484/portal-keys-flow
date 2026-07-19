@@ -126,7 +126,7 @@ const FEATURES = [
     title: "Contacts",
     desc: "Save payees once and send to them by name, not a 0x address.",
   },
-  { key: "faq", icon: "❓", title: "FAQ", desc: "How Paygrid works — fees, chains, and settlement." },
+  
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
