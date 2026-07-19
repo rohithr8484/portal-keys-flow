@@ -33,9 +33,9 @@ The platform includes:
 
 # Pay with USDC & ETH
 
-Make secure crypto payments in **USDC** or **ETH** to hotels, restaurants, cafés, transport providers, tour operators, local guides, and fellow travelers.
+Make secure crypto payments in **USDC** or **ETH** to hotels, restaurants, cafés, transport providers, tour operators, local guides, and fellow travelers accepting USDC and ETH
 
-Whether you're paying for accommodation, transportation, food, shopping, or guided travel experiences, PayGrid keeps every payment simple and secure.
+Whether you're paying for transportation, food, shopping, or guided travel experiences, PayGrid keeps every payment simple and secure.
 
 ---
 
