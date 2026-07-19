@@ -1304,7 +1304,7 @@ function HotelsTab({
                   <div className="text-[11px] text-accent font-medium">{hotel.city}</div>
                   <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
                   <div className="text-[10px] font-mono text-muted-foreground truncate">
-                    → {shortAddr(hotel.bookingAddress)} · USDC on Arb One
+                    → {shortAddr(hotel.bookingAddress)} · {hotel.asset} on Arb One
                   </div>
                   <div className="mt-auto pt-2">
                     <Button
@@ -1314,9 +1314,12 @@ function HotelsTab({
                       onClick={() => bookViaRouting(hotel)}
                       disabled={anyBusy}
                     >
-                      {routeBusy ? "Generating…" : `Pay ${hotel.usdc} USDC via routing`}
+                      {routeBusy
+                        ? "Generating…"
+                        : `Pay ${hotel.asset === "ETH" ? hotel.eth : hotel.usdc} ${hotel.asset} via routing`}
                     </Button>
                   </div>
+
                 </div>
               </div>
             );
