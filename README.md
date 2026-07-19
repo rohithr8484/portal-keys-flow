@@ -31,7 +31,7 @@ The platform includes:
 
 ---
 
-## Pay with USDC & ETH
+### Pay with USDC & ETH
 
 Make secure crypto payments in **USDC** or **ETH** to hotels, restaurants, cafés, transport providers, tour operators, local guides, and fellow travelers accepting USDC and ETH
 
@@ -39,7 +39,7 @@ Whether you're paying for transportation, food, shopping, or guided travel exper
 
 ---
 
-# Split Travel Expenses
+### Split Travel Expenses
 
 Traveling with friends or family?
 
@@ -56,7 +56,7 @@ Everyone pays only their share with a few taps.
 
 ---
 
-# Receive Crypto
+### Receive Crypto
 
 Receive **USDC** or **ETH** instantly by generating a QR code or sharing a payment link.
 
@@ -70,7 +70,7 @@ Perfect for collecting money for:
 
 ---
 
-# Discover India
+### Discover India
 
 Explore curated travel experiences across India's most popular destinations.
 
@@ -89,13 +89,13 @@ Each destination includes highlights, pricing, and the ability to pay using **US
 
 ---
 
-# Saved Contacts
+### Saved Contacts
 
 Store frequently used travel companions, hotels, merchants, and guides for faster crypto payments throughout your journey.
 
 ---
 
-# Activity
+### Activity
 
 Every crypto payment is automatically recorded in an activity feed.
 
@@ -109,7 +109,7 @@ Review:
 
 ---
 
-# Transactions
+### Transactions
 
 Manage your crypto transactions from one dashboard.
 
@@ -121,7 +121,7 @@ Current capabilities include:
 
 ---
 
-# Smart Contracts
+### Smart Contracts
 
 PayGrid is designed to leverage smart contract capabilities for recording activity of seamless travel payments and automated on-chain interactions.
 
@@ -129,7 +129,7 @@ PayGrid is designed to leverage smart contract capabilities for recording activi
 
 ---
 
-# Help Center
+### Help Center
 
 An integrated FAQ helps users understand:
 
