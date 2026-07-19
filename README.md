@@ -60,7 +60,7 @@ Everyone pays only their share with a few taps.
 
 Receive **USDC** or **ETH** instantly by generating a QR code or sharing a payment link.
 
-Perfect for collecting money for:
+For collecting money for:
 
 - Shared hotel bookings
 - Group activities
