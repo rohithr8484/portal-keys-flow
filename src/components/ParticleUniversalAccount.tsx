@@ -181,11 +181,11 @@ export function ParticleUniversalAccount() {
     if (storedNetwork === "mainnet" || storedNetwork === "testnet") {
       setNetwork(storedNetwork);
     }
-    // Only one testnet signer path is supported now — force 7702 regardless of legacy storage.
-    if (storedMethod !== "zerodev-7702") {
-      localStorage.setItem("ua_testnet_method", "zerodev-7702");
+    if (storedMethod === "zerodev-7702" || storedMethod === "zerodev-particle") {
+      setTestnetMethod(storedMethod);
+    } else {
+      setTestnetMethod("zerodev-7702");
     }
-    setTestnetMethod("zerodev-7702");
     setCoins(Number(localStorage.getItem("ua_coins") || 0));
     setUsdc(Number(localStorage.getItem("ua_usdc") || 0));
     setXp(Number(localStorage.getItem("ua_xp") || 0));
@@ -294,6 +294,40 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
+  // Mainnet: sign in via Particle Web3 login. Exposes Particle's EIP-1193
+  // provider as window.ethereum so the existing MetaMask-based signing paths
+  // (which read window.ethereum) keep working unchanged.
+  const connectParticleMainnet = useCallback(async () => {
+    setError(null);
+    try {
+      setLoading(true);
+      const [{ ParticleNetwork }, { ParticleProvider }] = await Promise.all([
+        import("@particle-network/auth"),
+        import("@particle-network/provider"),
+      ]);
+      const particle = new ParticleNetwork({
+        projectId: PARTICLE_PROJECT_ID,
+        clientKey: PARTICLE_CLIENT_KEY,
+        appId: PARTICLE_APP_ID,
+        chainName: "arbitrum" as any,
+        chainId: ARBITRUM_MAINNET.chainId,
+      });
+      if (!particle.auth.isLogin()) {
+        await particle.auth.login();
+      }
+      const particleProvider = new ParticleProvider(particle.auth);
+      const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
+      if (!accounts?.[0]) throw new Error("Particle returned no account");
+      // Route downstream ethers.BrowserProvider(window.ethereum) calls through Particle.
+      (window as any).ethereum = particleProvider;
+      setEoa(accounts[0]);
+    } catch (e: any) {
+      setError(e?.message ?? "Particle sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
     setEoa(null);
     setUa(null);
@@ -312,6 +346,10 @@ export function ParticleUniversalAccount() {
     setSigningIn(true);
     setError(null);
     setStatus(null);
+    setTestnetMethod(method);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ua_testnet_method", method);
+    }
     try {
       if (method === "zerodev-7702") {
         const account = await getLocal7702Account();
@@ -1275,7 +1313,7 @@ export function ParticleUniversalAccount() {
 
               {isTestnet ? (
                 <div
-                  className="flex justify-center max-w-md mx-auto animate-fade-in"
+                  className="flex flex-col gap-3 max-w-md mx-auto animate-fade-in"
                   style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
                 >
                   <button
@@ -1285,17 +1323,35 @@ export function ParticleUniversalAccount() {
                   >
                     {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
                   </button>
+                  <button
+                    onClick={() => signInTestnet("zerodev-particle")}
+                    disabled={signingIn}
+                    className="w-full inline-flex items-center justify-center rounded-xl border border-panel-border bg-panel/60 px-5 py-3 text-sm font-semibold text-foreground hover:bg-panel hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50"
+                  >
+                    {signingIn ? "Signing in…" : "Sign in with Particle Web3 Login"}
+                  </button>
                 </div>
               ) : (
-                <button
-                  onClick={connect}
-                  disabled={loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50 animate-fade-in"
-                  style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
-                >
-                  {loading ? "Connecting…" : "Sign in with MetaMask"}
-                </button>
+                <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  <button
+                    onClick={connect}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50 animate-fade-in"
+                    style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+                  >
+                    {loading ? "Connecting…" : "Sign in with MetaMask"}
+                  </button>
+                  <button
+                    onClick={connectParticleMainnet}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center rounded-xl border border-panel-border bg-panel/60 px-7 py-3 text-sm font-semibold text-foreground hover:bg-panel hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 animate-fade-in"
+                    style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
+                  >
+                    {loading ? "Connecting…" : "Sign in with Particle Web3 Login"}
+                  </button>
+                </div>
               )}
+
 
               {error && <p className="mt-4 text-sm text-destructive animate-fade-in">{error}</p>}
             </div>
