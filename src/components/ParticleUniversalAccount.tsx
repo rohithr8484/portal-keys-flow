@@ -450,6 +450,46 @@ export function ParticleUniversalAccount() {
     if (ua) refresh();
   }, [ua, refresh]);
 
+  // ---------- Unified spendable: poll actual ETH + USDC balance ----------
+  // Mainnet: reads the connected EOA on Arbitrum One (payments settle from it).
+  // Testnet: reads the local 7702 smart account on Arbitrum Sepolia.
+  useEffect(() => {
+    const account = isTestnet ? smartAccountAddress : eoa;
+    if (!account || !ethers.isAddress(account)) return;
+    let cancelled = false;
+    const RPC = isTestnet ? ARB_SEPOLIA.rpcUrl : "https://arb1.arbitrum.io/rpc";
+    const USDC = isTestnet
+      ? "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+      : "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    const provider = new ethers.JsonRpcProvider(RPC);
+    const erc20 = new ethers.Interface(["function balanceOf(address) view returns (uint256)"]);
+    const load = async () => {
+      try {
+        const [ethBal, usdcRaw, priceRes] = await Promise.all([
+          provider.getBalance(account),
+          provider.call({
+            to: USDC,
+            data: erc20.encodeFunctionData("balanceOf", [account]),
+          }),
+          fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+            .then((r) => r.json())
+            .catch(() => null),
+        ]);
+        if (cancelled) return;
+        const ethPrice = priceRes?.ethereum?.usd ?? (isTestnet ? 0 : 3500);
+        const ethUsd = Number(ethers.formatEther(ethBal)) * ethPrice;
+        const usdcUsd = Number(ethers.formatUnits(BigInt(usdcRaw || "0x0"), 6));
+        setBalance({ totalAmountInUSD: ethUsd + usdcUsd });
+      } catch {}
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [isTestnet, smartAccountAddress, eoa]);
+
   // ---------- Mainnet: Particle UA transfer ----------
   const sendMainnetTx = useCallback(async () => {
     if (!ua || !eoa) return;
