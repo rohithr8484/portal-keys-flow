@@ -1062,7 +1062,11 @@ const HOTEL_LISTINGS: Hotel[] = [
 // The user sends USDC on any supported source chain to the generated smart
 // routing address, and ZeroDev bridges/settles it as USDC on Arbitrum One
 // to the platform treasury (HOTEL_BOOKING_ADDRESS).
-type RoutingHotel = Omit<Hotel, "eth"> & { usdcRouting: true };
+type RoutingHotel = Omit<Hotel, "eth"> & {
+  usdcRouting: true;
+  asset: "USDC" | "ETH";
+  eth?: string;
+};
 
 const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
   {
@@ -1074,6 +1078,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     image: "https://images.unsplash.com/photo-1580289143186-03e546ed7ceb?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "USDC",
   },
   {
     id: "hampi-ruins",
@@ -1084,6 +1089,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     image: "https://images.unsplash.com/photo-1580889240911-ede6e04dc849?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "USDC",
   },
   {
     id: "ranthambore-safari",
@@ -1091,9 +1097,11 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Sawai Madhopur → Ranthambore",
     tagline: "Two morning safaris, jungle fort trek and Chambal river drive.",
     usdc: "2.10",
+    eth: "0.00078",
     image: "https://images.unsplash.com/photo-1549366021-9f761d450615?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "ETH",
   },
   {
     id: "khajuraho-heritage",
@@ -1101,11 +1109,14 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Khajuraho → Orchha → Gwalior",
     tagline: "UNESCO temples, Bundela palaces and the fortified skyline of Gwalior.",
     usdc: "1.95",
+    eth: "0.00072",
     image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "ETH",
   },
 ];
+
 
 type RoutingModalState = {
   hotel: RoutingHotel;
@@ -1171,44 +1182,66 @@ function HotelsTab({
           import("viem"),
         ]);
       const ZERODEV_PROJECT_ID = "263a14d6-19fe-4e98-8ba4-02b793c1aa0a";
+
+      const isEth = hotel.asset === "ETH";
+
       const erc20Call = createCall({
         target: FLEX.TOKEN_ADDRESS,
         value: 0n,
         abi: viem.erc20Abi,
         functionName: "transfer",
-        // FLEX.AMOUNT is a routing placeholder that the router substitutes at
-        // execution time with the actual amount deposited by the payer.
         args: [hotel.bookingAddress as `0x${string}`, FLEX.AMOUNT as unknown as bigint],
       });
+      const nativeCall = createCall({
+        target: hotel.bookingAddress as `0x${string}`,
+        value: FLEX.NATIVE_AMOUNT as unknown as bigint,
+      });
+
+      const actions = isEth
+        ? { NATIVE: { action: [nativeCall], fallBack: [nativeCall] } }
+        : { USDC: { action: [erc20Call], fallBack: [erc20Call] } };
+
+      const srcTokens = isEth
+        ? [
+            { tokenType: "NATIVE" as const, chain: viemChains.arbitrum },
+            { tokenType: "NATIVE" as const, chain: viemChains.optimism },
+            { tokenType: "NATIVE" as const, chain: viemChains.base },
+            { tokenType: "NATIVE" as const, chain: viemChains.mainnet },
+          ]
+        : [
+            { tokenType: "USDC" as const, chain: viemChains.arbitrum },
+            { tokenType: "USDC" as const, chain: viemChains.optimism },
+            { tokenType: "USDC" as const, chain: viemChains.base },
+            { tokenType: "USDC" as const, chain: viemChains.mainnet },
+          ];
+
       const { smartRoutingAddress, estimatedFees } = await createSmartRoutingAddress({
         destChain: viemChains.arbitrum,
         owner: hotel.bookingAddress as `0x${string}`,
         slippage: 5000,
-        actions: {
-          USDC: { action: [erc20Call], fallBack: [erc20Call] },
-        },
-        srcTokens: [
-          { tokenType: "USDC", chain: viemChains.arbitrum },
-          { tokenType: "USDC", chain: viemChains.optimism },
-          { tokenType: "USDC", chain: viemChains.base },
-          { tokenType: "USDC", chain: viemChains.mainnet },
-        ],
+        actions,
+        srcTokens,
         config: { baseUrl: `${SMART_ROUTING_ADDRESS_SERVER_URL}/${ZERODEV_PROJECT_ID}` },
       });
       setRoutingModal({ hotel, address: smartRoutingAddress, fees: estimatedFees });
       pushActivity({
         kind: "pay",
         label: `Routing address for ${hotel.name}`,
-        amount: hotel.usdc,
-        token: "USDC",
+        amount: isEth ? (hotel.eth ?? "0") : hotel.usdc,
+        token: isEth ? "ETH" : "USDC",
       });
-      onNotify?.("Smart routing address ready — send USDC on any supported chain.");
+      onNotify?.(
+        isEth
+          ? "Smart routing address ready — send ETH on any supported chain."
+          : "Smart routing address ready — send USDC on any supported chain."
+      );
     } catch (e: any) {
       onNotify?.(e?.message ?? "Failed to create smart routing address");
     } finally {
       setBusyKey(null);
     }
   };
+
 
   const showRouting = network === "mainnet";
 
@@ -1271,7 +1304,7 @@ function HotelsTab({
                   <div className="text-[11px] text-accent font-medium">{hotel.city}</div>
                   <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
                   <div className="text-[10px] font-mono text-muted-foreground truncate">
-                    → {shortAddr(hotel.bookingAddress)} · USDC on Arb One
+                    → {shortAddr(hotel.bookingAddress)} · {hotel.asset} on Arb One
                   </div>
                   <div className="mt-auto pt-2">
                     <Button
@@ -1281,9 +1314,12 @@ function HotelsTab({
                       onClick={() => bookViaRouting(hotel)}
                       disabled={anyBusy}
                     >
-                      {routeBusy ? "Generating…" : `Pay ${hotel.usdc} USDC via routing`}
+                      {routeBusy
+                        ? "Generating…"
+                        : `Pay ${hotel.asset === "ETH" ? hotel.eth : hotel.usdc} ${hotel.asset} via routing`}
                     </Button>
                   </div>
+
                 </div>
               </div>
             );
@@ -1293,11 +1329,18 @@ function HotelsTab({
       <Dialog open={!!routingModal} onOpenChange={(o) => !o && setRoutingModal(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send USDC to complete your booking</DialogTitle>
+            <DialogTitle>
+              Send {routingModal?.hotel.asset ?? "USDC"} to complete your booking
+            </DialogTitle>
             <DialogDescription>
-              Send at least {routingModal?.hotel.usdc} USDC to the address below on any supported chain
-              (Arbitrum, Optimism, Base, Ethereum). ZeroDev will route it to the operator on Arbitrum One.
+              Send at least{" "}
+              {routingModal?.hotel.asset === "ETH"
+                ? `${routingModal?.hotel.eth} ETH`
+                : `${routingModal?.hotel.usdc} USDC`}{" "}
+              to the address below on any supported chain (Arbitrum, Optimism, Base, Ethereum). ZeroDev
+              will route it to the operator on Arbitrum One.
             </DialogDescription>
+
           </DialogHeader>
           {routingModal && (
             <div className="space-y-3">

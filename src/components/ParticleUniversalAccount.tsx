@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib/particle-config";
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
-import paygridLogo from "@/assets/paygrid-logo.png";
+
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
 type SdkModule = typeof import("@particle-network/universal-account-sdk");
@@ -1025,19 +1025,6 @@ export function ParticleUniversalAccount() {
       </div>
 
       <header className="mb-10 text-center relative">
-        <div className="flex justify-center mb-5">
-          <div className="relative inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur-xl shadow-lg shadow-primary/10">
-            <img
-              src={paygridLogo}
-              alt="Paygrid"
-              className="h-8 w-auto drop-shadow-[0_0_12px_rgba(59,130,246,0.35)]"
-            />
-            <div className="hidden sm:block text-left leading-tight border-l border-panel-border/60 pl-3">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Powered by Particle</div>
-              <div className="text-sm font-bold tracking-tight">Universal Accounts</div>
-            </div>
-          </div>
-        </div>
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-5">
           <span className="size-1.5 rounded-full bg-success animate-pulse" />
