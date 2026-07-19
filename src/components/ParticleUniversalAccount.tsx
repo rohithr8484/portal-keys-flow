@@ -165,6 +165,7 @@ export function ParticleUniversalAccount() {
   const [streak, setStreak] = useState<number>(0);
   const [platformAddress, setPlatformAddress] = useState<string | null>(null);
   const [platformBalance, setPlatformBalance] = useState<string | null>(null);
+  const [feeRecipientBalance, setFeeRecipientBalance] = useState<string | null>(null);
   const [testnetSignedIn, setTestnetSignedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const method = (localStorage.getItem("ua_testnet_method") as TestnetMethod) || "zerodev-7702";
@@ -492,6 +493,29 @@ export function ParticleUniversalAccount() {
       window.clearInterval(id);
     };
   }, [isTestnet, smartAccountAddress, eoa]);
+
+  // Poll ETH balance of the platform fee recipient on the active network.
+  useEffect(() => {
+    let cancelled = false;
+    const RPC = isTestnet ? ARB_SEPOLIA.rpcUrl : "https://arb1.arbitrum.io/rpc";
+    const provider = new ethers.JsonRpcProvider(RPC);
+    const load = async () => {
+      try {
+        const bal = await provider.getBalance(PLATFORM_FEE_RECIPIENT);
+        if (!cancelled) setFeeRecipientBalance(ethers.formatEther(bal));
+      } catch {
+        if (!cancelled) setFeeRecipientBalance(null);
+      }
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [isTestnet]);
+
+
 
   // ---------- Mainnet: Particle UA transfer ----------
   const sendMainnetTx = useCallback(async () => {
@@ -1267,6 +1291,9 @@ export function ParticleUniversalAccount() {
                   <div className="text-muted-foreground break-all">
                     {platformAddress} · balance {platformBalance ?? "…"} ETH
                   </div>
+                  <div className="text-muted-foreground break-all mt-1">
+                    Platform fee recipient · {PLATFORM_FEE_RECIPIENT} · balance {feeRecipientBalance ?? "…"} ETH
+                  </div>
                 </div>
                 <a href={ARB_SEPOLIA.faucet} target="_blank" rel="noreferrer" className="underline text-primary">
                   Fund via faucet →
@@ -1304,6 +1331,27 @@ export function ParticleUniversalAccount() {
             </div>
           </div>
         )}
+        {!isTestnet && (
+          <div className="mt-6">
+            <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
+              <div>
+                <div className="font-semibold text-foreground">🏦 Platform Treasury (Arbitrum One)</div>
+                <div className="text-muted-foreground break-all">
+                  {PLATFORM_FEE_RECIPIENT} · balance {feeRecipientBalance ?? "…"} ETH
+                </div>
+              </div>
+              <a
+                href={`https://arbiscan.io/address/${PLATFORM_FEE_RECIPIENT}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline text-primary"
+              >
+                View on Arbiscan →
+              </a>
+            </div>
+          </div>
+        )}
+
       </section>
 
       {missingAppId && !isTestnet && (

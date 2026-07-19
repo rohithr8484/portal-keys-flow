@@ -1086,7 +1086,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Hampi → Badami → Pattadakal",
     tagline: "Vijayanagara boulders, Virupaksha temple and Chalukyan rock-cut caves.",
     usdc: "1.75",
-    image: "https://images.unsplash.com/photo-1600100397888-e0a89e91d51a?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1580881613629-410ba53fc3c1?w=1200&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
     asset: "USDC",
