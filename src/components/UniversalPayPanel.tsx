@@ -830,8 +830,8 @@ function ReceiveTab({
               value={chainId}
               onChange={(e) => setChainId(Number(e.target.value))}
             >
-              <option value={42161}>Arbitrum One (mainnet)</option>
-              <option value={421614}>Arbitrum Sepolia (testnet)</option>
+              <option value={42161}>🔷 Arbitrum One (mainnet)</option>
+              <option value={421614}>🧪 Arbitrum Sepolia (testnet)</option>
             </select>
           </label>
           <label className="text-xs text-muted-foreground space-y-1">
@@ -841,9 +841,8 @@ function ReceiveTab({
               value={token}
               onChange={(e) => setToken(e.target.value as ReceiveToken)}
             >
-              {RECEIVE_TOKENS.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
+              <option value="USDC">💵 USDC</option>
+              <option value="ETH">⧫ ETH</option>
             </select>
           </label>
         </div>
