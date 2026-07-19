@@ -848,13 +848,13 @@ function ReceiveTab({
           </label>
         </div>
         <label className="text-xs text-muted-foreground space-y-1 block">
-          Receive
+          Receive Payment
           <select
             className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={invoiceType}
             onChange={(e) => setInvoiceType(e.target.value)}
           >
-            {["Invoice", "Amount", "Deposit", "Donation", "Subscription", "Refund", "Tip"].map((t) => (
+            {["Food", "Accomodation", "Deposit", "Donation", "Subscription", "Refund", "Tip"].map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>
