@@ -1075,7 +1075,7 @@ export function ParticleUniversalAccount() {
           // "Transactions" tab of Arbiscan (Sepolia) instead of only showing
           // up as an internal transaction under a UserOp bundle. ----
           if (isTestnet) {
-            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
+            const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
             const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
             if (!isStoredPrivateKey(pk)) {
               throw new Error("Testnet smart account key missing. Sign in again.");
