@@ -1010,7 +1010,7 @@ export function ParticleUniversalAccount() {
   const methodLabel = testnetMethod === "zerodev-7702" ? "ZeroDev (EIP-7702)" : "ZeroDev + Particle";
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
+    <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
       {/* Animated GameFi backdrop */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 gamefi-grid opacity-30" />
@@ -1332,7 +1332,7 @@ export function ParticleUniversalAccount() {
 
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
         <div className="space-y-14">
-          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
+          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-5 sm:p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl float-slow"
@@ -1348,7 +1348,7 @@ export function ParticleUniversalAccount() {
                 {isTestnet ? "🔐" : "🦊"}
               </div>
               <h2
-                className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight animate-fade-in"
+                className="text-lg sm:text-xl font-bold mb-2 tracking-tight animate-fade-in"
                 style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
               >
                 {isTestnet ? "Sign in to continue" : "Connect your wallet"}
@@ -1651,7 +1651,7 @@ const HOW_STEPS = [
   {
     n: "03",
     title: "Pay, split, receive — even for travellers",
-    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours, hotels and group trips in a single tap.",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours and group trips in a single tap.",
     img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=70",
     alt: "Travellers exploring a new destination",
   },
