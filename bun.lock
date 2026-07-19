@@ -43,6 +43,7 @@
         "@tanstack/router-plugin": "^1.167.28",
         "@zerodev/ecdsa-validator": "^5.4.9",
         "@zerodev/sdk": "^5.5.10",
+        "@zerodev/smart-routing-address": "^0.2.5",
         "buffer": "^6.0.3",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -725,6 +726,8 @@
     "@zerodev/ecdsa-validator": ["@zerodev/ecdsa-validator@5.4.9", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@zerodev/ecdsa-validator/-/ecdsa-validator-5.4.9.tgz", { "peerDependencies": { "@zerodev/sdk": "^5.4.13", "viem": "^2.28.0" } }, "sha512-9NVE8/sQIKRo42UOoYKkNdmmHJY8VlT4t+2MHD2ipLg21cpbY9fS17TGZh61+Bl3qlqc8pP23I6f89z9im7kuA=="],
 
     "@zerodev/sdk": ["@zerodev/sdk@5.5.10", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@zerodev/sdk/-/sdk-5.5.10.tgz", { "dependencies": { "semver": "^7.6.0" }, "peerDependencies": { "viem": "^2.28.0" } }, "sha512-WVyj2XR9F6zK2GdXrvappx7yo6zoJ46cWe42dOIArp3xDjFBninjA4O1O94MwohB0G+yFqtXNsEU+WxdE67SgQ=="],
+
+    "@zerodev/smart-routing-address": ["@zerodev/smart-routing-address@0.2.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@zerodev/smart-routing-address/-/smart-routing-address-0.2.5.tgz", { "peerDependencies": { "typescript": "^5.0.0", "viem": "^2.47.18" } }, "sha512-LtHwb7trl/4huwbbP590Rb58vHoeBFsEanwwyqVu1TaB1VvDI4NUSnLyNnPYt5g0i7+yF1yPSmfHsU1vAQD80g=="],
 
     "abitype": ["abitype@1.2.3", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/abitype/-/abitype-1.2.3.tgz", { "peerDependencies": { "typescript": ">=5.0.4", "zod": "^3.22.0 || ^4.0.0" }, "optionalPeers": ["typescript", "zod"] }, "sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg=="],
 

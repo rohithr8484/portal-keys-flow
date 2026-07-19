@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib/particle-config";
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
+import paygridLogo from "@/assets/paygrid-logo.png";
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
 type SdkModule = typeof import("@particle-network/universal-account-sdk");
@@ -449,6 +450,46 @@ export function ParticleUniversalAccount() {
   useEffect(() => {
     if (ua) refresh();
   }, [ua, refresh]);
+
+  // ---------- Unified spendable: poll actual ETH + USDC balance ----------
+  // Mainnet: reads the connected EOA on Arbitrum One (payments settle from it).
+  // Testnet: reads the local 7702 smart account on Arbitrum Sepolia.
+  useEffect(() => {
+    const account = isTestnet ? smartAccountAddress : eoa;
+    if (!account || !ethers.isAddress(account)) return;
+    let cancelled = false;
+    const RPC = isTestnet ? ARB_SEPOLIA.rpcUrl : "https://arb1.arbitrum.io/rpc";
+    const USDC = isTestnet
+      ? "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+      : "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    const provider = new ethers.JsonRpcProvider(RPC);
+    const erc20 = new ethers.Interface(["function balanceOf(address) view returns (uint256)"]);
+    const load = async () => {
+      try {
+        const [ethBal, usdcRaw, priceRes] = await Promise.all([
+          provider.getBalance(account),
+          provider.call({
+            to: USDC,
+            data: erc20.encodeFunctionData("balanceOf", [account]),
+          }),
+          fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+            .then((r) => r.json())
+            .catch(() => null),
+        ]);
+        if (cancelled) return;
+        const ethPrice = priceRes?.ethereum?.usd ?? (isTestnet ? 0 : 3500);
+        const ethUsd = Number(ethers.formatEther(ethBal)) * ethPrice;
+        const usdcUsd = Number(ethers.formatUnits(BigInt(usdcRaw || "0x0"), 6));
+        setBalance({ totalAmountInUSD: ethUsd + usdcUsd });
+      } catch {}
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [isTestnet, smartAccountAddress, eoa]);
 
   // ---------- Mainnet: Particle UA transfer ----------
   const sendMainnetTx = useCallback(async () => {
@@ -986,12 +1027,14 @@ export function ParticleUniversalAccount() {
       <header className="mb-10 text-center relative">
         <div className="flex justify-center mb-5">
           <div className="relative inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur-xl shadow-lg shadow-primary/10">
-            <div className="relative size-8 rounded-xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center text-base font-black text-primary-foreground glow-pulse">
-              ◆
-            </div>
-            <div className="text-left leading-tight">
+            <img
+              src={paygridLogo}
+              alt="Paygrid"
+              className="h-8 w-auto drop-shadow-[0_0_12px_rgba(59,130,246,0.35)]"
+            />
+            <div className="hidden sm:block text-left leading-tight border-l border-panel-border/60 pl-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Powered by Particle</div>
-              <div className="text-sm font-bold tracking-tight">Paygrid</div>
+              <div className="text-sm font-bold tracking-tight">Universal Accounts</div>
             </div>
           </div>
         </div>
