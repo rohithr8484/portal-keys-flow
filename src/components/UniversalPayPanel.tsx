@@ -362,9 +362,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                 : "border-panel-border bg-background/40 hover:border-primary/40"
             }`}
           >
-            <div className="text-lg mb-1">{f.icon}</div>
-            <div className="text-xs font-semibold">{f.title}</div>
-            <div className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{f.desc}</div>
+            <div className="text-2xl mb-1.5">{f.icon}</div>
+            <div className="text-sm sm:text-base font-semibold">{f.title}</div>
+            <div className="text-xs sm:text-[13px] leading-snug text-muted-foreground line-clamp-3 mt-1">{f.desc}</div>
           </button>
         ))}
       </div>
