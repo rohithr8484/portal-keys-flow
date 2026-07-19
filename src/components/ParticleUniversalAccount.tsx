@@ -984,42 +984,34 @@ export function ParticleUniversalAccount() {
         onPay={async ({ recipient, amount, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
 
-          // ---- Testnet path: gasless kernel userop (send-to-pool style) ----
+          // ---- Testnet path: send directly from the local 7702 EOA key so
+          // the transfer appears as a top-level Arbiscan Sepolia transaction
+          // (not just an internal call under a UserOp bundle). Keeps the
+          // same ETH / native-USDC currency semantics as before. ----
           if (isTestnet) {
-            const { kernelClient } = await buildKernelClient();
-            const chainId = EVM_CHAINS.arbitrumSepolia;
-            // Native (Circle) USDC on Arbitrum Sepolia. When token === "USDC"
-            // we MUST encode an ERC-20 transfer — sending the USDC amount as
-            // native ETH value would revert during simulation with reason 0x
-            // (the smart account has nowhere near that much ETH).
-            const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
-            const calls =
-              token === "ETH"
-                ? buildSplitNativeCalls({
-                    chainId,
-                    recipients: [{ address: recipient, amount }],
-                  })
-                : buildSplitERC20Calls({
-                    chainId,
-                    tokenAddress: ARB_SEPOLIA_USDC,
-                    decimals: 6,
-                    recipients: [{ address: recipient, amount }],
-                  });
-            const userOpHash = await (kernelClient as any).sendUserOperation({
-              callData: await kernelClient.account!.encodeCalls(
-                calls.map((c) => ({
-                  to: c.to as `0x${string}`,
-                  value: BigInt(c.value),
-                  data: c.data as `0x${string}`,
-                })),
-              ),
-            });
-            const receipt = await kernelClient.waitForUserOperationReceipt({
-              hash: userOpHash,
-            });
-            const txId = receipt.receipt.transactionHash;
+            const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
+            const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
+            if (!isStoredPrivateKey(pk)) {
+              throw new Error("Testnet smart account key missing. Sign in again.");
+            }
+            const rpcProvider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+            const wallet = new ethers.Wallet(pk, rpcProvider);
+            const to = ethers.getAddress(recipient);
+            let tx;
+            if (token === "ETH") {
+              tx = await wallet.sendTransaction({
+                to,
+                value: ethers.parseEther(String(amount)),
+              });
+            } else {
+              const iface = new ethers.Interface(["function transfer(address,uint256)"]);
+              const units = ethers.parseUnits(String(amount), 6);
+              const data = iface.encodeFunctionData("transfer", [to, units]);
+              tx = await wallet.sendTransaction({ to: ARB_SEPOLIA_USDC, data });
+            }
+            await tx.wait();
             awardXp(25);
-            return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
+            return { txId: tx.hash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${tx.hash}` };
           }
 
 
