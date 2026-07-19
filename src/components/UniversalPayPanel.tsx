@@ -1329,11 +1329,18 @@ function HotelsTab({
       <Dialog open={!!routingModal} onOpenChange={(o) => !o && setRoutingModal(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Send USDC to complete your booking</DialogTitle>
+            <DialogTitle>
+              Send {routingModal?.hotel.asset ?? "USDC"} to complete your booking
+            </DialogTitle>
             <DialogDescription>
-              Send at least {routingModal?.hotel.usdc} USDC to the address below on any supported chain
-              (Arbitrum, Optimism, Base, Ethereum). ZeroDev will route it to the operator on Arbitrum One.
+              Send at least{" "}
+              {routingModal?.hotel.asset === "ETH"
+                ? `${routingModal?.hotel.eth} ETH`
+                : `${routingModal?.hotel.usdc} USDC`}{" "}
+              to the address below on any supported chain (Arbitrum, Optimism, Base, Ethereum). ZeroDev
+              will route it to the operator on Arbitrum One.
             </DialogDescription>
+
           </DialogHeader>
           {routingModal && (
             <div className="space-y-3">
