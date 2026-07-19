@@ -214,7 +214,6 @@ Once authenticated they can:
 - Pay merchants using **USDC** or **ETH**
 - Split travel expenses
 - Receive crypto payments
-- Browse travel destinations
 - Book travel experiences
 - View activity
 - Track transaction history
