@@ -1348,7 +1348,7 @@ export function ParticleUniversalAccount() {
                 {isTestnet ? "🔐" : "🦊"}
               </div>
               <h2
-                className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight animate-fade-in"
+                className="text-lg sm:text-xl font-bold mb-2 tracking-tight animate-fade-in"
                 style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
               >
                 {isTestnet ? "Sign in to continue" : "Connect your wallet"}
