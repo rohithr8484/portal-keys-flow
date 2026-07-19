@@ -1254,29 +1254,30 @@ export function ParticleUniversalAccount() {
       )}
 
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
-        <div className="space-y-10">
-          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10">
-            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl" />
-            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl" />
+        <div className="space-y-14">
+          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
+            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl float-slow" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl float-slow" style={{ animationDelay: "2s" }} />
+            <div aria-hidden className="pointer-events-none absolute inset-x-10 top-0 h-px shimmer-bar" />
             <div className="relative">
-              <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl mb-5 shadow-lg shadow-primary/30 glow-pulse">
+              <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl mb-5 shadow-lg shadow-primary/30 glow-pulse animate-scale-in">
                 {isTestnet ? "🔐" : "🦊"}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
                 {isTestnet ? "Sign in to continue" : "Connect your wallet"}
               </h2>
-              <p className="text-sm text-muted-foreground mb-7 max-w-md mx-auto">
+              <p className="text-sm text-muted-foreground mb-7 max-w-md mx-auto animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
                 {isTestnet
                   ? "Unlock your Kernel smart account on Arbitrum Sepolia and start moving value across chains."
                   : "Your EOA becomes the owner of a Universal Account — one balance, every supported chain."}
               </p>
 
               {isTestnet ? (
-                <div className="flex justify-center max-w-md mx-auto">
+                <div className="flex justify-center max-w-md mx-auto animate-fade-in" style={{ animationDelay: "240ms", animationFillMode: "backwards" }}>
                   <button
                     onClick={() => signInTestnet("zerodev-7702")}
                     disabled={signingIn}
-                    className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                    className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50"
                   >
                     {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
                   </button>
@@ -1285,13 +1286,14 @@ export function ParticleUniversalAccount() {
                 <button
                   onClick={connect}
                   disabled={loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50 animate-fade-in"
+                  style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
                 >
                   {loading ? "Connecting…" : "Sign in with MetaMask"}
                 </button>
               )}
 
-              {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+              {error && <p className="mt-4 text-sm text-destructive animate-fade-in">{error}</p>}
             </div>
           </div>
 
@@ -1566,25 +1568,27 @@ function LandingHowItWorks() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {HOW_STEPS.map((s) => (
+        {HOW_STEPS.map((s, i) => (
           <div
             key={s.n}
-            className="group relative overflow-hidden rounded-2xl border border-panel-border bg-panel/60 backdrop-blur hover:border-primary/60 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20"
+            className="group relative overflow-hidden rounded-2xl border border-panel-border bg-panel/60 backdrop-blur hover:border-primary/60 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/30 animate-fade-in"
+            style={{ animationDelay: `${i * 120}ms`, animationFillMode: "backwards" }}
           >
             <div className="relative aspect-[16/10] overflow-hidden">
               <img
                 src={s.img}
                 alt={s.alt}
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
-              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-[10px] font-mono text-primary">
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-[10px] font-mono text-primary group-hover:border-primary/60 group-hover:text-accent transition-colors">
                 {s.n}
               </div>
+              <div aria-hidden className="absolute -inset-x-8 -bottom-8 h-24 bg-gradient-to-r from-primary/0 via-primary/40 to-accent/0 blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
             </div>
             <div className="p-5">
-              <div className="text-base font-semibold mb-1.5">{s.title}</div>
+              <div className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">{s.title}</div>
               <div className="text-xs text-muted-foreground leading-relaxed">{s.desc}</div>
             </div>
           </div>
@@ -1644,29 +1648,36 @@ function LandingFaq() {
           return (
             <div
               key={item.q}
-              className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all overflow-hidden ${
-                isOpen ? "border-primary/50 shadow-lg shadow-primary/10" : "border-panel-border hover:border-primary/30"
+              className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all duration-300 overflow-hidden animate-fade-in hover:-translate-y-0.5 ${
+                isOpen ? "border-primary/50 shadow-lg shadow-primary/20" : "border-panel-border hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
               }`}
+              style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
             >
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
-                className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 cursor-pointer"
+                className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 cursor-pointer group"
               >
-                <span className="text-sm font-semibold">{item.q}</span>
+                <span className="text-sm font-semibold group-hover:text-primary transition-colors">{item.q}</span>
                 <span
-                  className={`shrink-0 size-7 rounded-full flex items-center justify-center border border-panel-border text-primary transition-transform ${
-                    isOpen ? "rotate-45 bg-primary/15" : "bg-background/40"
+                  className={`shrink-0 size-7 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    isOpen ? "rotate-45 bg-primary/20 border-primary/50 text-primary scale-110" : "bg-background/40 border-panel-border text-primary group-hover:bg-primary/10 group-hover:scale-105"
                   }`}
                 >
                   +
                 </span>
               </button>
-              {isOpen && (
-                <div className="px-5 pb-5 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
-                  {item.a}
+              <div
+                className={`grid transition-all duration-300 ease-out ${
+                  isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-5 pb-5 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
+                    {item.a}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
