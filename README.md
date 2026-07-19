@@ -360,9 +360,6 @@ Whether you're relaxing on Goa's beaches, exploring Rajasthan's historic forts, 
 
 ## License
 
-Built for the **UXMM Hackathon**.
+Built for the **UXMaxx Hackathon**.
 
----
-
-**Powered by Particle Network Universal Accounts, ZeroDev, Next.js, React, and Tailwind CSS.** 🚀
 ```
