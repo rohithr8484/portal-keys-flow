@@ -685,20 +685,32 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                         href={storedMap[a.id].explorer}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] px-2 py-1 rounded-md border border-[color:var(--success)]/50 text-[color:var(--success)] hover:bg-[color:var(--success)]/10 transition"
+                        className="group inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-md border border-[color:var(--success)]/50 bg-[color:var(--success)]/10 text-[color:var(--success)] hover:bg-[color:var(--success)]/20 hover:shadow-[0_0_12px_-2px_var(--success)] transition"
                         title={`Stored on ${storedMap[a.id].network}`}
                       >
-                        ⛓ On-chain ↗
+                        <span className="size-1.5 rounded-full bg-[color:var(--success)] animate-pulse" />
+                        On-chain
+                        <span className="opacity-70 group-hover:translate-x-0.5 transition">↗</span>
                       </a>
                     ) : (
                       <button
                         type="button"
                         onClick={() => storeActivity(a)}
                         disabled={storingId === a.id}
-                        className="text-[10px] px-2 py-1 rounded-md border border-primary/40 text-primary hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2.5 py-1 rounded-md border border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-[0_0_14px_-2px_hsl(var(--primary)/0.55)] disabled:opacity-50 disabled:cursor-not-allowed transition"
                         title={`Store this entry on ${activeNetwork === "mainnet" ? "Arbitrum One" : "Arbitrum Sepolia"}`}
                       >
-                        {storingId === a.id ? "Storing…" : "Store on-chain"}
+                        {storingId === a.id ? (
+                          <>
+                            <span className="size-2 rounded-full border border-primary border-t-transparent animate-spin" />
+                            Storing…
+                          </>
+                        ) : (
+                          <>
+                            <span>⛓</span>
+                            Store on-chain
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
