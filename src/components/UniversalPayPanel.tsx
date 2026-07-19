@@ -126,7 +126,6 @@ const FEATURES = [
     title: "Contacts",
     desc: "Save payees once and send to them by name, not a 0x address.",
   },
-  
 ] as const;
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
@@ -552,7 +551,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
             </div>
           </div>
         </TabsContent>
-
       </Tabs>
 
       {/* Activity feed */}
@@ -850,7 +848,7 @@ function ReceiveTab({
           </label>
         </div>
         <label className="text-xs text-muted-foreground space-y-1 block">
-          Invoice type
+          Receive
           <select
             className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
             value={invoiceType}
