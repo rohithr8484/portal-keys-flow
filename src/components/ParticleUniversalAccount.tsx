@@ -1332,7 +1332,7 @@ export function ParticleUniversalAccount() {
 
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
         <div className="space-y-14">
-          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
+          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-5 sm:p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl float-slow"
