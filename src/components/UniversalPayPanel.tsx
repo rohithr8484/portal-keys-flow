@@ -489,7 +489,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
             <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-3">
               <div className="flex items-center gap-3">
                 <img
-                  src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(cName || cAddr || "new")}&backgroundType=gradientLinear`}
+                  src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(cName || cAddr || "new")}`}
                   alt="Avatar preview"
                   className="size-14 rounded-full border border-panel-border bg-background/60"
                 />
@@ -507,7 +507,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                   {["alpha", "nova", "kite", "lumen", "orbit"].map((seed) => (
                     <img
                       key={seed}
-                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${seed}&backgroundType=gradientLinear`}
+                      src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}`}
                       alt=""
                       className="size-7 rounded-full border-2 border-panel/80"
                     />
@@ -529,7 +529,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <img
-                      src={`https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(c.name + c.address)}&backgroundType=gradientLinear`}
+                      src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(c.name + c.address)}`}
                       alt=""
                       className="size-9 rounded-full border border-panel-border shrink-0"
                     />
