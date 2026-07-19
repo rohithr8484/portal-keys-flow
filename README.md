@@ -240,11 +240,7 @@ Configure your Particle Network project credentials before launching the applica
 Create a `.env.local` file.
 
 ```env
-NEXT_PUBLIC_PARTICLE_PROJECT_ID=...
 
-NEXT_PUBLIC_PARTICLE_CLIENT_KEY=...
-
-NEXT_PUBLIC_PARTICLE_APP_ID=...
 ```
 
 These public client-side credentials are required for Particle Network Universal Accounts.
