@@ -14,7 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { amountForTokenUnits, decimalAmountToUnits, formatDisplayAmount, splitDecimalAmountEvenly } from "@/lib/amounts";
+import {
+  amountForTokenUnits,
+  decimalAmountToUnits,
+  formatDisplayAmount,
+  splitDecimalAmountEvenly,
+} from "@/lib/amounts";
 import {
   createPaymentRequest,
   listRecentRequests,
@@ -91,11 +96,36 @@ function shortHash(hash: string) {
 }
 
 const FEATURES = [
-  { key: "pay", icon: "💸", title: "Pay & split", desc: "Send to one wallet or divide a bill across many in a single tap." },
-  { key: "receive", icon: "📥", title: "Receive", desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia." },
-  { key: "hotels", icon: "🧳", title: "Tourist packages", desc: "Book curated India tours — pay in USDC or ETH from your wallet." },
-  { key: "token", icon: "🪙", title: "Any token", desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets." },
-  { key: "contacts", icon: "⭐", title: "Contacts", desc: "Save payees once and send to them by name, not a 0x address." },
+  {
+    key: "pay",
+    icon: "💸",
+    title: "Pay & split",
+    desc: "Send to one wallet or divide a bill across many in a single tap.",
+  },
+  {
+    key: "receive",
+    icon: "📥",
+    title: "Receive",
+    desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia.",
+  },
+  {
+    key: "hotels",
+    icon: "🧳",
+    title: "Tourist packages",
+    desc: "Book curated India tours — pay in USDC or ETH from your wallet.",
+  },
+  {
+    key: "token",
+    icon: "🪙",
+    title: "Any token",
+    desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets.",
+  },
+  {
+    key: "contacts",
+    icon: "⭐",
+    title: "Contacts",
+    desc: "Save payees once and send to them by name, not a 0x address.",
+  },
   { key: "faq", icon: "❓", title: "FAQ", desc: "How Paygrid works — fees, chains, and settlement." },
 ] as const;
 
@@ -106,18 +136,18 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
   const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
   const [storingId, setStoringId] = useState<string | null>(null);
-  const [storedMap, setStoredMap] = usePersist<Record<string, { hash: string; explorer: string; network: "mainnet" | "testnet" }>>("up_stored_activity", {});
+  const [storedMap, setStoredMap] = usePersist<
+    Record<string, { hash: string; explorer: string; network: "mainnet" | "testnet" }>
+  >("up_stored_activity", {});
 
   const [contacts, setContacts] = usePersist<Contact[]>("up_contacts", []);
-  
+
   const [activity, setActivity] = usePersist<Activity[]>("up_activity", []);
 
   const [contactOpen, setContactOpen] = useState(false);
 
   const pushActivity = (a: Omit<Activity, "id" | "at">) =>
-    setActivity((prev) =>
-      [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30),
-    );
+    setActivity((prev) => [{ ...a, id: crypto.randomUUID(), at: Date.now() }, ...prev].slice(0, 30));
 
   const storeActivity = async (entry: Activity) => {
     setStoringId(entry.id);
@@ -206,9 +236,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
     if (paySplit && payPreview.valid.length > 1 && onSplitPay) {
       setPayBusy(true);
       try {
-        onNotify?.(
-          `Batching ${payPreview.valid.length} transfers of ${payPreview.eachLabel} ${payToken}…`,
-        );
+        onNotify?.(`Batching ${payPreview.valid.length} transfers of ${payPreview.eachLabel} ${payToken}…`);
         const res = await onSplitPay({
           recipients: payPreview.valid.map((address, index) => ({
             address,
@@ -250,9 +278,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
           const res = await onPay({ recipient: to, amount, token: payToken });
           pushActivity({
             kind: "pay",
-            label: payName.trim()
-              ? `${payName.trim()} · ${shortAddr(to)}`
-              : `Sent to ${shortAddr(to)}`,
+            label: payName.trim() ? `${payName.trim()} · ${shortAddr(to)}` : `Sent to ${shortAddr(to)}`,
             amount,
             token: payToken,
             hash: res?.txId,
@@ -273,9 +299,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
     // Fallback: log locally when no on-chain handler wired.
     pushActivity({
       kind: "pay",
-      label: paySplit
-        ? `Split to ${payPreview.valid.length} recipients`
-        : `Sent to ${shortAddr(payPreview.valid[0])}`,
+      label: paySplit ? `Split to ${payPreview.valid.length} recipients` : `Sent to ${shortAddr(payPreview.valid[0])}`,
       amount: payPreview.totalLabel,
       token: payToken,
     });
@@ -285,7 +309,6 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
   };
 
   // ---------- Requests state (removed) ----------
-
 
   // ---------- Contacts state ----------
   const [cName, setCName] = useState("");
@@ -300,8 +323,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
     setCAddr("");
     onNotify?.("Contact saved");
   };
-  const removeContact = (addr: string) =>
-    setContacts((prev) => prev.filter((c) => c.address !== addr));
+  const removeContact = (addr: string) => setContacts((prev) => prev.filter((c) => c.address !== addr));
   const pickContact = (c: Contact) => {
     setPayRecipients((prev) => (prev ? `${prev}, ${c.address}` : c.address));
     setContactOpen(false);
@@ -312,12 +334,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
     <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
       <div className="flex items-end justify-between mb-5 flex-wrap gap-2">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Universal Pay
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight neon-text">
-            Move value, anywhere
-          </h2>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Universal Pay</div>
+          <h2 className="text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
           <p className="text-xs text-muted-foreground mt-1">
             Payment primitives built on the smart account you already connected.
           </p>
@@ -347,9 +365,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
           >
             <div className="text-lg mb-1">{f.icon}</div>
             <div className="text-xs font-semibold">{f.title}</div>
-            <div className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">
-              {f.desc}
-            </div>
+            <div className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{f.desc}</div>
           </button>
         ))}
       </div>
@@ -371,19 +387,10 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                 <div className="text-sm font-semibold">Pay or split</div>
                 <div className="flex items-center gap-2 text-xs">
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={paySplit}
-                      onChange={(e) => setPaySplit(e.target.checked)}
-                    />
+                    <input type="checkbox" checked={paySplit} onChange={(e) => setPaySplit(e.target.checked)} />
                     Split evenly
                   </label>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setContactOpen(true)}
-                    type="button"
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => setContactOpen(true)} type="button">
                     From contacts
                   </Button>
                 </div>
@@ -427,32 +434,25 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                   </span>
                 </span>
               </div>
-              {payPreview.error && (
-                <div className="text-xs text-destructive">{payPreview.error}</div>
-              )}
+              {payPreview.error && <div className="text-xs text-destructive">{payPreview.error}</div>}
               <Button onClick={submitPay} className="w-full" disabled={payBusy}>
                 {payBusy ? "Broadcasting…" : paySplit ? "Split payment" : "Send payment"}
               </Button>
             </div>
 
             <div className="rounded-xl border border-panel-border bg-background/40 p-4">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
-                Any token, any chain
-              </div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Any token, any chain</div>
               <div className="grid grid-cols-3 gap-2">
                 {SETTLEMENT_TOKENS.map((t) => (
-                  <div
-                    key={t}
-                    className="rounded-lg border border-panel-border bg-background/60 p-2 text-center"
-                  >
+                  <div key={t} className="rounded-lg border border-panel-border bg-background/60 p-2 text-center">
                     <div className="text-lg">🪙</div>
                     <div className="text-xs font-semibold">{t}</div>
                   </div>
                 ))}
               </div>
               <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-                Your Universal Account sources funds from any asset you hold and
-                settles the recipient in the token you pick above.
+                Your Universal Account sources funds from any asset you hold and settles the recipient in the token you
+                pick above.
               </p>
             </div>
           </div>
@@ -460,48 +460,29 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
 
         {/* HOTELS */}
         <TabsContent value="hotels" className="mt-0">
-          <HotelsTab
-            onNotify={onNotify}
-            onPay={onPay}
-            pushActivity={pushActivity}
-          />
+          <HotelsTab onNotify={onNotify} onPay={onPay} pushActivity={pushActivity} />
         </TabsContent>
 
         {/* RECEIVE */}
         <TabsContent value="receive" className="mt-0">
-          <ReceiveTab
-            address={address}
-            onNotify={onNotify}
-            pushActivity={pushActivity}
-          />
+          <ReceiveTab address={address} onNotify={onNotify} pushActivity={pushActivity} />
         </TabsContent>
-
 
         <TabsContent value="token" className="mt-0">
           <div className="rounded-xl border border-panel-border bg-background/40 p-6 text-center">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Unified spendable
-            </div>
-            <div className="text-4xl font-bold neon-text mt-1">
-              ${(unifiedUsd ?? 0).toFixed(2)}
-            </div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Unified spendable</div>
+            <div className="text-4xl font-bold neon-text mt-1">${(unifiedUsd ?? 0).toFixed(2)}</div>
             <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
               {SETTLEMENT_TOKENS.map((t) => (
-                <div
-                  key={t}
-                  className="rounded-lg border border-panel-border bg-background/60 py-3"
-                >
+                <div key={t} className="rounded-lg border border-panel-border bg-background/60 py-3">
                   <div className="text-lg">🪙</div>
                   <div className="font-semibold">{t}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    spend & receive
-                  </div>
+                  <div className="text-[10px] text-muted-foreground">spend & receive</div>
                 </div>
               ))}
             </div>
           </div>
         </TabsContent>
-
 
         {/* CONTACTS */}
         <TabsContent value="contacts" className="mt-0">
@@ -520,16 +501,8 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                   </div>
                 </div>
               </div>
-              <Input
-                placeholder="Name"
-                value={cName}
-                onChange={(e) => setCName(e.target.value)}
-              />
-              <Input
-                placeholder="0x address"
-                value={cAddr}
-                onChange={(e) => setCAddr(e.target.value)}
-              />
+              <Input placeholder="Name" value={cName} onChange={(e) => setCName(e.target.value)} />
+              <Input placeholder="0x address" value={cAddr} onChange={(e) => setCAddr(e.target.value)} />
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {["alpha", "nova", "kite", "lumen", "orbit"].map((seed) => (
@@ -541,9 +514,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                     />
                   ))}
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  Sample avatars
-                </span>
+                <span className="text-[10px] text-muted-foreground">Sample avatars</span>
               </div>
               <Button onClick={addContact} className="w-full">
                 Add contact
@@ -551,11 +522,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
             </div>
             <div className="rounded-xl border border-panel-border bg-panel/60 p-5 space-y-2">
               <div className="text-sm font-semibold">Saved</div>
-              {contacts.length === 0 && (
-                <div className="text-xs text-muted-foreground">
-                  No contacts yet.
-                </div>
-              )}
+              {contacts.length === 0 && <div className="text-xs text-muted-foreground">No contacts yet.</div>}
               {contacts.map((c) => (
                 <div
                   key={c.address}
@@ -569,20 +536,14 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                     />
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{c.name}</div>
-                      <div className="font-mono text-muted-foreground truncate">
-                        {shortAddr(c.address)}
-                      </div>
+                      <div className="font-mono text-muted-foreground truncate">{shortAddr(c.address)}</div>
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" onClick={() => pickContact(c)}>
                       Pay
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeContact(c.address)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => removeContact(c.address)}>
                       Remove
                     </Button>
                   </div>
@@ -596,17 +557,13 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
         <TabsContent value="faq" className="mt-0">
           <FaqTab />
         </TabsContent>
-
-
       </Tabs>
 
       {/* Activity feed */}
       <div className="mt-8 rounded-2xl border border-panel-border bg-panel/70 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Activity
-            </div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Activity</div>
             <div className="text-sm font-semibold">Recent transactions</div>
           </div>
           <div className="flex items-center gap-2">
@@ -625,20 +582,21 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
         ) : (
           <div className="space-y-2 max-h-72 overflow-auto pr-1">
             {activity.map((a) => {
-              const kindIcon =
-                a.kind === "pay" ? "↗" : a.kind === "receive" ? "↘" : "🧾";
+              const kindIcon = a.kind === "pay" ? "↗" : a.kind === "receive" ? "↘" : "🧾";
               const kindColor =
                 a.kind === "pay"
                   ? "text-primary"
                   : a.kind === "receive"
-                  ? "text-[color:var(--success)]"
-                  : "text-accent";
+                    ? "text-[color:var(--success)]"
+                    : "text-accent";
               return (
                 <div
                   key={a.id}
                   className="flex items-center gap-3 rounded-lg border border-panel-border bg-background/40 px-3 py-2.5 hover:border-primary/40 transition-colors"
                 >
-                  <div className={`size-9 rounded-lg bg-background/60 border border-panel-border flex items-center justify-center text-base ${kindColor}`}>
+                  <div
+                    className={`size-9 rounded-lg bg-background/60 border border-panel-border flex items-center justify-center text-base ${kindColor}`}
+                  >
                     {kindIcon}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -646,9 +604,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                       <Badge variant="secondary" className="uppercase text-[9px]">
                         {a.kind}
                       </Badge>
-                      <span className="text-xs font-medium truncate">
-                        {a.label}
-                      </span>
+                      <span className="text-xs font-medium truncate">{a.label}</span>
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-0.5">
                       <span>
@@ -721,21 +677,16 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
         )}
       </div>
 
-
       {/* Contact picker */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Pick a contact</DialogTitle>
-            <DialogDescription>
-              Adds the wallet address to the recipient list.
-            </DialogDescription>
+            <DialogDescription>Adds the wallet address to the recipient list.</DialogDescription>
           </DialogHeader>
           <div className="space-y-1 max-h-72 overflow-auto">
             {contacts.length === 0 && (
-              <div className="text-xs text-muted-foreground">
-                Save contacts in the Contacts tab first.
-              </div>
+              <div className="text-xs text-muted-foreground">Save contacts in the Contacts tab first.</div>
             )}
             {contacts.map((c) => (
               <button
@@ -745,9 +696,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                 className="w-full text-left rounded border border-panel-border p-2 hover:bg-background/60 cursor-pointer"
               >
                 <div className="text-sm font-semibold">{c.name}</div>
-                <div className="text-[11px] font-mono text-muted-foreground">
-                  {c.address}
-                </div>
+                <div className="text-[11px] font-mono text-muted-foreground">{c.address}</div>
               </button>
             ))}
           </div>
@@ -819,9 +768,7 @@ function ReceiveTab({
     }
     setBusy(true);
     try {
-      const composedMemo = memo
-        ? `[${invoiceType}] ${memo}`
-        : `[${invoiceType}]`;
+      const composedMemo = memo ? `[${invoiceType}] ${memo}` : `[${invoiceType}]`;
       const row = await createPaymentRequest({
         recipient: address,
         amount: amt,
@@ -938,9 +885,7 @@ function ReceiveTab({
         <Button onClick={create} className="w-full" disabled={busy || !address}>
           {busy ? "Generating…" : "Generate payment request"}
         </Button>
-        <div className="text-[11px] text-muted-foreground">
-          Funds settle to your smart account on {chain?.label}.
-        </div>
+        <div className="text-[11px] text-muted-foreground">Funds settle to your smart account on {chain?.label}.</div>
       </div>
 
       <div className="rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
@@ -948,17 +893,10 @@ function ReceiveTab({
           <>
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold">Share this request</div>
-              <Badge variant={request.status === "pending" ? "secondary" : "default"}>
-                {request.status}
-              </Badge>
+              <Badge variant={request.status === "pending" ? "secondary" : "default"}>{request.status}</Badge>
             </div>
             <div className="flex justify-center bg-white rounded-lg p-3">
-              <QRCodeSVG
-                ref={qrRef as any}
-                value={payUrl}
-                size={168}
-                includeMargin
-              />
+              <QRCodeSVG ref={qrRef as any} value={payUrl} size={168} includeMargin />
             </div>
             <div className="text-xs text-muted-foreground text-center break-all">
               {formatDisplayAmount(request.amount)} {request.token} → {shortAddr(request.recipient)}
@@ -968,11 +906,7 @@ function ReceiveTab({
               <Button size="sm" variant="secondary" onClick={() => copy(payUrl, "Link")}>
                 Copy link
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => copy(request.recipient, "Address")}
-              >
+              <Button size="sm" variant="secondary" onClick={() => copy(request.recipient, "Address")}>
                 Copy address
               </Button>
               <Button size="sm" variant="secondary" onClick={downloadQr}>
@@ -980,12 +914,7 @@ function ReceiveTab({
               </Button>
             </div>
             {request.status === "pending" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="w-full"
-                onClick={() => cancel(request.id)}
-              >
+              <Button size="sm" variant="ghost" className="w-full" onClick={() => cancel(request.id)}>
                 Cancel request
               </Button>
             )}
@@ -1002,10 +931,7 @@ function ReceiveTab({
           <div className="text-sm font-semibold mb-2">Recent requests</div>
           <div className="space-y-1 max-h-64 overflow-auto pr-1">
             {recent.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between text-xs border-b border-panel-border py-2"
-              >
+              <div key={r.id} className="flex items-center justify-between text-xs border-b border-panel-border py-2">
                 <div className="min-w-0 pr-2">
                   <div className="font-semibold">
                     {formatDisplayAmount(r.amount)} {r.token}{" "}
@@ -1018,12 +944,7 @@ function ReceiveTab({
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <a
-                    href={`/pay/${r.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary hover:underline"
-                  >
+                  <a href={`/pay/${r.id}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                     Open ↗
                   </a>
                 </div>
@@ -1119,7 +1040,7 @@ const HOTEL_LISTINGS: Hotel[] = [
     city: "Gangtok → Pelling → Darjeeling",
     tagline: "Himalayan panoramas, monasteries and tea estates.",
     usdc: "1.90",
-    eth: "0.00070",
+    eth: "0.0000000070",
     image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
@@ -1134,7 +1055,6 @@ const HOTEL_LISTINGS: Hotel[] = [
     bookingAddress: HOTEL_BOOKING_ADDRESS,
   },
 ];
-
 
 function HotelsTab({
   onNotify,
@@ -1155,9 +1075,7 @@ function HotelsTab({
     const amount = token === "USDC" ? hotel.usdc : hotel.eth;
     const key = `${hotel.id}:${token}`;
     setBusyKey(key);
-    onNotify?.(
-      `Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`,
-    );
+    onNotify?.(`Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`);
     try {
       const res = await onPay({
         recipient: hotel.bookingAddress,
@@ -1173,11 +1091,7 @@ function HotelsTab({
         hash: res?.txId,
         txUrl: res?.txUrl,
       });
-      onNotify?.(
-        res?.txId
-          ? `Booking confirmed — tx ${res.txId}`
-          : `Booking submitted for ${hotel.name}`,
-      );
+      onNotify?.(res?.txId ? `Booking confirmed — tx ${res.txId}` : `Booking submitted for ${hotel.name}`);
     } catch (e: any) {
       onNotify?.(e?.message ?? "Booking failed");
     } finally {
@@ -1190,8 +1104,7 @@ function HotelsTab({
       <div className="rounded-xl border border-panel-border bg-panel/60 p-4">
         <div className="text-sm font-semibold mb-1">Curated tourist packages across India</div>
         <div className="text-[11px] text-muted-foreground">
-          Every itinerary settles instantly to the operator's booking wallet
-          when you pay with ETH.
+          Every itinerary settles instantly to the operator's booking wallet when you pay with ETH.
         </div>
       </div>
 
@@ -1205,34 +1118,18 @@ function HotelsTab({
               className="rounded-xl border border-panel-border bg-panel/60 overflow-hidden flex flex-col hover:border-primary/50 transition-colors"
             >
               <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
-                <img
-                  src={hotel.image}
-                  alt={hotel.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                />
+                <img src={hotel.image} alt={hotel.name} loading="lazy" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
               </div>
               <div className="p-4 flex-1 flex flex-col gap-2">
-                <div className="text-sm font-semibold leading-snug">
-                  {hotel.name}
-                </div>
-                <div className="text-[11px] text-primary font-medium">
-                  {hotel.city}
-                </div>
-                <div className="text-[11px] text-muted-foreground leading-relaxed">
-                  {hotel.tagline}
-                </div>
+                <div className="text-sm font-semibold leading-snug">{hotel.name}</div>
+                <div className="text-[11px] text-primary font-medium">{hotel.city}</div>
+                <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
                 <div className="text-[10px] font-mono text-muted-foreground truncate">
                   → {shortAddr(hotel.bookingAddress)}
                 </div>
                 <div className="mt-auto pt-2">
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => bookHotel(hotel, "ETH")}
-                    disabled={anyBusy}
-                  >
+                  <Button size="sm" className="w-full" onClick={() => bookHotel(hotel, "ETH")} disabled={anyBusy}>
                     {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
                   </Button>
                 </div>
@@ -1294,19 +1191,14 @@ function FaqTab() {
         {FAQ_ITEMS.map((item, i) => {
           const isOpen = open === i;
           return (
-            <div
-              key={item.q}
-              className="rounded-lg border border-panel-border bg-background/40 overflow-hidden"
-            >
+            <div key={item.q} className="rounded-lg border border-panel-border bg-background/40 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
                 className="w-full flex items-center justify-between gap-3 text-left px-4 py-3 hover:bg-background/60 transition-colors cursor-pointer"
               >
                 <span className="text-sm font-medium">{item.q}</span>
-                <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>
-                  +
-                </span>
+                <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
               </button>
               {isOpen && (
                 <div className="px-4 pb-4 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
@@ -1320,6 +1212,3 @@ function FaqTab() {
     </div>
   );
 }
-
-
-
