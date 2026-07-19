@@ -314,7 +314,11 @@ export function ParticleUniversalAccount() {
       });
       // Always show the Particle Web3 login modal — logout any lingering session first
       if (particle.auth.isLogin()) {
-        try { await particle.auth.logout(); } catch { /* ignore */ }
+        try {
+          await particle.auth.logout();
+        } catch {
+          /* ignore */
+        }
       }
       await particle.auth.login({
         preferredAuthType: undefined as any,
@@ -373,7 +377,11 @@ export function ParticleUniversalAccount() {
         });
         // Always surface the Particle Web3 login modal — clear any existing session first
         if (particle.auth.isLogin()) {
-          try { await particle.auth.logout(); } catch { /* ignore */ }
+          try {
+            await particle.auth.logout();
+          } catch {
+            /* ignore */
+          }
         }
         await particle.auth.login({
           preferredAuthType: undefined as any,
@@ -990,7 +998,7 @@ export function ParticleUniversalAccount() {
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-5">
           <span className="size-1.5 rounded-full bg-success animate-pulse" />
-          EIP-7702 · Universal Accounts · Cross-chain GameFi
+          EIP-7702 · Universal Accounts · ZeroDev
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-black tracking-tighter neon-text">
@@ -1361,7 +1369,6 @@ export function ParticleUniversalAccount() {
                   </button>
                 </div>
               )}
-
 
               {error && <p className="mt-4 text-sm text-destructive animate-fade-in">{error}</p>}
             </div>
