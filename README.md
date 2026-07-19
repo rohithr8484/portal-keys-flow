@@ -5,9 +5,9 @@
 
 ## Explore Travel. Pay with Crypto.
 
-PayGrid is a travel payment application that makes travel payments easier by enabling seamless crypto payments using **USDC** and **ETH**. Whether you're booking a heritage tour in Rajasthan, reserving a houseboat in Kerala, splitting hotel expenses with friends in Goa, or paying for local travel experiences, PayGrid provides a secure and intuitive payment experience.
+PayGrid is a travel payment application that makes travel payments easier by enabling seamless crypto payments using **USDC** and **ETH**, PayGrid combines crypto payments, shared expense management, QR-based transfers, and curated travel experiences into one platform Whether you're booking a heritage tour in Rajasthan, reserving a houseboat in Kerala, splitting hotel expenses with friends in Goa, or paying for local travel experiences, PayGrid provides a secure and intuitive payment experience.
 
-Designed for modern travelers, PayGrid combines crypto payments, shared expense management, QR-based transfers, and curated travel experiences into one platform. Powered by **Particle Network Universal Accounts (EIP-7702)**, users simply connect their wallet and start paying without changing their existing wallet address.
+Powered by **Particle Network Universal Accounts (EIP-7702)**, users simply connect their wallet and start paying without changing their existing wallet address.
 
 
 ---
