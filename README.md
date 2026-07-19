@@ -340,18 +340,6 @@ Future enhancements include:
   - Travel booking automation
   - Programmable payment workflows
 
-  
-
----
-
-# Why PayGrid?
-
-Travel should be about creating unforgettable memories—not worrying about payments.
-
-PayGrid brings together **USDC** and **ETH** payments, shared travel expenses, destination discovery, and curated travel experiences into one intuitive platform built specifically for travelers.
-
-Whether you're relaxing on Goa's beaches, exploring Rajasthan's historic forts, cruising Kerala's backwaters, or trekking through Ladakh, PayGrid delivers a seamless crypto payment experience designed for modern travel.
-
 ---
 
 ## License
