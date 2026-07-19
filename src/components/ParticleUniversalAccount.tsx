@@ -1660,18 +1660,18 @@ const HOW_STEPS = [
 function LandingHowItWorks() {
   return (
     <section className="relative">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-3">
-          <span className="size-1.5 rounded-full bg-accent" />
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-panel-border bg-panel/60 text-xs text-muted-foreground mb-4 animate-fade-in">
+          <span className="size-2 rounded-full bg-accent glow-pulse" />
           How it works
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
           Three steps to a{" "}
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             chain-agnostic wallet
           </span>
         </h2>
-        <p className="mt-3 text-sm text-muted-foreground max-w-lg mx-auto">
+        <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
           Paygrid layers Universal Accounts on top of your existing wallet — no new seed phrase, no bridge dance.
         </p>
       </div>
