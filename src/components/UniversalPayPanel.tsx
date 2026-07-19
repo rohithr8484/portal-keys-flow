@@ -1058,16 +1058,74 @@ const HOTEL_LISTINGS: Hotel[] = [
   },
 ];
 
+// Mainnet-only additional destinations paid via ZeroDev Smart Routing.
+// The user sends USDC on any supported source chain to the generated smart
+// routing address, and ZeroDev bridges/settles it as USDC on Arbitrum One
+// to the platform treasury (HOTEL_BOOKING_ADDRESS).
+type RoutingHotel = Omit<Hotel, "eth"> & { usdcRouting: true };
+
+const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
+  {
+    id: "himalayan-monastery",
+    name: "Himalayan Monastery Trail (8D/7N)",
+    city: "Leh → Nubra → Pangong",
+    tagline: "High-altitude monasteries, sand dunes and the shifting blues of Pangong.",
+    usdc: "3.20",
+    image: "https://images.unsplash.com/photo-1580289143186-03e546ed7ceb?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+    usdcRouting: true,
+  },
+  {
+    id: "hampi-ruins",
+    name: "Hampi & Deccan Ruins (5D/4N)",
+    city: "Hampi → Badami → Pattadakal",
+    tagline: "Vijayanagara boulders, Virupaksha temple and Chalukyan rock-cut caves.",
+    usdc: "1.75",
+    image: "https://images.unsplash.com/photo-1580889240911-ede6e04dc849?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+    usdcRouting: true,
+  },
+  {
+    id: "ranthambore-safari",
+    name: "Ranthambore Tiger Safari (4D/3N)",
+    city: "Sawai Madhopur → Ranthambore",
+    tagline: "Two morning safaris, jungle fort trek and Chambal river drive.",
+    usdc: "2.10",
+    image: "https://images.unsplash.com/photo-1549366021-9f761d450615?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+    usdcRouting: true,
+  },
+  {
+    id: "khajuraho-heritage",
+    name: "Khajuraho Heritage Loop (5D/4N)",
+    city: "Khajuraho → Orchha → Gwalior",
+    tagline: "UNESCO temples, Bundela palaces and the fortified skyline of Gwalior.",
+    usdc: "1.95",
+    image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&auto=format&fit=crop",
+    bookingAddress: HOTEL_BOOKING_ADDRESS,
+    usdcRouting: true,
+  },
+];
+
+type RoutingModalState = {
+  hotel: RoutingHotel;
+  address: string;
+  fees: unknown;
+} | null;
+
 function HotelsTab({
   onNotify,
   onPay,
   pushActivity,
+  network,
 }: {
   onNotify?: (msg: string) => void;
   onPay?: Props["onPay"];
   pushActivity: (a: Omit<Activity, "id" | "at">) => void;
+  network: "mainnet" | "testnet";
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [routingModal, setRoutingModal] = useState<RoutingModalState>(null);
 
   const bookHotel = async (hotel: Hotel, token: Token) => {
     if (!onPay) {
@@ -1101,12 +1159,64 @@ function HotelsTab({
     }
   };
 
+  const bookViaRouting = async (hotel: RoutingHotel) => {
+    const key = `${hotel.id}:ROUTE`;
+    setBusyKey(key);
+    onNotify?.(`Generating smart routing address for ${hotel.name}…`);
+    try {
+      const [{ createSmartRoutingAddress, createCall, FLEX, SMART_ROUTING_ADDRESS_SERVER_URL }, viemChains, viem] =
+        await Promise.all([
+          import("@zerodev/smart-routing-address"),
+          import("viem/chains"),
+          import("viem"),
+        ]);
+      const ZERODEV_PROJECT_ID = "263a14d6-19fe-4e98-8ba4-02b793c1aa0a";
+      const erc20Call = createCall({
+        target: FLEX.TOKEN_ADDRESS,
+        value: 0n,
+        abi: viem.erc20Abi,
+        functionName: "transfer",
+        args: [hotel.bookingAddress as `0x${string}`, FLEX.AMOUNT],
+      });
+      const { smartRoutingAddress, estimatedFees } = await createSmartRoutingAddress({
+        destChain: viemChains.arbitrum,
+        owner: hotel.bookingAddress as `0x${string}`,
+        slippage: 5000,
+        actions: {
+          USDC: { action: [erc20Call], fallBack: [erc20Call] },
+        },
+        srcTokens: [
+          { tokenType: "USDC", chain: viemChains.arbitrum },
+          { tokenType: "USDC", chain: viemChains.optimism },
+          { tokenType: "USDC", chain: viemChains.base },
+          { tokenType: "USDC", chain: viemChains.mainnet },
+        ],
+        config: { baseUrl: `${SMART_ROUTING_ADDRESS_SERVER_URL}/${ZERODEV_PROJECT_ID}` },
+      });
+      setRoutingModal({ hotel, address: smartRoutingAddress, fees: estimatedFees });
+      pushActivity({
+        kind: "pay",
+        label: `Routing address for ${hotel.name}`,
+        amount: hotel.usdc,
+        token: "USDC",
+      });
+      onNotify?.("Smart routing address ready — send USDC on any supported chain.");
+    } catch (e: any) {
+      onNotify?.(e?.message ?? "Failed to create smart routing address");
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const showRouting = network === "mainnet";
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-panel-border bg-panel/60 p-4">
         <div className="text-sm font-semibold mb-1">Curated tourist packages across India</div>
         <div className="text-[11px] text-muted-foreground">
-          Every itinerary settles instantly to the operator's booking wallet when you pay with ETH.
+          Standard packages settle in ETH on Arbitrum. Mainnet-only routes below accept USDC from any
+          supported source chain via ZeroDev Smart Routing.
         </div>
       </div>
 
@@ -1139,7 +1249,82 @@ function HotelsTab({
             </div>
           );
         })}
+
+        {showRouting &&
+          ROUTING_HOTEL_LISTINGS.map((hotel) => {
+            const routeBusy = busyKey === `${hotel.id}:ROUTE`;
+            const anyBusy = busyKey !== null;
+            return (
+              <div
+                key={hotel.id}
+                className="rounded-xl border border-accent/40 bg-panel/60 overflow-hidden flex flex-col hover:border-accent/70 transition-colors"
+              >
+                <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
+                  <img src={hotel.image} alt={hotel.name} loading="lazy" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                  <Badge className="absolute top-2 right-2 bg-accent/90 text-accent-foreground">Smart Routing</Badge>
+                </div>
+                <div className="p-4 flex-1 flex flex-col gap-2">
+                  <div className="text-sm font-semibold leading-snug">{hotel.name}</div>
+                  <div className="text-[11px] text-accent font-medium">{hotel.city}</div>
+                  <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
+                  <div className="text-[10px] font-mono text-muted-foreground truncate">
+                    → {shortAddr(hotel.bookingAddress)} · USDC on Arb One
+                  </div>
+                  <div className="mt-auto pt-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => bookViaRouting(hotel)}
+                      disabled={anyBusy}
+                    >
+                      {routeBusy ? "Generating…" : `Pay ${hotel.usdc} USDC via routing`}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
       </div>
+
+      <Dialog open={!!routingModal} onOpenChange={(o) => !o && setRoutingModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send USDC to complete your booking</DialogTitle>
+            <DialogDescription>
+              Send at least {routingModal?.hotel.usdc} USDC to the address below on any supported chain
+              (Arbitrum, Optimism, Base, Ethereum). ZeroDev will route it to the operator on Arbitrum One.
+            </DialogDescription>
+          </DialogHeader>
+          {routingModal && (
+            <div className="space-y-3">
+              <div className="flex justify-center rounded-lg border border-panel-border bg-background/60 p-4">
+                <QRCodeSVG value={routingModal.address} size={180} />
+              </div>
+              <div className="text-[11px] font-mono break-all rounded-md border border-panel-border bg-background/60 p-2">
+                {routingModal.address}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  navigator.clipboard?.writeText(routingModal.address);
+                  onNotify?.("Address copied");
+                }}
+              >
+                Copy address
+              </Button>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setRoutingModal(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
