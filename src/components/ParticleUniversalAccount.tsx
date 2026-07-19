@@ -371,9 +371,14 @@ export function ParticleUniversalAccount() {
           chainName: "arbitrum" as any,
           chainId: ARB_SEPOLIA.chainId,
         });
-        if (!particle.auth.isLogin()) {
-          await particle.auth.login();
+        // Always surface the Particle Web3 login modal — clear any existing session first
+        if (particle.auth.isLogin()) {
+          try { await particle.auth.logout(); } catch { /* ignore */ }
         }
+        await particle.auth.login({
+          preferredAuthType: undefined as any,
+          supportAuthTypes: "email,google,apple,twitter,discord",
+        } as any);
         const particleProvider = new ParticleProvider(particle.auth);
         const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
         if (!accounts?.[0]) throw new Error("Particle returned no account");
