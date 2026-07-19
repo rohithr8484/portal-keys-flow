@@ -77,16 +77,14 @@ Explore curated travel experiences across India's most popular destinations.
 
 Featured destinations include:
 
-- 🏖 Goa Beach Holidays
-- 🌴 Kerala Backwater Cruises
-- 🕌 Rajasthan Heritage Tours
-- 🏔 Kashmir Getaways
-- 🏍 Ladakh Road Expeditions
-- ❄ Himachal Adventure Packages
-- 🌊 Andaman Island Escapes
+- 🏖 Goa Beach Escape (North & South Goa)
+- 🌴 Enchanting Kerala (Cochin → Munnar → Thekkady → Alleppey)
+- 🕌 Rajasthan Royal Tour (Jaipur → Jodhpur → Udaipur)
+- 🏔 Kashmir Valley Retreat ( Srinagar → Gulmarg → Pahalgam )
+- 🏍 North East Explorer (Gangtok → Pelling → Darjeeling)
+- ❄ Spiritual & Temple Circuit ( Varanasi → Prayagraj → Ayodhya )
+- 🌊 Andaman Island Getaway ( Port Blair → Havelock → Neil Island )
 - 🛕 Golden Triangle (Delhi • Agra • Jaipur)
-- 🌿 Meghalaya Nature Trails
-- 🌄 Sikkim Mountain Tours
 
 Each destination includes highlights, pricing, and the ability to pay using **USDC** or **ETH** directly from the application.
 
