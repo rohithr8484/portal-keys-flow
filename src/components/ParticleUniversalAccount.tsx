@@ -294,6 +294,40 @@ export function ParticleUniversalAccount() {
     }
   }, []);
 
+  // Mainnet: sign in via Particle Web3 login. Exposes Particle's EIP-1193
+  // provider as window.ethereum so the existing MetaMask-based signing paths
+  // (which read window.ethereum) keep working unchanged.
+  const connectParticleMainnet = useCallback(async () => {
+    setError(null);
+    try {
+      setLoading(true);
+      const [{ ParticleNetwork }, { ParticleProvider }] = await Promise.all([
+        import("@particle-network/auth"),
+        import("@particle-network/provider"),
+      ]);
+      const particle = new ParticleNetwork({
+        projectId: PARTICLE_PROJECT_ID,
+        clientKey: PARTICLE_CLIENT_KEY,
+        appId: PARTICLE_APP_ID,
+        chainName: "arbitrum" as any,
+        chainId: ARBITRUM_MAINNET.chainId,
+      });
+      if (!particle.auth.isLogin()) {
+        await particle.auth.login();
+      }
+      const particleProvider = new ParticleProvider(particle.auth);
+      const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
+      if (!accounts?.[0]) throw new Error("Particle returned no account");
+      // Route downstream ethers.BrowserProvider(window.ethereum) calls through Particle.
+      (window as any).ethereum = particleProvider;
+      setEoa(accounts[0]);
+    } catch (e: any) {
+      setError(e?.message ?? "Particle sign-in failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
     setEoa(null);
     setUa(null);
