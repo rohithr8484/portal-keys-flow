@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib/particle-config";
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
+import paygridLogo from "@/assets/paygrid-logo.png";
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
 type SdkModule = typeof import("@particle-network/universal-account-sdk");
