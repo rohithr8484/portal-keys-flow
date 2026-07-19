@@ -66,6 +66,10 @@
     border-color: var(--color-border);
   }
 
+  html {
+    font-size: 17px;
+  }
+
   html, body {
     background:
       radial-gradient(ellipse at 20% 0%, oklch(0.30 0.14 305 / 45%), transparent 55%),
