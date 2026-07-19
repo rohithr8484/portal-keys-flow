@@ -169,7 +169,6 @@ export function ParticleUniversalAccount() {
   });
   const [signingIn, setSigningIn] = useState<boolean>(false);
 
-
   const persistNum = (key: string, v: number) => {
     try {
       localStorage.setItem(key, String(v));
@@ -278,7 +277,6 @@ export function ParticleUniversalAccount() {
     setError(null);
   }, [testnetMethod]);
 
-
   const connect = useCallback(async () => {
     setError(null);
     try {
@@ -310,51 +308,46 @@ export function ParticleUniversalAccount() {
   }, [testnetMethod]);
 
   // Testnet sign-in — derives smart account for the chosen method without sending.
-  const signInTestnet = useCallback(
-    async (method: TestnetMethod) => {
-      setSigningIn(true);
-      setError(null);
-      setStatus(null);
-      try {
-        if (method === "zerodev-7702") {
-          const account = await getLocal7702Account();
-          setSmartAccountAddress(account.address);
-        } else {
-          const [{ ParticleNetwork }, { ParticleProvider }] = await Promise.all([
-            import("@particle-network/auth"),
-            import("@particle-network/provider"),
-          ]);
-          const particle = new ParticleNetwork({
-            projectId: PARTICLE_PROJECT_ID,
-            clientKey: PARTICLE_CLIENT_KEY,
-            appId: PARTICLE_APP_ID,
-            chainName: "arbitrum" as any,
-            chainId: ARB_SEPOLIA.chainId,
-          });
-          if (!particle.auth.isLogin()) {
-            await particle.auth.login();
-          }
-          const particleProvider = new ParticleProvider(particle.auth);
-          const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
-          if (!accounts?.[0]) throw new Error("Particle returned no account");
-          // Kernel SA is derived lazily on first payment; show the signer EOA for now.
-          setSmartAccountAddress(accounts[0]);
+  const signInTestnet = useCallback(async (method: TestnetMethod) => {
+    setSigningIn(true);
+    setError(null);
+    setStatus(null);
+    try {
+      if (method === "zerodev-7702") {
+        const account = await getLocal7702Account();
+        setSmartAccountAddress(account.address);
+      } else {
+        const [{ ParticleNetwork }, { ParticleProvider }] = await Promise.all([
+          import("@particle-network/auth"),
+          import("@particle-network/provider"),
+        ]);
+        const particle = new ParticleNetwork({
+          projectId: PARTICLE_PROJECT_ID,
+          clientKey: PARTICLE_CLIENT_KEY,
+          appId: PARTICLE_APP_ID,
+          chainName: "arbitrum" as any,
+          chainId: ARB_SEPOLIA.chainId,
+        });
+        if (!particle.auth.isLogin()) {
+          await particle.auth.login();
         }
-        setTestnetSignedIn(true);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`ua_signed_in_${method}`, "1");
-        }
-        setStatus("Signed in.");
-      } catch (e: any) {
-        setError(e?.shortMessage || e?.message || "Sign in failed");
-      } finally {
-        setSigningIn(false);
+        const particleProvider = new ParticleProvider(particle.auth);
+        const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
+        if (!accounts?.[0]) throw new Error("Particle returned no account");
+        // Kernel SA is derived lazily on first payment; show the signer EOA for now.
+        setSmartAccountAddress(accounts[0]);
       }
-    },
-    [],
-  );
-
-
+      setTestnetSignedIn(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`ua_signed_in_${method}`, "1");
+      }
+      setStatus("Signed in.");
+    } catch (e: any) {
+      setError(e?.shortMessage || e?.message || "Sign in failed");
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
 
   // Initialize Universal Account (mainnet only)
   useEffect(() => {
@@ -957,7 +950,7 @@ export function ParticleUniversalAccount() {
             Paygrid
           </span>
         </h1>
-        <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">One wallet. Every chain.</p>
+        <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">One Universal wallet.</p>
 
         <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">
           {(["mainnet", "testnet"] as const).map((n) => (
@@ -1014,7 +1007,6 @@ export function ParticleUniversalAccount() {
             return { txId: tx.hash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${tx.hash}` };
           }
 
-
           // ---- Mainnet: send directly from the connected MetaMask EOA on
           // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
           // funds straight from the user's wallet instead of relying on the
@@ -1031,13 +1023,15 @@ export function ParticleUniversalAccount() {
             if (err?.code === 4902) {
               await window.ethereum.request({
                 method: "wallet_addEthereumChain",
-                params: [{
-                  chainId: ARB_ONE_HEX,
-                  chainName: "Arbitrum One",
-                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                  rpcUrls: ["https://arb1.arbitrum.io/rpc"],
-                  blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
-                }],
+                params: [
+                  {
+                    chainId: ARB_ONE_HEX,
+                    chainName: "Arbitrum One",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+                    blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
+                  },
+                ],
               });
             } else {
               throw err;
@@ -1065,7 +1059,6 @@ export function ParticleUniversalAccount() {
           }
           await provider.waitForTransaction(txHash);
           return { txId: txHash, txUrl: `${ARBITRUM_MAINNET.explorer}/tx/${txHash}` };
-
         }}
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
@@ -1111,8 +1104,6 @@ export function ParticleUniversalAccount() {
             };
           }
 
-
-
           // ---- Mainnet: send every recipient directly from the connected
           // MetaMask EOA on Arbitrum One (same approach as /pay/:requestId).
           // Each leg is a normal wallet transaction, so funds come from the
@@ -1130,13 +1121,15 @@ export function ParticleUniversalAccount() {
             if (err?.code === 4902) {
               await window.ethereum.request({
                 method: "wallet_addEthereumChain",
-                params: [{
-                  chainId: ARB_ONE_HEX,
-                  chainName: "Arbitrum One",
-                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                  rpcUrls: ["https://arb1.arbitrum.io/rpc"],
-                  blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
-                }],
+                params: [
+                  {
+                    chainId: ARB_ONE_HEX,
+                    chainName: "Arbitrum One",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+                    blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
+                  },
+                ],
               });
             } else {
               throw err;
@@ -1173,7 +1166,6 @@ export function ParticleUniversalAccount() {
           };
         }}
       />
-
 
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
         {/* GameFi action loop — each button fires a real gasless UserOp via the selected method */}
@@ -1240,13 +1232,9 @@ export function ParticleUniversalAccount() {
             paymaster.
           </div>
           <div className="text-[11px]">
-            One wallet per browser: your EIP-7702 Kernel smart account address is derived from a locally-persisted key and reused every time you sign in.
-            <a
-              className="text-primary hover:underline ml-2"
-              href={ARB_SEPOLIA.faucet}
-              target="_blank"
-              rel="noreferrer"
-            >
+            One wallet per browser: your EIP-7702 Kernel smart account address is derived from a locally-persisted key
+            and reused every time you sign in.
+            <a className="text-primary hover:underline ml-2" href={ARB_SEPOLIA.faucet} target="_blank" rel="noreferrer">
               Get test ETH ↗
             </a>
           </div>
@@ -1256,24 +1244,40 @@ export function ParticleUniversalAccount() {
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
         <div className="space-y-14">
           <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10 animate-fade-in">
-            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl float-slow" />
-            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl float-slow" style={{ animationDelay: "2s" }} />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl float-slow"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl float-slow"
+              style={{ animationDelay: "2s" }}
+            />
             <div aria-hidden className="pointer-events-none absolute inset-x-10 top-0 h-px shimmer-bar" />
             <div className="relative">
               <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl mb-5 shadow-lg shadow-primary/30 glow-pulse animate-scale-in">
                 {isTestnet ? "🔐" : "🦊"}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
+              <h2
+                className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight animate-fade-in"
+                style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
+              >
                 {isTestnet ? "Sign in to continue" : "Connect your wallet"}
               </h2>
-              <p className="text-sm text-muted-foreground mb-7 max-w-md mx-auto animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
+              <p
+                className="text-sm text-muted-foreground mb-7 max-w-md mx-auto animate-fade-in"
+                style={{ animationDelay: "160ms", animationFillMode: "backwards" }}
+              >
                 {isTestnet
                   ? "Unlock your Kernel smart account on Arbitrum Sepolia and start moving value across chains."
                   : "Your EOA becomes the owner of a Universal Account — one balance, every supported chain."}
               </p>
 
               {isTestnet ? (
-                <div className="flex justify-center max-w-md mx-auto animate-fade-in" style={{ animationDelay: "240ms", animationFillMode: "backwards" }}>
+                <div
+                  className="flex justify-center max-w-md mx-auto animate-fade-in"
+                  style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+                >
                   <button
                     onClick={() => signInTestnet("zerodev-7702")}
                     disabled={signingIn}
@@ -1357,7 +1361,6 @@ export function ParticleUniversalAccount() {
         </div>
       )}
     </div>
-
   );
 }
 
@@ -1534,7 +1537,7 @@ const HOW_STEPS = [
   },
   {
     n: "02",
-    title: "One balance, every chain",
+    title: "One Universal balance",
     desc: "Your holdings across supported networks are unified. Paygrid routes the cheapest source and delivers the token the recipient asked for.",
     img: "https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?auto=format&fit=crop&w=900&q=70",
     alt: "Interconnected network of nodes",
@@ -1585,7 +1588,10 @@ function LandingHowItWorks() {
               <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-[10px] font-mono text-primary group-hover:border-primary/60 group-hover:text-accent transition-colors">
                 {s.n}
               </div>
-              <div aria-hidden className="absolute -inset-x-8 -bottom-8 h-24 bg-gradient-to-r from-primary/0 via-primary/40 to-accent/0 blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
+              <div
+                aria-hidden
+                className="absolute -inset-x-8 -bottom-8 h-24 bg-gradient-to-r from-primary/0 via-primary/40 to-accent/0 blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500"
+              />
             </div>
             <div className="p-5">
               <div className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">{s.title}</div>
@@ -1636,9 +1642,7 @@ function LandingFaq() {
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
           Answers before you{" "}
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            connect
-          </span>
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">connect</span>
         </h2>
       </div>
 
@@ -1649,7 +1653,9 @@ function LandingFaq() {
             <div
               key={item.q}
               className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all duration-300 overflow-hidden animate-fade-in hover:-translate-y-0.5 ${
-                isOpen ? "border-primary/50 shadow-lg shadow-primary/20" : "border-panel-border hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
+                isOpen
+                  ? "border-primary/50 shadow-lg shadow-primary/20"
+                  : "border-panel-border hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
               }`}
               style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
             >
@@ -1661,7 +1667,9 @@ function LandingFaq() {
                 <span className="text-sm font-semibold group-hover:text-primary transition-colors">{item.q}</span>
                 <span
                   className={`shrink-0 size-7 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                    isOpen ? "rotate-45 bg-primary/20 border-primary/50 text-primary scale-110" : "bg-background/40 border-panel-border text-primary group-hover:bg-primary/10 group-hover:scale-105"
+                    isOpen
+                      ? "rotate-45 bg-primary/20 border-primary/50 text-primary scale-110"
+                      : "bg-background/40 border-panel-border text-primary group-hover:bg-primary/10 group-hover:scale-105"
                   }`}
                 >
                   +
@@ -1685,4 +1693,3 @@ function LandingFaq() {
     </section>
   );
 }
-
