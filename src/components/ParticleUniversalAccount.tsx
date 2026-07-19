@@ -1289,7 +1289,7 @@ export function ParticleUniversalAccount() {
                 <div>
                   <div className="font-semibold text-foreground">🏦 Platform Treasury (rewards source)</div>
                   <div className="text-muted-foreground break-all">
-                    {platformAddress} · balance {platformBalance ?? "…"} ETH
+                    0x54D222B9465D9F10338C426679835B08bc0bAA9C · balance {platformBalance ?? "…"} ETH
                   </div>
                   <div className="text-muted-foreground break-all mt-1">
                     Platform fee recipient · {PLATFORM_FEE_RECIPIENT} · balance {feeRecipientBalance ?? "…"} ETH
