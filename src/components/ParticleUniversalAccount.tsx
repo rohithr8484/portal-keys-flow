@@ -312,9 +312,14 @@ export function ParticleUniversalAccount() {
         chainName: "arbitrum" as any,
         chainId: ARBITRUM_MAINNET.chainId,
       });
-      if (!particle.auth.isLogin()) {
-        await particle.auth.login();
+      // Always show the Particle Web3 login modal — logout any lingering session first
+      if (particle.auth.isLogin()) {
+        try { await particle.auth.logout(); } catch { /* ignore */ }
       }
+      await particle.auth.login({
+        preferredAuthType: undefined as any,
+        supportAuthTypes: "email,google,apple,twitter,discord",
+      } as any);
       const particleProvider = new ParticleProvider(particle.auth);
       const accounts: string[] = await particleProvider.request({ method: "eth_accounts" });
       if (!accounts?.[0]) throw new Error("Particle returned no account");
