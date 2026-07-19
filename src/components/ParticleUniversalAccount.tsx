@@ -1637,7 +1637,7 @@ const HOW_STEPS = [
   {
     n: "01",
     title: "Connect once",
-    desc: "Sign in with MetaMask or ZeroDev. A Universal smart account is bound to your EOA — same address, superpowers.",
+    desc: "Sign in with MetaMask or Particle Network, ZeroDev. A Universal smart account is bound to your EOA — same address, superpowers.",
     img: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=900&q=70",
     alt: "Abstract crypto wallet illustration",
   },
@@ -1650,10 +1650,10 @@ const HOW_STEPS = [
   },
   {
     n: "03",
-    title: "Pay, split, receive",
-    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly.",
-    img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=70",
-    alt: "Mobile payment illustration",
+    title: "Pay, split, receive — even for travellers",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours, hotels and group trips in a single tap.",
+    img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=70",
+    alt: "Travellers exploring a new destination",
   },
 ];
 
