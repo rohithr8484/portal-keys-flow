@@ -1254,40 +1254,49 @@ export function ParticleUniversalAccount() {
       )}
 
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
-        <div className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-10 text-center">
-          <div className="mx-auto size-14 rounded-2xl bg-primary/15 flex items-center justify-center text-2xl mb-4">
-            {isTestnet ? "🔐" : "🦊"}
-          </div>
-          <h2 className="text-xl font-medium mb-2">
-            {isTestnet ? "Sign in to continue" : "Connect your wallet"}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            {isTestnet
-              ? "Pick a signing method to unlock your smart account on Arbitrum Sepolia."
-              : "We'll use your EOA as the owner of a smart account."}
-          </p>
+        <div className="space-y-10">
+          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10">
+            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl" />
+            <div className="relative">
+              <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl mb-5 shadow-lg shadow-primary/30 glow-pulse">
+                {isTestnet ? "🔐" : "🦊"}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight">
+                {isTestnet ? "Sign in to continue" : "Connect your wallet"}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-7 max-w-md mx-auto">
+                {isTestnet
+                  ? "Unlock your Kernel smart account on Arbitrum Sepolia and start moving value across chains."
+                  : "Your EOA becomes the owner of a Universal Account — one balance, every supported chain."}
+              </p>
 
-          {isTestnet ? (
-            <div className="flex justify-center max-w-md mx-auto">
-              <button
-                onClick={() => signInTestnet("zerodev-7702")}
-                disabled={signingIn}
-                className="w-full inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-              >
-                {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
-              </button>
+              {isTestnet ? (
+                <div className="flex justify-center max-w-md mx-auto">
+                  <button
+                    onClick={() => signInTestnet("zerodev-7702")}
+                    disabled={signingIn}
+                    className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                  >
+                    {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={connect}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                >
+                  {loading ? "Connecting…" : "Sign in with MetaMask"}
+                </button>
+              )}
+
+              {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
             </div>
-          ) : (
-            <button
-              onClick={connect}
-              disabled={loading}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-            >
-              {loading ? "Connecting…" : "Sign in with MetaMask"}
-            </button>
-          )}
+          </div>
 
-          {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+          <LandingHowItWorks />
+          <LandingFaq />
         </div>
       ) : (
         <div className="grid gap-6">
@@ -1510,3 +1519,159 @@ function GameActionCard({
     </div>
   );
 }
+
+// ---------- Landing sections (sign-in view only, UI-only) ----------
+
+const HOW_STEPS = [
+  {
+    n: "01",
+    title: "Connect once",
+    desc: "Sign in with MetaMask or ZeroDev. A Universal smart account is bound to your EOA — same address, superpowers.",
+    img: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=900&q=70",
+    alt: "Abstract crypto wallet illustration",
+  },
+  {
+    n: "02",
+    title: "One balance, every chain",
+    desc: "Your holdings across supported networks are unified. Paygrid routes the cheapest source and delivers the token the recipient asked for.",
+    img: "https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?auto=format&fit=crop&w=900&q=70",
+    alt: "Interconnected network of nodes",
+  },
+  {
+    n: "03",
+    title: "Pay, split, receive",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly.",
+    img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=70",
+    alt: "Mobile payment illustration",
+  },
+];
+
+function LandingHowItWorks() {
+  return (
+    <section className="relative">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-3">
+          <span className="size-1.5 rounded-full bg-accent" />
+          How it works
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Three steps to a{" "}
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            chain-agnostic wallet
+          </span>
+        </h2>
+        <p className="mt-3 text-sm text-muted-foreground max-w-lg mx-auto">
+          Paygrid layers Universal Accounts on top of your existing wallet — no new seed phrase, no bridge dance.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {HOW_STEPS.map((s) => (
+          <div
+            key={s.n}
+            className="group relative overflow-hidden rounded-2xl border border-panel-border bg-panel/60 backdrop-blur hover:border-primary/60 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/20"
+          >
+            <div className="relative aspect-[16/10] overflow-hidden">
+              <img
+                src={s.img}
+                alt={s.alt}
+                loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-[10px] font-mono text-primary">
+                {s.n}
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="text-base font-semibold mb-1.5">{s.title}</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">{s.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const LANDING_FAQ = [
+  {
+    q: "What is Paygrid?",
+    a: "A smart-account wallet UX layered on Particle Universal Accounts. Sign in once and move value across supported chains from a single balance.",
+  },
+  {
+    q: "Which networks are supported?",
+    a: "Settlement happens on Arbitrum One (mainnet) and Arbitrum Sepolia (testnet). Funds can be sourced from any chain Particle indexes.",
+  },
+  {
+    q: "Which tokens can I move?",
+    a: "USDC and ETH. Your Universal Account picks the cheapest source assets you already hold and delivers the token the recipient asked for.",
+  },
+  {
+    q: "Do splits require multiple signatures?",
+    a: "No. A split is a single atomic Universal Account transaction — everyone settles together, in one signature.",
+  },
+  {
+    q: "How does Receive work?",
+    a: "Generate a request from the Receive tab. You get a QR code and a shareable link that opens a payer view on any wallet.",
+  },
+  {
+    q: "What are the fees?",
+    a: "Paygrid adds no protocol fee. You only pay underlying network gas plus whatever Particle needs to route funds across chains.",
+  },
+];
+
+function LandingFaq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section className="relative">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-3">
+          <span className="size-1.5 rounded-full bg-primary" />
+          FAQ
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Answers before you{" "}
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            connect
+          </span>
+        </h2>
+      </div>
+
+      <div className="max-w-3xl mx-auto grid gap-3">
+        {LANDING_FAQ.map((item, i) => {
+          const isOpen = open === i;
+          return (
+            <div
+              key={item.q}
+              className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all overflow-hidden ${
+                isOpen ? "border-primary/50 shadow-lg shadow-primary/10" : "border-panel-border hover:border-primary/30"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 cursor-pointer"
+              >
+                <span className="text-sm font-semibold">{item.q}</span>
+                <span
+                  className={`shrink-0 size-7 rounded-full flex items-center justify-center border border-panel-border text-primary transition-transform ${
+                    isOpen ? "rotate-45 bg-primary/15" : "bg-background/40"
+                  }`}
+                >
+                  +
+                </span>
+              </button>
+              {isOpen && (
+                <div className="px-5 pb-5 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
