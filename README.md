@@ -120,8 +120,6 @@ Current capabilities include:
 - Transaction history
 - Payment confirmation
 
-> More advanced transaction management features coming soon.
-
 ---
 
 # Smart Contracts
