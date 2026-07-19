@@ -1648,29 +1648,36 @@ function LandingFaq() {
           return (
             <div
               key={item.q}
-              className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all overflow-hidden ${
-                isOpen ? "border-primary/50 shadow-lg shadow-primary/10" : "border-panel-border hover:border-primary/30"
+              className={`rounded-2xl border bg-panel/60 backdrop-blur transition-all duration-300 overflow-hidden animate-fade-in hover:-translate-y-0.5 ${
+                isOpen ? "border-primary/50 shadow-lg shadow-primary/20" : "border-panel-border hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
               }`}
+              style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
             >
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : i)}
-                className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 cursor-pointer"
+                className="w-full flex items-center justify-between gap-4 text-left px-5 py-4 cursor-pointer group"
               >
-                <span className="text-sm font-semibold">{item.q}</span>
+                <span className="text-sm font-semibold group-hover:text-primary transition-colors">{item.q}</span>
                 <span
-                  className={`shrink-0 size-7 rounded-full flex items-center justify-center border border-panel-border text-primary transition-transform ${
-                    isOpen ? "rotate-45 bg-primary/15" : "bg-background/40"
+                  className={`shrink-0 size-7 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                    isOpen ? "rotate-45 bg-primary/20 border-primary/50 text-primary scale-110" : "bg-background/40 border-panel-border text-primary group-hover:bg-primary/10 group-hover:scale-105"
                   }`}
                 >
                   +
                 </span>
               </button>
-              {isOpen && (
-                <div className="px-5 pb-5 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
-                  {item.a}
+              <div
+                className={`grid transition-all duration-300 ease-out ${
+                  isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-5 pb-5 text-xs text-muted-foreground leading-relaxed border-t border-panel-border/60 pt-3">
+                    {item.a}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
