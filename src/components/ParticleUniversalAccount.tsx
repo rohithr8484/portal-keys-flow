@@ -1010,7 +1010,7 @@ export function ParticleUniversalAccount() {
   const methodLabel = testnetMethod === "zerodev-7702" ? "ZeroDev (EIP-7702)" : "ZeroDev + Particle";
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-6 py-12">
+    <div className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
       {/* Animated GameFi backdrop */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 gamefi-grid opacity-30" />
