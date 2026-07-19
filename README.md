@@ -25,8 +25,7 @@ The platform includes:
 - 🧳 Curated travel packages across India
 - ⭐ Save favorite contacts
 - 📜 Activity & payment history
-- 💼 Transaction management
-- 📑 Smart contract support
+- 💼 Transaction management & Smart contract support
 - ❓ Built-in FAQ and travel assistance
 - 🎨 Responsive mobile-first interface
 
