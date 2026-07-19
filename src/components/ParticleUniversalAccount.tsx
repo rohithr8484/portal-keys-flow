@@ -1291,6 +1291,9 @@ export function ParticleUniversalAccount() {
                   <div className="text-muted-foreground break-all">
                     {platformAddress} · balance {platformBalance ?? "…"} ETH
                   </div>
+                  <div className="text-muted-foreground break-all mt-1">
+                    Platform fee recipient · {PLATFORM_FEE_RECIPIENT} · balance {feeRecipientBalance ?? "…"} ETH
+                  </div>
                 </div>
                 <a href={ARB_SEPOLIA.faucet} target="_blank" rel="noreferrer" className="underline text-primary">
                   Fund via faucet →
@@ -1328,6 +1331,27 @@ export function ParticleUniversalAccount() {
             </div>
           </div>
         )}
+        {!isTestnet && (
+          <div className="mt-6">
+            <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-[11px] flex flex-wrap items-center gap-2 justify-between">
+              <div>
+                <div className="font-semibold text-foreground">🏦 Platform Treasury (Arbitrum One)</div>
+                <div className="text-muted-foreground break-all">
+                  {PLATFORM_FEE_RECIPIENT} · balance {feeRecipientBalance ?? "…"} ETH
+                </div>
+              </div>
+              <a
+                href={`https://arbiscan.io/address/${PLATFORM_FEE_RECIPIENT}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline text-primary"
+              >
+                View on Arbiscan →
+              </a>
+            </div>
+          </div>
+        )}
+
       </section>
 
       {missingAppId && !isTestnet && (
