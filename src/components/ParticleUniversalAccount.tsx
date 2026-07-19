@@ -4,6 +4,8 @@ import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
 
 
+const PAYGRID_LOGO_URL = "/__l5e/assets-v1/ce5dcd6b-076a-4f95-b873-ffb42fee0c0f/paygrid-logo.png";
+
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
 type SdkModule = typeof import("@particle-network/universal-account-sdk");
 let sdkPromise: Promise<SdkModule> | null = null;
@@ -1025,17 +1027,18 @@ export function ParticleUniversalAccount() {
       </div>
 
       <header className="mb-10 text-center relative">
+        <div className="mb-5 flex justify-center">
+          <img
+            src={PAYGRID_LOGO_URL}
+            alt="Paygrid"
+            className="h-14 w-auto max-w-[280px] rounded-lg object-contain shadow-lg shadow-primary/10"
+          />
+        </div>
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-5">
           <span className="size-1.5 rounded-full bg-success animate-pulse" />
           EIP-7702 · Universal Accounts · ZeroDev
         </div>
-
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tighter neon-text">
-          <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent [background-size:200%_auto] animate-[shimmer_4s_linear_infinite]">
-            Paygrid
-          </span>
-        </h1>
         <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">One Universal wallet.</p>
 
         <div className="mt-7 inline-flex rounded-xl border border-panel-border bg-panel/70 backdrop-blur p-1 shadow-lg shadow-primary/5">

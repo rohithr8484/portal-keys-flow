@@ -1097,7 +1097,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Sawai Madhopur → Ranthambore",
     tagline: "Two morning safaris, jungle fort trek and Chambal river drive.",
     usdc: "2.10",
-    eth: "0.00078",
+    eth: "0.000000002",
     image: "https://images.unsplash.com/photo-1549366021-9f761d450615?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
@@ -1109,7 +1109,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Khajuraho → Orchha → Gwalior",
     tagline: "UNESCO temples, Bundela palaces and the fortified skyline of Gwalior.",
     usdc: "1.95",
-    eth: "0.00072",
+    eth: "0.000000002",
     image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
@@ -1194,11 +1194,11 @@ function HotelsTab({
       });
       const nativeCall = createCall({
         target: hotel.bookingAddress as `0x${string}`,
-        value: FLEX.NATIVE_AMOUNT as unknown as bigint,
+        value: FLEX.NATIVE_AMOUNT,
       });
 
       const actions = isEth
-        ? { NATIVE: { action: [nativeCall], fallBack: [nativeCall] } }
+        ? { NATIVE: { action: [nativeCall], fallBack: [] } }
         : { USDC: { action: [erc20Call], fallBack: [erc20Call] } };
 
       const srcTokens = isEth
@@ -1221,6 +1221,7 @@ function HotelsTab({
         slippage: 5000,
         actions,
         srcTokens,
+        allowPartialRoutes: true,
         config: { baseUrl: `${SMART_ROUTING_ADDRESS_SERVER_URL}/${ZERODEV_PROJECT_ID}` },
       });
       setRoutingModal({ hotel, address: smartRoutingAddress, fees: estimatedFees });
@@ -1232,7 +1233,7 @@ function HotelsTab({
       });
       onNotify?.(
         isEth
-          ? "Smart routing address ready — send ETH on any supported chain."
+          ? "Smart routing address ready — send ETH on a supported chain."
           : "Smart routing address ready — send USDC on any supported chain."
       );
     } catch (e: any) {
@@ -1337,7 +1338,7 @@ function HotelsTab({
               {routingModal?.hotel.asset === "ETH"
                 ? `${routingModal?.hotel.eth} ETH`
                 : `${routingModal?.hotel.usdc} USDC`}{" "}
-              to the address below on any supported chain (Arbitrum, Optimism, Base, Ethereum). ZeroDev
+              to the address below on {routingModal?.hotel.asset === "ETH" ? "a supported chain (Optimism, Base, Ethereum when available)" : "any supported chain (Arbitrum, Optimism, Base, Ethereum)"}. ZeroDev
               will route it to the operator on Arbitrum One.
             </DialogDescription>
 
