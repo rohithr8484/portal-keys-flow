@@ -1202,7 +1202,12 @@ function HotelsTab({
         : { USDC: { action: [erc20Call], fallBack: [erc20Call] } };
 
       const srcTokens = isEth
-        ? [{ tokenType: "NATIVE" as const, chain: viemChains.arbitrum }]
+        ? [
+            { tokenType: "NATIVE" as const, chain: viemChains.arbitrum },
+            { tokenType: "NATIVE" as const, chain: viemChains.optimism },
+            { tokenType: "NATIVE" as const, chain: viemChains.base },
+            { tokenType: "NATIVE" as const, chain: viemChains.mainnet },
+          ]
         : [
             { tokenType: "USDC" as const, chain: viemChains.arbitrum },
             { tokenType: "USDC" as const, chain: viemChains.optimism },
@@ -1228,7 +1233,7 @@ function HotelsTab({
       });
       onNotify?.(
         isEth
-          ? "Smart routing address ready — send ETH on Arbitrum One."
+          ? "Smart routing address ready — send ETH on a supported chain."
           : "Smart routing address ready — send USDC on any supported chain."
       );
     } catch (e: any) {
@@ -1333,7 +1338,7 @@ function HotelsTab({
               {routingModal?.hotel.asset === "ETH"
                 ? `${routingModal?.hotel.eth} ETH`
                 : `${routingModal?.hotel.usdc} USDC`}{" "}
-              to the address below on {routingModal?.hotel.asset === "ETH" ? "Arbitrum One" : "any supported chain (Arbitrum, Optimism, Base, Ethereum)"}. ZeroDev
+              to the address below on {routingModal?.hotel.asset === "ETH" ? "a supported chain (Optimism, Base, Ethereum when available)" : "any supported chain (Arbitrum, Optimism, Base, Ethereum)"}. ZeroDev
               will route it to the operator on Arbitrum One.
             </DialogDescription>
 
