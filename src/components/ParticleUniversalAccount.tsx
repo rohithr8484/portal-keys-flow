@@ -1254,40 +1254,49 @@ export function ParticleUniversalAccount() {
       )}
 
       {(!eoa && !isTestnet) || (isTestnet && !testnetSignedIn) ? (
-        <div className="rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-10 text-center">
-          <div className="mx-auto size-14 rounded-2xl bg-primary/15 flex items-center justify-center text-2xl mb-4">
-            {isTestnet ? "🔐" : "🦊"}
-          </div>
-          <h2 className="text-xl font-medium mb-2">
-            {isTestnet ? "Sign in to continue" : "Connect your wallet"}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            {isTestnet
-              ? "Pick a signing method to unlock your smart account on Arbitrum Sepolia."
-              : "We'll use your EOA as the owner of a smart account."}
-          </p>
+        <div className="space-y-10">
+          <div className="relative overflow-hidden rounded-3xl border border-panel-border bg-gradient-to-br from-panel/90 via-panel/70 to-panel/40 backdrop-blur-xl p-10 text-center shadow-2xl shadow-primary/10">
+            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-primary/20 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-accent/20 blur-3xl" />
+            <div className="relative">
+              <div className="mx-auto size-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl mb-5 shadow-lg shadow-primary/30 glow-pulse">
+                {isTestnet ? "🔐" : "🦊"}
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight">
+                {isTestnet ? "Sign in to continue" : "Connect your wallet"}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-7 max-w-md mx-auto">
+                {isTestnet
+                  ? "Unlock your Kernel smart account on Arbitrum Sepolia and start moving value across chains."
+                  : "Your EOA becomes the owner of a Universal Account — one balance, every supported chain."}
+              </p>
 
-          {isTestnet ? (
-            <div className="flex justify-center max-w-md mx-auto">
-              <button
-                onClick={() => signInTestnet("zerodev-7702")}
-                disabled={signingIn}
-                className="w-full inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-              >
-                {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
-              </button>
+              {isTestnet ? (
+                <div className="flex justify-center max-w-md mx-auto">
+                  <button
+                    onClick={() => signInTestnet("zerodev-7702")}
+                    disabled={signingIn}
+                    className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                  >
+                    {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={connect}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 transition disabled:opacity-50 shadow-lg shadow-primary/30"
+                >
+                  {loading ? "Connecting…" : "Sign in with MetaMask"}
+                </button>
+              )}
+
+              {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
             </div>
-          ) : (
-            <button
-              onClick={connect}
-              disabled={loading}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition disabled:opacity-50"
-            >
-              {loading ? "Connecting…" : "Sign in with MetaMask"}
-            </button>
-          )}
+          </div>
 
-          {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+          <LandingHowItWorks />
+          <LandingFaq />
         </div>
       ) : (
         <div className="grid gap-6">
