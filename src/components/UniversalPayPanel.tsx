@@ -1182,44 +1182,66 @@ function HotelsTab({
           import("viem"),
         ]);
       const ZERODEV_PROJECT_ID = "263a14d6-19fe-4e98-8ba4-02b793c1aa0a";
+
+      const isEth = hotel.asset === "ETH";
+
       const erc20Call = createCall({
         target: FLEX.TOKEN_ADDRESS,
         value: 0n,
         abi: viem.erc20Abi,
         functionName: "transfer",
-        // FLEX.AMOUNT is a routing placeholder that the router substitutes at
-        // execution time with the actual amount deposited by the payer.
         args: [hotel.bookingAddress as `0x${string}`, FLEX.AMOUNT as unknown as bigint],
       });
+      const nativeCall = createCall({
+        target: hotel.bookingAddress as `0x${string}`,
+        value: FLEX.NATIVE_AMOUNT as unknown as bigint,
+      });
+
+      const actions = isEth
+        ? { NATIVE: { action: [nativeCall], fallBack: [nativeCall] } }
+        : { USDC: { action: [erc20Call], fallBack: [erc20Call] } };
+
+      const srcTokens = isEth
+        ? [
+            { tokenType: "NATIVE" as const, chain: viemChains.arbitrum },
+            { tokenType: "NATIVE" as const, chain: viemChains.optimism },
+            { tokenType: "NATIVE" as const, chain: viemChains.base },
+            { tokenType: "NATIVE" as const, chain: viemChains.mainnet },
+          ]
+        : [
+            { tokenType: "USDC" as const, chain: viemChains.arbitrum },
+            { tokenType: "USDC" as const, chain: viemChains.optimism },
+            { tokenType: "USDC" as const, chain: viemChains.base },
+            { tokenType: "USDC" as const, chain: viemChains.mainnet },
+          ];
+
       const { smartRoutingAddress, estimatedFees } = await createSmartRoutingAddress({
         destChain: viemChains.arbitrum,
         owner: hotel.bookingAddress as `0x${string}`,
         slippage: 5000,
-        actions: {
-          USDC: { action: [erc20Call], fallBack: [erc20Call] },
-        },
-        srcTokens: [
-          { tokenType: "USDC", chain: viemChains.arbitrum },
-          { tokenType: "USDC", chain: viemChains.optimism },
-          { tokenType: "USDC", chain: viemChains.base },
-          { tokenType: "USDC", chain: viemChains.mainnet },
-        ],
+        actions,
+        srcTokens,
         config: { baseUrl: `${SMART_ROUTING_ADDRESS_SERVER_URL}/${ZERODEV_PROJECT_ID}` },
       });
       setRoutingModal({ hotel, address: smartRoutingAddress, fees: estimatedFees });
       pushActivity({
         kind: "pay",
         label: `Routing address for ${hotel.name}`,
-        amount: hotel.usdc,
-        token: "USDC",
+        amount: isEth ? (hotel.eth ?? "0") : hotel.usdc,
+        token: isEth ? "ETH" : "USDC",
       });
-      onNotify?.("Smart routing address ready — send USDC on any supported chain.");
+      onNotify?.(
+        isEth
+          ? "Smart routing address ready — send ETH on any supported chain."
+          : "Smart routing address ready — send USDC on any supported chain."
+      );
     } catch (e: any) {
       onNotify?.(e?.message ?? "Failed to create smart routing address");
     } finally {
       setBusyKey(null);
     }
   };
+
 
   const showRouting = network === "mainnet";
 
