@@ -1651,7 +1651,7 @@ const HOW_STEPS = [
   {
     n: "03",
     title: "Pay, split, receive — even for travellers",
-    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours, hotels and group trips in a single tap.",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours and group trips in a single tap.",
     img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=70",
     alt: "Travellers exploring a new destination",
   },
