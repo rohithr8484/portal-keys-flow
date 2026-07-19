@@ -362,9 +362,9 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
                 : "border-panel-border bg-background/40 hover:border-primary/40"
             }`}
           >
-            <div className="text-lg mb-1">{f.icon}</div>
-            <div className="text-xs font-semibold">{f.title}</div>
-            <div className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{f.desc}</div>
+            <div className="text-2xl mb-1.5">{f.icon}</div>
+            <div className="text-sm sm:text-base font-semibold">{f.title}</div>
+            <div className="text-xs sm:text-[13px] leading-snug text-muted-foreground line-clamp-3 mt-1">{f.desc}</div>
           </button>
         ))}
       </div>
@@ -1075,7 +1075,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Leh → Nubra → Pangong",
     tagline: "High-altitude monasteries, sand dunes and the shifting blues of Pangong.",
     usdc: "3.20",
-    image: "https://images.unsplash.com/photo-1580289143186-03e546ed7ceb?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1589553416260-f586c8f1514f?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
     asset: "USDC",
@@ -1086,7 +1086,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Hampi → Badami → Pattadakal",
     tagline: "Vijayanagara boulders, Virupaksha temple and Chalukyan rock-cut caves.",
     usdc: "1.75",
-    image: "https://images.unsplash.com/photo-1580889240911-ede6e04dc849?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1600100397888-e0a89e91d51a?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
     asset: "USDC",
