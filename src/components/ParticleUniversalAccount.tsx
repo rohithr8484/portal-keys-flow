@@ -346,6 +346,10 @@ export function ParticleUniversalAccount() {
     setSigningIn(true);
     setError(null);
     setStatus(null);
+    setTestnetMethod(method);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ua_testnet_method", method);
+    }
     try {
       if (method === "zerodev-7702") {
         const account = await getLocal7702Account();
