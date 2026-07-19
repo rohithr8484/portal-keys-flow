@@ -9,7 +9,6 @@ PayGrid is a travel payment application that makes travel payments easier by ena
 
 Designed for modern travelers, PayGrid combines crypto payments, shared expense management, QR-based transfers, and curated travel experiences into one platform. Powered by **Particle Network Universal Accounts (EIP-7702)**, users simply connect their wallet and start paying without changing their existing wallet address.
 
-🔗 **Live Demo:** https://your-demo-link.vercel.app
 
 ---
 
