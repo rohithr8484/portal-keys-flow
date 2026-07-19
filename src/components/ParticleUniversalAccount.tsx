@@ -1078,38 +1078,47 @@ export function ParticleUniversalAccount() {
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
 
-          // ---- Testnet path: ONE gasless kernel userop batches every leg ----
+          // ---- Testnet path: send each leg as a direct EOA transaction from
+          // the local 7702 key. This makes every transfer appear in the
+          // "Transactions" tab of Arbiscan (Sepolia) instead of only showing
+          // up as an internal transaction under a UserOp bundle. ----
           if (isTestnet) {
-            const { kernelClient } = await buildKernelClient();
-            const chainId = EVM_CHAINS.arbitrumSepolia;
             const ARB_SEPOLIA_USDC = "0x75faF114eAFb1BDbe2F0316DF893fd58CE46AA4d";
-            // Testnet split preserves duplicate recipients. USDC is encoded
-            // as ERC-20 transfers so amounts aren't misread as native value.
-            const calls =
-              token === "ETH"
-                ? buildSplitNativeCalls({ chainId, recipients })
-                : buildSplitERC20Calls({
-                    chainId,
-                    tokenAddress: ARB_SEPOLIA_USDC,
-                    decimals: 6,
-                    recipients,
-                  });
-            const userOpHash = await (kernelClient as any).sendUserOperation({
-              callData: await kernelClient.account!.encodeCalls(
-                calls.map((c) => ({
-                  to: c.to as `0x${string}`,
-                  value: BigInt(c.value),
-                  data: c.data as `0x${string}`,
-                })),
-              ),
-            });
-            const receipt = await kernelClient.waitForUserOperationReceipt({
-              hash: userOpHash,
-            });
-            const txId = receipt.receipt.transactionHash;
+            const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
+            if (!isStoredPrivateKey(pk)) {
+              throw new Error("Testnet smart account key missing. Sign in again.");
+            }
+            const rpcProvider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+            const wallet = new ethers.Wallet(pk, rpcProvider);
+            const erc20Iface = new ethers.Interface(["function transfer(address,uint256)"]);
+            const hashes: string[] = [];
+            for (const r of recipients) {
+              const to = ethers.getAddress(r.address);
+              let tx;
+              if (token === "ETH") {
+                tx = await wallet.sendTransaction({
+                  to,
+                  value: ethers.parseEther(String(r.amount)),
+                });
+              } else {
+                const units = ethers.parseUnits(String(r.amount), 6);
+                const data = erc20Iface.encodeFunctionData("transfer", [to, units]);
+                tx = await wallet.sendTransaction({
+                  to: ARB_SEPOLIA_USDC,
+                  data,
+                });
+              }
+              await tx.wait();
+              hashes.push(tx.hash);
+            }
             awardXp(50);
-            return { txId, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txId}` };
+            const first = hashes[0];
+            return {
+              txId: hashes.join(", "),
+              txUrl: first ? `${ARB_SEPOLIA.explorer}/tx/${first}` : undefined,
+            };
           }
+
 
 
           // ---- Mainnet: send every recipient directly from the connected
