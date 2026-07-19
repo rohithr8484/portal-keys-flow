@@ -330,20 +330,20 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
   };
 
   return (
-    <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-6">
-      <div className="flex items-end justify-between mb-5 flex-wrap gap-2">
-        <div>
+    <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-5 gap-3">
+        <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Universal Pay</div>
-          <h2 className="text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
           <p className="text-xs text-muted-foreground mt-1">
             Payment primitives built on the smart account you already connected.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] px-2.5 py-1 rounded-full border border-panel-border bg-background/40 text-muted-foreground">
             Balance ${(unifiedUsd ?? 0).toFixed(2)}
           </span>
-          <span className="text-[11px] px-2.5 py-1 rounded-full border border-panel-border bg-background/40 text-muted-foreground">
+          <span className="text-[11px] px-2.5 py-1 rounded-full border border-panel-border bg-background/40 text-muted-foreground truncate max-w-[160px]">
             {address ? shortAddr(address) : "Not connected"}
           </span>
         </div>
