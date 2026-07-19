@@ -365,6 +365,6 @@ Whether you're relaxing on Goa's beaches, exploring Rajasthan's historic forts, 
 
 ## License
 
-Built for the **UXMaxx Hackathon**.
+Built for the **UXMaxx Hackathon**. **General Track + Zero Dev track**
 
 ```
