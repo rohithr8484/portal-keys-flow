@@ -1075,7 +1075,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Leh → Nubra → Pangong",
     tagline: "High-altitude monasteries, sand dunes and the shifting blues of Pangong.",
     usdc: "3.20",
-    image: "https://images.unsplash.com/photo-1580289143186-03e546ed7ceb?w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1589553416260-f586c8f1514f?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
     asset: "USDC",
