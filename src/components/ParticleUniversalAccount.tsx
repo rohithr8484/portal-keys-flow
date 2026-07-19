@@ -494,6 +494,29 @@ export function ParticleUniversalAccount() {
     };
   }, [isTestnet, smartAccountAddress, eoa]);
 
+  // Poll ETH balance of the platform fee recipient on the active network.
+  useEffect(() => {
+    let cancelled = false;
+    const RPC = isTestnet ? ARB_SEPOLIA.rpcUrl : "https://arb1.arbitrum.io/rpc";
+    const provider = new ethers.JsonRpcProvider(RPC);
+    const load = async () => {
+      try {
+        const bal = await provider.getBalance(PLATFORM_FEE_RECIPIENT);
+        if (!cancelled) setFeeRecipientBalance(ethers.formatEther(bal));
+      } catch {
+        if (!cancelled) setFeeRecipientBalance(null);
+      }
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [isTestnet]);
+
+
+
   // ---------- Mainnet: Particle UA transfer ----------
   const sendMainnetTx = useCallback(async () => {
     if (!ua || !eoa) return;
