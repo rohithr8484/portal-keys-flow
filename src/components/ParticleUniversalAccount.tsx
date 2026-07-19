@@ -1027,12 +1027,14 @@ export function ParticleUniversalAccount() {
       <header className="mb-10 text-center relative">
         <div className="flex justify-center mb-5">
           <div className="relative inline-flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur-xl shadow-lg shadow-primary/10">
-            <div className="relative size-8 rounded-xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center text-base font-black text-primary-foreground glow-pulse">
-              ◆
-            </div>
-            <div className="text-left leading-tight">
+            <img
+              src={paygridLogo}
+              alt="Paygrid"
+              className="h-8 w-auto drop-shadow-[0_0_12px_rgba(59,130,246,0.35)]"
+            />
+            <div className="hidden sm:block text-left leading-tight border-l border-panel-border/60 pl-3">
               <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Powered by Particle</div>
-              <div className="text-sm font-bold tracking-tight">Paygrid</div>
+              <div className="text-sm font-bold tracking-tight">Universal Accounts</div>
             </div>
           </div>
         </div>
