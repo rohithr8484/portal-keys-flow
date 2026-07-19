@@ -1062,7 +1062,11 @@ const HOTEL_LISTINGS: Hotel[] = [
 // The user sends USDC on any supported source chain to the generated smart
 // routing address, and ZeroDev bridges/settles it as USDC on Arbitrum One
 // to the platform treasury (HOTEL_BOOKING_ADDRESS).
-type RoutingHotel = Omit<Hotel, "eth"> & { usdcRouting: true };
+type RoutingHotel = Omit<Hotel, "eth"> & {
+  usdcRouting: true;
+  asset: "USDC" | "ETH";
+  eth?: string;
+};
 
 const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
   {
@@ -1074,6 +1078,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     image: "https://images.unsplash.com/photo-1580289143186-03e546ed7ceb?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "USDC",
   },
   {
     id: "hampi-ruins",
@@ -1084,6 +1089,7 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     image: "https://images.unsplash.com/photo-1580889240911-ede6e04dc849?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "USDC",
   },
   {
     id: "ranthambore-safari",
@@ -1091,9 +1097,11 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Sawai Madhopur → Ranthambore",
     tagline: "Two morning safaris, jungle fort trek and Chambal river drive.",
     usdc: "2.10",
+    eth: "0.00078",
     image: "https://images.unsplash.com/photo-1549366021-9f761d450615?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "ETH",
   },
   {
     id: "khajuraho-heritage",
@@ -1101,11 +1109,14 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
     city: "Khajuraho → Orchha → Gwalior",
     tagline: "UNESCO temples, Bundela palaces and the fortified skyline of Gwalior.",
     usdc: "1.95",
+    eth: "0.00072",
     image: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&auto=format&fit=crop",
     bookingAddress: HOTEL_BOOKING_ADDRESS,
     usdcRouting: true,
+    asset: "ETH",
   },
 ];
+
 
 type RoutingModalState = {
   hotel: RoutingHotel;
