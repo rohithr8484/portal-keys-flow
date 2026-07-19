@@ -1637,7 +1637,7 @@ const HOW_STEPS = [
   {
     n: "01",
     title: "Connect once",
-    desc: "Sign in with MetaMask or ZeroDev. A Universal smart account is bound to your EOA — same address, superpowers.",
+    desc: "Sign in with MetaMask or Particle Network, ZeroDev. A Universal smart account is bound to your EOA — same address, superpowers.",
     img: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=900&q=70",
     alt: "Abstract crypto wallet illustration",
   },
@@ -1650,28 +1650,28 @@ const HOW_STEPS = [
   },
   {
     n: "03",
-    title: "Pay, split, receive",
-    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly.",
-    img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=70",
-    alt: "Mobile payment illustration",
+    title: "Pay, split, receive — even for travellers",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours, hotels and group trips in a single tap.",
+    img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=70",
+    alt: "Travellers exploring a new destination",
   },
 ];
 
 function LandingHowItWorks() {
   return (
     <section className="relative">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-panel-border bg-panel/60 text-[11px] text-muted-foreground mb-3">
-          <span className="size-1.5 rounded-full bg-accent" />
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-panel-border bg-panel/60 text-xs text-muted-foreground mb-4 animate-fade-in">
+          <span className="size-2 rounded-full bg-accent glow-pulse" />
           How it works
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
           Three steps to a{" "}
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             chain-agnostic wallet
           </span>
         </h2>
-        <p className="mt-3 text-sm text-muted-foreground max-w-lg mx-auto">
+        <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
           Paygrid layers Universal Accounts on top of your existing wallet — no new seed phrase, no bridge dance.
         </p>
       </div>
@@ -1680,28 +1680,36 @@ function LandingHowItWorks() {
         {HOW_STEPS.map((s, i) => (
           <div
             key={s.n}
-            className="group relative overflow-hidden rounded-2xl border border-panel-border bg-panel/60 backdrop-blur hover:border-primary/60 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/30 animate-fade-in"
-            style={{ animationDelay: `${i * 120}ms`, animationFillMode: "backwards" }}
+            className="group relative overflow-hidden rounded-2xl border border-panel-border bg-panel/60 backdrop-blur hover:border-primary/60 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/30 animate-fade-in float-slow"
+            style={{ animationDelay: `${i * 140}ms`, animationFillMode: "backwards" }}
           >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              style={{
+                background:
+                  "linear-gradient(120deg, transparent 30%, color-mix(in oklab, var(--primary) 22%, transparent) 50%, transparent 70%)",
+              }}
+            />
             <div className="relative aspect-[16/10] overflow-hidden">
               <img
                 src={s.img}
                 alt={s.alt}
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-110 group-hover:rotate-1"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
-              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-[10px] font-mono text-primary group-hover:border-primary/60 group-hover:text-accent transition-colors">
+              <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-background/70 backdrop-blur-md border border-panel-border text-xs font-mono text-primary group-hover:border-primary/60 group-hover:text-accent group-hover:scale-110 transition-all duration-300">
                 {s.n}
               </div>
               <div
                 aria-hidden
-                className="absolute -inset-x-8 -bottom-8 h-24 bg-gradient-to-r from-primary/0 via-primary/40 to-accent/0 blur-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500"
+                className="absolute -inset-x-8 -bottom-8 h-24 bg-gradient-to-r from-primary/0 via-primary/50 to-accent/0 blur-2xl opacity-0 group-hover:opacity-70 transition-opacity duration-500"
               />
             </div>
-            <div className="p-5">
-              <div className="text-base font-semibold mb-1.5 group-hover:text-primary transition-colors">{s.title}</div>
-              <div className="text-xs text-muted-foreground leading-relaxed">{s.desc}</div>
+            <div className="p-6 relative">
+              <div className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{s.title}</div>
+              <div className="text-sm text-muted-foreground leading-relaxed">{s.desc}</div>
             </div>
           </div>
         ))}
