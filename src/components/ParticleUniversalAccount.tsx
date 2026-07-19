@@ -165,6 +165,7 @@ export function ParticleUniversalAccount() {
   const [streak, setStreak] = useState<number>(0);
   const [platformAddress, setPlatformAddress] = useState<string | null>(null);
   const [platformBalance, setPlatformBalance] = useState<string | null>(null);
+  const [feeRecipientBalance, setFeeRecipientBalance] = useState<string | null>(null);
   const [testnetSignedIn, setTestnetSignedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     const method = (localStorage.getItem("ua_testnet_method") as TestnetMethod) || "zerodev-7702";
