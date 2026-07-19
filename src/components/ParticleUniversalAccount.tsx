@@ -1309,7 +1309,7 @@ export function ParticleUniversalAccount() {
 
               {isTestnet ? (
                 <div
-                  className="flex justify-center max-w-md mx-auto animate-fade-in"
+                  className="flex flex-col gap-3 max-w-md mx-auto animate-fade-in"
                   style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
                 >
                   <button
@@ -1319,17 +1319,35 @@ export function ParticleUniversalAccount() {
                   >
                     {signingIn ? "Signing in…" : "Sign in with ZeroDev (EIP-7702)"}
                   </button>
+                  <button
+                    onClick={() => signInTestnet("zerodev-particle")}
+                    disabled={signingIn}
+                    className="w-full inline-flex items-center justify-center rounded-xl border border-panel-border bg-panel/60 px-5 py-3 text-sm font-semibold text-foreground hover:bg-panel hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50"
+                  >
+                    {signingIn ? "Signing in…" : "Sign in with Particle Web3 Login"}
+                  </button>
                 </div>
               ) : (
-                <button
-                  onClick={connect}
-                  disabled={loading}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50 animate-fade-in"
-                  style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
-                >
-                  {loading ? "Connecting…" : "Sign in with MetaMask"}
-                </button>
+                <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  <button
+                    onClick={connect}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-7 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 shadow-lg shadow-primary/30 hover:shadow-primary/50 animate-fade-in"
+                    style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
+                  >
+                    {loading ? "Connecting…" : "Sign in with MetaMask"}
+                  </button>
+                  <button
+                    onClick={connectParticleMainnet}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center rounded-xl border border-panel-border bg-panel/60 px-7 py-3 text-sm font-semibold text-foreground hover:bg-panel hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 animate-fade-in"
+                    style={{ animationDelay: "300ms", animationFillMode: "backwards" }}
+                  >
+                    {loading ? "Connecting…" : "Sign in with Particle Web3 Login"}
+                  </button>
+                </div>
               )}
+
 
               {error && <p className="mt-4 text-sm text-destructive animate-fade-in">{error}</p>}
             </div>
