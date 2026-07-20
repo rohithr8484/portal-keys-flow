@@ -119,47 +119,28 @@ Current capabilities include:
 - Transaction history
 - Payment confirmation
 
+#### 🌐 Mainnet — Arbitrum One
 
-MAINET -> 
+| Flow                | Transaction |
+| ------------------- | ----------- |
+| Pay / Split         | [`0x409c2429…d52a32e`](https://arbiscan.io/tx/0x409c2429c30ff60d3e86f363709c543400dcef042d16018e38cd085acd52a32e) |
+| Pay / Split         | [`0x9b489629…3bfcdd7`](https://arbiscan.io/tx/0x9b489629d8121318b178ba20e511a150d1358fed17a036a40f9c4fd4e3bfcdd7) |
+| Pay / Split         | [`0x5d55f9b1…8a791f4`](https://arbiscan.io/tx/0x5d55f9b1d894b51933359ebf3b35c78192c49811df0715f01077618818a791f4) |
+| Receive (QR link)   | [Payer link](https://id-preview--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app/pay/0f216220-a3b2-4998-98df-13cb63118ab9) |
+| Receive (on-chain)  | [`0xd4325ad2…36935d7`](https://arbiscan.io/tx/0xd4325ad2605ca9a953afc106276e616f8a8da41b0c286b4c4b0e058d036935d7) |
+| Tourist Packages    | [`0xb9284c4d…1526503`](https://arbiscan.io/tx/0xb9284c4d013241ea6a49c0d905db2dc909980df39706175a9fe3d7f6c1526503) |
+| Activity Tracker    | [`0x59766e05…ff2b0e99`](https://arbiscan.io/tx/0x59766e055fcebb7e027b888131234368dd5297153184f2e255776e06ff2b0e99) |
 
-Pay/Split
+#### 🧪 Testnet — Arbitrum Sepolia
 
-https://arbiscan.io/tx/0x409c2429c30ff60d3e86f363709c543400dcef042d16018e38cd085acd52a32e
-https://arbiscan.io/tx/0x9b489629d8121318b178ba20e511a150d1358fed17a036a40f9c4fd4e3bfcdd7
-https://arbiscan.io/tx/0x5d55f9b1d894b51933359ebf3b35c78192c49811df0715f01077618818a791f4
+| Flow                | Transaction |
+| ------------------- | ----------- |
+| Pay / Split         | [`0xa89e5feb…7e88c28f`](https://sepolia.arbiscan.io/tx/0xa89e5febfc5ecfff2e86915cfb7f7d553ed81fda0198e9908ed8b2517e88c28f) |
+| Pay / Split         | [`0x90a150df…aee8d6be`](https://sepolia.arbiscan.io/tx/0x90a150df2776e9b0f11013a46c8b435f0d39c28fd8a1408510c59c20aee8d6be) |
+| Receive             | [`0xc6c43ad1…8c93689`](https://sepolia.arbiscan.io/tx/0xc6c43ad1fa57191bdab8602ad3bc919d8d9ce9e695c6e19323040c0f28c93689) |
+| Tourist Packages    | [`0x219f211a…c554a1c1`](https://sepolia.arbiscan.io/tx/0x219f211a532473bffd4c3974043aee0710dd765fd15cc4619000f533c554a1c1) |
+| Activity Tracker    | [`0xd4429655…c1a02da8d`](https://sepolia.arbiscan.io/tx/0xd44296554bd622f565ea78767892bb60eeee5aa82465a6dbad9a014c1a02da8d) |
 
-Receive - 
-
-https://id-preview--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app/pay/0f216220-a3b2-4998-98df-13cb63118ab9
-
-https://arbiscan.io/tx/0xd4325ad2605ca9a953afc106276e616f8a8da41b0c286b4c4b0e058d036935d7
-
-Packages
-
-https://arbiscan.io/tx/0xb9284c4d013241ea6a49c0d905db2dc909980df39706175a9fe3d7f6c1526503
-
-Transaction Activity
-
-https://arbiscan.io/tx/0x59766e055fcebb7e027b888131234368dd5297153184f2e255776e06ff2b0e99
-
-TESTNET ->
-
-Pay/Split
-
-https://sepolia.arbiscan.io/tx/0xa89e5febfc5ecfff2e86915cfb7f7d553ed81fda0198e9908ed8b2517e88c28f
-https://sepolia.arbiscan.io/tx/0x90a150df2776e9b0f11013a46c8b435f0d39c28fd8a1408510c59c20aee8d6be
-
-Receive - 
-
-https://sepolia.arbiscan.io/tx/0xc6c43ad1fa57191bdab8602ad3bc919d8d9ce9e695c6e19323040c0f28c93689
-
-Packages
-
-https://sepolia.arbiscan.io/tx/0x219f211a532473bffd4c3974043aee0710dd765fd15cc4619000f533c554a1c1
-
-Transaction Activity
-
-https://sepolia.arbiscan.io/tx/0xd44296554bd622f565ea78767892bb60eeee5aa82465a6dbad9a014c1a02da8d
 
 ---
 
