@@ -124,7 +124,7 @@ Current capabilities include:
 | Pay / Split         | [`0x409c2429…d52a32e`](https://arbiscan.io/tx/0x409c2429c30ff60d3e86f363709c543400dcef042d16018e38cd085acd52a32e) |
 | Pay / Split         | [`0x9b489629…3bfcdd7`](https://arbiscan.io/tx/0x9b489629d8121318b178ba20e511a150d1358fed17a036a40f9c4fd4e3bfcdd7) |
 | Pay / Split         | [`0x5d55f9b1…8a791f4`](https://arbiscan.io/tx/0x5d55f9b1d894b51933359ebf3b35c78192c49811df0715f01077618818a791f4) |
-| Receive (QR link)   | [Payer link](https://id-preview--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app/pay/0f216220-a3b2-4998-98df-13cb63118ab9) | (Lovable Account is required to use QR feature |
+| Receive (QR link)   | [Payer link](https://id-preview--1bb3265d-244f-432e-8470-e4d28c06e2a8.lovable.app/pay/0f216220-a3b2-4998-98df-13cb63118ab9) |
 | Receive (on-chain)  | [`0xd4325ad2…36935d7`](https://arbiscan.io/tx/0xd4325ad2605ca9a953afc106276e616f8a8da41b0c286b4c4b0e058d036935d7) |
 | Tourist Packages    | [`0xb9284c4d…1526503`](https://arbiscan.io/tx/0xb9284c4d013241ea6a49c0d905db2dc909980df39706175a9fe3d7f6c1526503) |
 | Activity Tracker    | [`0x59766e05…ff2b0e99`](https://arbiscan.io/tx/0x59766e055fcebb7e027b888131234368dd5297153184f2e255776e06ff2b0e99) |
