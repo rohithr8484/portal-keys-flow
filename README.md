@@ -280,7 +280,7 @@ Start the development server:
 http://localhost:3000
 ```
 
-Configure your Particle Network project credentials before launching the application.
+Particle Network project credentials need to be configured before launching the app
 
 ---
 
