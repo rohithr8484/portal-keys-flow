@@ -333,7 +333,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
     <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-5 gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Universal Pay</div>
+          <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Unified Payments</div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight neon-text">Move value, anywhere</h2>
           <p className="text-xs text-muted-foreground mt-1">
             Payment primitives built on the smart account you already connected.
@@ -1117,7 +1117,6 @@ const ROUTING_HOTEL_LISTINGS: RoutingHotel[] = [
   },
 ];
 
-
 type RoutingModalState = {
   hotel: RoutingHotel;
   address: string;
@@ -1176,11 +1175,7 @@ function HotelsTab({
     onNotify?.(`Generating smart routing address for ${hotel.name}…`);
     try {
       const [{ createSmartRoutingAddress, createCall, FLEX, SMART_ROUTING_ADDRESS_SERVER_URL }, viemChains, viem] =
-        await Promise.all([
-          import("@zerodev/smart-routing-address"),
-          import("viem/chains"),
-          import("viem"),
-        ]);
+        await Promise.all([import("@zerodev/smart-routing-address"), import("viem/chains"), import("viem")]);
       const ZERODEV_PROJECT_ID = "263a14d6-19fe-4e98-8ba4-02b793c1aa0a";
 
       const isEth = hotel.asset === "ETH";
@@ -1234,7 +1229,7 @@ function HotelsTab({
       onNotify?.(
         isEth
           ? "Smart routing address ready — send ETH on a supported chain."
-          : "Smart routing address ready — send USDC on any supported chain."
+          : "Smart routing address ready — send USDC on any supported chain.",
       );
     } catch (e: any) {
       onNotify?.(e?.message ?? "Failed to create smart routing address");
@@ -1243,7 +1238,6 @@ function HotelsTab({
     }
   };
 
-
   const showRouting = network === "mainnet";
 
   return (
@@ -1251,8 +1245,8 @@ function HotelsTab({
       <div className="rounded-xl border border-panel-border bg-panel/60 p-4">
         <div className="text-sm font-semibold mb-1">Curated tourist packages across India</div>
         <div className="text-[11px] text-muted-foreground">
-          Standard packages settle in ETH on Arbitrum. Mainnet-only routes below accept USDC from any
-          supported source chain via ZeroDev Smart Routing.
+          Standard packages settle in ETH on Arbitrum. Mainnet-only routes below accept USDC from any supported source
+          chain via ZeroDev Smart Routing.
         </div>
       </div>
 
@@ -1320,7 +1314,6 @@ function HotelsTab({
                         : `Pay ${hotel.asset === "ETH" ? hotel.eth : hotel.usdc} ${hotel.asset} via routing`}
                     </Button>
                   </div>
-
                 </div>
               </div>
             );
@@ -1330,18 +1323,18 @@ function HotelsTab({
       <Dialog open={!!routingModal} onOpenChange={(o) => !o && setRoutingModal(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              Send {routingModal?.hotel.asset ?? "USDC"} to complete your booking
-            </DialogTitle>
+            <DialogTitle>Send {routingModal?.hotel.asset ?? "USDC"} to complete your booking</DialogTitle>
             <DialogDescription>
               Send at least{" "}
               {routingModal?.hotel.asset === "ETH"
                 ? `${routingModal?.hotel.eth} ETH`
                 : `${routingModal?.hotel.usdc} USDC`}{" "}
-              to the address below on {routingModal?.hotel.asset === "ETH" ? "a supported chain (Optimism, Base, Ethereum when available)" : "any supported chain (Arbitrum, Optimism, Base, Ethereum)"}. ZeroDev
-              will route it to the operator on Arbitrum One.
+              to the address below on{" "}
+              {routingModal?.hotel.asset === "ETH"
+                ? "a supported chain (Optimism, Base, Ethereum when available)"
+                : "any supported chain (Arbitrum, Optimism, Base, Ethereum)"}
+              . ZeroDev will route it to the operator on Arbitrum One.
             </DialogDescription>
-
           </DialogHeader>
           {routingModal && (
             <div className="space-y-3">
