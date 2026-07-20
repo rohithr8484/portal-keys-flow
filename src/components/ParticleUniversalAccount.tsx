@@ -1096,29 +1096,28 @@ export function ParticleUniversalAccount() {
           // same ETH / native-USDC currency semantics as before. ----
           if (isTestnet) {
             const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
-            const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
-            if (!isStoredPrivateKey(pk)) {
-              throw new Error("Testnet smart account key missing. Sign in again.");
-            }
-            const rpcProvider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
-            const wallet = new ethers.Wallet(pk, rpcProvider);
-            const to = ethers.getAddress(recipient);
-            let tx;
+            const { kernelClient } = await buildKernelClient();
+            const to = ethers.getAddress(recipient) as `0x${string}`;
+            let callData: `0x${string}`;
             if (token === "ETH") {
-              tx = await wallet.sendTransaction({
-                to,
-                value: ethers.parseEther(String(amount)),
-              });
+              callData = await kernelClient.account!.encodeCalls([
+                { to, value: ethers.parseEther(String(amount)), data: "0x" },
+              ]);
             } else {
               const iface = new ethers.Interface(["function transfer(address,uint256)"]);
               const units = ethers.parseUnits(String(amount), 6);
-              const data = iface.encodeFunctionData("transfer", [to, units]);
-              tx = await wallet.sendTransaction({ to: ARB_SEPOLIA_USDC, data });
+              const data = iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
+              callData = await kernelClient.account!.encodeCalls([
+                { to: ARB_SEPOLIA_USDC as `0x${string}`, value: BigInt(0), data },
+              ]);
             }
-            await tx.wait();
+            const userOpHash = await (kernelClient as any).sendUserOperation({ callData });
+            const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
+            const txHash = receipt.receipt.transactionHash;
             awardXp(25);
-            return { txId: tx.hash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${tx.hash}` };
+            return { txId: txHash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txHash}` };
           }
+
 
           // ---- Mainnet: send directly from the connected MetaMask EOA on
           // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
