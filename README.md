@@ -155,8 +155,8 @@ PayGrid is designed to leverage smart contract capabilities for recording activi
 
 | Contract              | Address                                      |
 | --------------------- | -------------------------------------------- |
-| Treasury              | `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` |
-| Activity Tracker      | `0x54D222B9465D9F10338C426679835B08bc0bAA9C` |
+| Treasury  Activity            | `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` |
+| Treasury      | `0x54D222B9465D9F10338C426679835B08bc0bAA9C` |
 
 
 ---
