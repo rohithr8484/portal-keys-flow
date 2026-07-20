@@ -237,7 +237,7 @@ Mainnet support enables real-world travel payments using **USDC** and **ETH**, a
 
 ---
 
-# Archtecture
+# Architecture
 
 ```text
 Connect Wallet
