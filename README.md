@@ -366,7 +366,7 @@ Particle Network project credentials need to be configured before launching the 
 - **`qrcode.react`** — renders QR codes for Receive Payment and Smart-Routing deposit addresses.
 
 ### Backend
-- **Lovable Cloud (Supabase)** — Postgres + Auth + generated typed client; stores payment requests, contacts and activity.
+- **Supabase** — Postgres + Auth + generated typed client; stores payment requests, contacts and activity.
 
 ### On-chain
 - **Arbitrum One** (mainnet) and **Arbitrum Sepolia** (testnet). Native USDC address on Arbitrum One: `0xaf88d065e77c8cC2239327C5EDb3A432268e5831`.
