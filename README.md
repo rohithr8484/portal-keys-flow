@@ -401,22 +401,19 @@ const ua = new UniversalAccount({
 
 ### 2. ZeroDev EIP-7702 kernel client (Testnet)
 
-Builds the smart account on Arbitrum Sepolia with sponsored gas. The `useEIP7702: true`
-flag keeps the smart-account address identical to the underlying EOA.
+Builds the smart account on Arbitrum Sepolia with sponsored gas. 
 
 ```ts
 const validator = await signerToEcdsaValidator(publicClient, {
   signer,
   entryPoint,
   kernelVersion,
-  useEIP7702: true,
 });
 
 const account = await createKernelAccount(publicClient, {
   plugins: { sudo: validator },
   entryPoint,
   kernelVersion,
-  useEIP7702: true,
 });
 
 const kernelClient = createKernelAccountClient({
