@@ -1154,24 +1154,39 @@ function HotelsTab({
   const EIP7702_PACKAGE_IDS = new Set(["north-east", "andaman"]);
 
   const bookHotel = async (hotel: Hotel, token: Token) => {
-    if (!onPay) {
+    const use7702 = network === "mainnet" && token === "ETH" && EIP7702_PACKAGE_IDS.has(hotel.id);
+    if (use7702 && !onPay7702) {
+      onNotify?.("Connect a wallet first");
+      return;
+    }
+    if (!use7702 && !onPay) {
       onNotify?.("Connect a wallet first");
       return;
     }
     const amount = token === "USDC" ? hotel.usdc : hotel.eth;
     const key = `${hotel.id}:${token}`;
     setBusyKey(key);
-    onNotify?.(`Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`);
+    onNotify?.(
+      use7702
+        ? `Delegating via EIP-7702 & transferring ${amount} ETH through your Universal Account to book ${hotel.name}…`
+        : `Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`,
+    );
     try {
-      const res = await onPay({
-        recipient: hotel.bookingAddress,
-        amount,
-        token,
-        memo: `Package booking · ${hotel.name}`,
-      });
+      const res = use7702
+        ? await onPay7702!({
+            recipient: hotel.bookingAddress,
+            amountEth: amount,
+            label: `Package booking · ${hotel.name}`,
+          })
+        : await onPay!({
+            recipient: hotel.bookingAddress,
+            amount,
+            token,
+            memo: `Package booking · ${hotel.name}`,
+          });
       pushActivity({
         kind: "pay",
-        label: `Booked ${hotel.name}`,
+        label: use7702 ? `Booked ${hotel.name} · EIP-7702` : `Booked ${hotel.name}`,
         amount,
         token,
         hash: res?.txId,
