@@ -68,8 +68,20 @@ async function readErc20Balance(tokenAddress: string, account: string): Promise<
   return typeof balance === "bigint" ? balance : BigInt(balance.toString());
 }
 
-
-
+async function sendInjectedWalletTransaction(tx: {
+  from: string;
+  to: string;
+  value?: string;
+  data?: string;
+}): Promise<string> {
+  const ethereum = window.ethereum;
+  if (!ethereum) throw new Error("Wallet not ready");
+  const hash = await ethereum.request({
+    method: "eth_sendTransaction",
+    params: [tx],
+  });
+  return String(hash);
+}
 
 function collectErrorMessages(value: unknown, out: string[] = [], seen = new Set<object>()): string[] {
   if (!value) return out;
@@ -249,13 +261,10 @@ function PayRequestPage() {
       const payer = ethers.getAddress(await signer.getAddress());
       setWallet(payer);
       setStatus("Awaiting signature…");
-      const { sendInjected7702Tx } = await import("@/lib/eip7702");
-      const { arbitrum, arbitrumSepolia } = await import("viem/chains");
-      const viemChain = request.chain_id === 42161 ? arbitrum : arbitrumSepolia;
       let hash: string;
       const amountInUnits = amountForTokenUnits(request.amount, tokenInfo.decimals);
       const amountWei = ethers.parseUnits(amountInUnits, tokenInfo.decimals);
-      const recipient = ethers.getAddress(request.recipient) as `0x${string}`;
+      const recipient = ethers.getAddress(request.recipient);
       if (tokenInfo.address === "native") {
         const nativeBalance = await provider.getBalance(payer);
         if (nativeBalance < amountWei) {
@@ -263,12 +272,15 @@ function PayRequestPage() {
             `Connected wallet has ${formatTokenUnits(nativeBalance, tokenInfo.decimals)} ${request.token} on ${chain.label}. Request needs ${displayAmount} ${request.token}.`,
           );
         }
-        const txHash = await sendInjected7702Tx(window.ethereum, viemChain, payer as `0x${string}`, {
+        const txHash = await sendInjectedWalletTransaction({
+          from: payer,
           to: recipient,
-          value: amountWei,
+          value: ethers.toQuantity(amountWei),
         });
         setStatus("Broadcasting…");
         setTxHash(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
         hash = txHash;
       } else {
         const tokenBalance = await readErc20Balance(tokenInfo.address, payer);
@@ -277,19 +289,24 @@ function PayRequestPage() {
             `Connected wallet has ${formatTokenUnits(tokenBalance, tokenInfo.decimals)} ${request.token} on ${chain.label}. Request needs ${displayAmount} ${request.token}. Switch to the funded account or add ${request.token}, then try again.`,
           );
         }
+        // Use the injected wallet RPC directly for ERC-20 sends. This avoids
+        // ethers v6 wrapping wallet/RPC failures as "could not coalesce error"
+        // and lets MetaMask own gas estimation/signing after our balance check.
         const data = ERC20_IFACE.encodeFunctionData("transfer", [
           recipient,
           amountWei,
-        ]) as `0x${string}`;
-        const txHash = await sendInjected7702Tx(window.ethereum, viemChain, payer as `0x${string}`, {
-          to: tokenInfo.address as `0x${string}`,
+        ]);
+        const txHash = await sendInjectedWalletTransaction({
+          from: payer,
+          to: tokenInfo.address,
           data,
         });
         setStatus("Broadcasting…");
         setTxHash(txHash);
+        const receipt = await provider.waitForTransaction(txHash);
+        if (receipt?.status === 0) throw new Error("Transaction reverted on-chain. No payment was marked as paid.");
         hash = txHash;
       }
-
       setStatus("Confirming…");
       await markPaymentPaid(request.id, hash);
       setRequest({ ...request, status: "paid", tx_hash: hash });
