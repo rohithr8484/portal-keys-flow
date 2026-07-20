@@ -212,7 +212,7 @@ Mainnet support enables real-world travel payments using **USDC** and **ETH**, a
 Connect Wallet  (MetaMask EOA  |  Particle Web3 Login)
         │
         ▼
-Particle Universal Account SDK  +  ZeroDev (EIP-7702)
+Particle Universal Account SDK  |  ZeroDev (EIP-7702)
         │
         ▼
 PayGrid Dashboard
