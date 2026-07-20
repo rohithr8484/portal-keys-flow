@@ -97,11 +97,13 @@ export async function sendInjected7702Tx(
 
     const hash = await walletClient.sendTransaction({
       account: from,
+      chain,
       to: params.to,
       data: params.data,
       value: params.value,
       authorizationList: [authorization],
     });
+
 
     await publicClient.waitForTransactionReceipt({ hash });
     return hash as Hex;
