@@ -109,12 +109,6 @@ Review:
 
 Manage your crypto transactions from one dashboard.
 
-Current capabilities include:
-
-- Transaction previews
-- Transaction history
-- Payment confirmation
-
 
 ### 🌐 Mainet - Arbitrium 
 | Flow                | Address     |  Transaction | 
