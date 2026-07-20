@@ -50,6 +50,16 @@ type Props = {
     token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
+  /**
+   * Mainnet-only: pay a specific Tourist Package through the Particle
+   * Universal Account using EIP-7702 delegation + authorization so the
+   * on-chain tx surfaces the "EIP-7702" action on Arbiscan.
+   */
+  onPay7702?: (args: {
+    recipient: string;
+    amountEth: string;
+    label: string;
+  }) => Promise<{ txId?: string; txUrl?: string } | void>;
 };
 
 const SETTLEMENT_TOKENS = ["USDC", "ETH"] as const;
