@@ -316,7 +316,7 @@ Particle Network project credentials need to be configured before launching the 
 ---
 
 # Tech Stack
-- 
+
 ### Core framework
 - **TanStack Start v1 + React 19 + TypeScript** — SSR-capable full-stack framework with file-based routing under `src/routes/`.
 - **Vite 7** — build tool; TanStack Router Vite plugin auto-generates `routeTree.gen.ts`.
