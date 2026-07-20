@@ -1285,6 +1285,7 @@ function HotelsTab({
         {HOTEL_LISTINGS.map((hotel) => {
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
+          const is7702 = network === "mainnet" && EIP7702_PACKAGE_IDS.has(hotel.id);
           return (
             <div
               key={hotel.id}
@@ -1293,6 +1294,9 @@ function HotelsTab({
               <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
                 <img src={hotel.image} alt={hotel.name} loading="lazy" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                {is7702 && (
+                  <Badge className="absolute top-2 right-2 bg-primary/90 text-primary-foreground">EIP-7702</Badge>
+                )}
               </div>
               <div className="p-4 flex-1 flex flex-col gap-2">
                 <div className="text-sm font-semibold leading-snug">{hotel.name}</div>
@@ -1300,10 +1304,15 @@ function HotelsTab({
                 <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
                 <div className="text-[10px] font-mono text-muted-foreground truncate">
                   → {shortAddr(hotel.bookingAddress)}
+                  {is7702 ? " · Delegate + Transfer" : ""}
                 </div>
                 <div className="mt-auto pt-2">
                   <Button size="sm" className="w-full" onClick={() => bookHotel(hotel, "ETH")} disabled={anyBusy}>
-                    {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
+                    {ethBusy
+                      ? is7702 ? "Delegating & paying…" : "Paying…"
+                      : is7702
+                        ? `Pay ${hotel.eth} ETH via EIP-7702`
+                        : `Pay ${hotel.eth} ETH`}
                   </Button>
                 </div>
               </div>
