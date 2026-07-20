@@ -150,6 +150,7 @@ PayGrid is designed to leverage smart contract capabilities for recording activi
 | Contract  | Address                                      |
 | --------- | -------------------------------------------- |
 | Treasury  | `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` |
+| Transaction Activity | `0x26cf943D673396aA29C3c3875d46e228186f8533` |
 
 #### 🧪 Testnet — Arbitrum Sepolia
 
@@ -157,7 +158,7 @@ PayGrid is designed to leverage smart contract capabilities for recording activi
 | --------------------- | -------------------------------------------- |
 | Treasury  Activity            | `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` |
 | Treasury      | `0x54D222B9465D9F10338C426679835B08bc0bAA9C` |
-| Transaction Activity | '0x25bbdF712ce03D6Aa1090b912A9AF06F6deBBd47' |
+| Transaction Activity | `0x25bbdF712ce03D6Aa1090b912A9AF06F6deBBd47` |
 
 
 ---
