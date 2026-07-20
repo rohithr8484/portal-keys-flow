@@ -50,6 +50,16 @@ type Props = {
     token: "USDC" | "ETH";
     memo?: string;
   }) => Promise<{ txId?: string; txUrl?: string } | void>;
+  /**
+   * Mainnet-only: pay a specific Tourist Package through the Particle
+   * Universal Account using EIP-7702 delegation + authorization so the
+   * on-chain tx surfaces the "EIP-7702" action on Arbiscan.
+   */
+  onPay7702?: (args: {
+    recipient: string;
+    amountEth: string;
+    label: string;
+  }) => Promise<{ txId?: string; txUrl?: string } | void>;
 };
 
 const SETTLEMENT_TOKENS = ["USDC", "ETH"] as const;
@@ -130,7 +140,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay, onPay7702 }: Props) {
   const address = smartAccount ?? "";
   const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
@@ -459,7 +469,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
 
         {/* HOTELS */}
         <TabsContent value="hotels" className="mt-0">
-          <HotelsTab onNotify={onNotify} onPay={onPay} pushActivity={pushActivity} network={activeNetwork} />
+          <HotelsTab onNotify={onNotify} onPay={onPay} onPay7702={onPay7702} pushActivity={pushActivity} network={activeNetwork} />
         </TabsContent>
 
         {/* RECEIVE */}
@@ -1126,36 +1136,57 @@ type RoutingModalState = {
 function HotelsTab({
   onNotify,
   onPay,
+  onPay7702,
   pushActivity,
   network,
 }: {
   onNotify?: (msg: string) => void;
   onPay?: Props["onPay"];
+  onPay7702?: Props["onPay7702"];
   pushActivity: (a: Omit<Activity, "id" | "at">) => void;
   network: "mainnet" | "testnet";
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [routingModal, setRoutingModal] = useState<RoutingModalState>(null);
 
+  // Mainnet-only: these packages settle via Particle UA + EIP-7702 so the
+  // on-chain tx displays the "EIP-7702" TRANSACTION ACTION on Arbiscan.
+  const EIP7702_PACKAGE_IDS = new Set(["north-east", "andaman"]);
+
   const bookHotel = async (hotel: Hotel, token: Token) => {
-    if (!onPay) {
+    const use7702 = network === "mainnet" && token === "ETH" && EIP7702_PACKAGE_IDS.has(hotel.id);
+    if (use7702 && !onPay7702) {
+      onNotify?.("Connect a wallet first");
+      return;
+    }
+    if (!use7702 && !onPay) {
       onNotify?.("Connect a wallet first");
       return;
     }
     const amount = token === "USDC" ? hotel.usdc : hotel.eth;
     const key = `${hotel.id}:${token}`;
     setBusyKey(key);
-    onNotify?.(`Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`);
+    onNotify?.(
+      use7702
+        ? `Delegating via EIP-7702 & transferring ${amount} ETH through your Universal Account to book ${hotel.name}…`
+        : `Withdrawing ${amount} ${token} from your wallet to book ${hotel.name}…`,
+    );
     try {
-      const res = await onPay({
-        recipient: hotel.bookingAddress,
-        amount,
-        token,
-        memo: `Package booking · ${hotel.name}`,
-      });
+      const res = use7702
+        ? await onPay7702!({
+            recipient: hotel.bookingAddress,
+            amountEth: amount,
+            label: `Package booking · ${hotel.name}`,
+          })
+        : await onPay!({
+            recipient: hotel.bookingAddress,
+            amount,
+            token,
+            memo: `Package booking · ${hotel.name}`,
+          });
       pushActivity({
         kind: "pay",
-        label: `Booked ${hotel.name}`,
+        label: use7702 ? `Booked ${hotel.name} · EIP-7702` : `Booked ${hotel.name}`,
         amount,
         token,
         hash: res?.txId,
@@ -1254,6 +1285,7 @@ function HotelsTab({
         {HOTEL_LISTINGS.map((hotel) => {
           const ethBusy = busyKey === `${hotel.id}:ETH`;
           const anyBusy = busyKey !== null;
+          const is7702 = network === "mainnet" && EIP7702_PACKAGE_IDS.has(hotel.id);
           return (
             <div
               key={hotel.id}
@@ -1262,6 +1294,9 @@ function HotelsTab({
               <div className="aspect-[16/10] overflow-hidden bg-background/60 relative">
                 <img src={hotel.image} alt={hotel.name} loading="lazy" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                {is7702 && (
+                  <Badge className="absolute top-2 right-2 bg-primary/90 text-primary-foreground">EIP-7702</Badge>
+                )}
               </div>
               <div className="p-4 flex-1 flex flex-col gap-2">
                 <div className="text-sm font-semibold leading-snug">{hotel.name}</div>
@@ -1269,10 +1304,15 @@ function HotelsTab({
                 <div className="text-[11px] text-muted-foreground leading-relaxed">{hotel.tagline}</div>
                 <div className="text-[10px] font-mono text-muted-foreground truncate">
                   → {shortAddr(hotel.bookingAddress)}
+                  {is7702 ? " · Delegate + Transfer" : ""}
                 </div>
                 <div className="mt-auto pt-2">
                   <Button size="sm" className="w-full" onClick={() => bookHotel(hotel, "ETH")} disabled={anyBusy}>
-                    {ethBusy ? "Paying…" : `Pay ${hotel.eth} ETH`}
+                    {ethBusy
+                      ? is7702 ? "Delegating & paying…" : "Paying…"
+                      : is7702
+                        ? `Pay ${hotel.eth} ETH via EIP-7702`
+                        : `Pay ${hotel.eth} ETH`}
                   </Button>
                 </div>
               </div>
