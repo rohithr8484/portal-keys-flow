@@ -68,20 +68,8 @@ async function readErc20Balance(tokenAddress: string, account: string): Promise<
   return typeof balance === "bigint" ? balance : BigInt(balance.toString());
 }
 
-async function sendInjectedWalletTransaction(tx: {
-  from: string;
-  to: string;
-  value?: string;
-  data?: string;
-}): Promise<string> {
-  const ethereum = window.ethereum;
-  if (!ethereum) throw new Error("Wallet not ready");
-  const hash = await ethereum.request({
-    method: "eth_sendTransaction",
-    params: [tx],
-  });
-  return String(hash);
-}
+
+
 
 function collectErrorMessages(value: unknown, out: string[] = [], seen = new Set<object>()): string[] {
   if (!value) return out;
