@@ -202,9 +202,9 @@ Particle Universal Account SDK  |  ZeroDev (EIP-7702)
 PayGrid Dashboard
         │
  ┌────────────┬─────────────┬──────────────┬─────────────┐
- │              │               │                 │                │
- ▼             ▼              ▼                 ▼               ▼
-Pay      Split Bills       Packages       Receive           Contacts
+ │            │             │              │             │
+ ▼            ▼             ▼              ▼             ▼
+Pay      Split Bills       Packages       Receive        Contacts
 ```
 
 ### Step-by-step flow with technical details
