@@ -237,7 +237,7 @@ Mainnet support enables real-world travel payments using **USDC** and **ETH**, a
 
 ---
 
-# Architecture
+# Architecture ( Mainet)
 
 ```text
 Connect Wallet  (MetaMask EOA  |  Particle Web3 Login)
