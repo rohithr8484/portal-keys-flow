@@ -240,34 +240,46 @@ Mainnet support enables real-world travel payments using **USDC** and **ETH**, a
 # Architecture
 
 ```text
-Connect Wallet
+Connect Wallet  (MetaMask EOA  |  Particle Web3 Login)
         │
         ▼
-Particle Universal Account  +  ZeroDev
-(EIP-7702)
+Particle Universal Account SDK  +  ZeroDev (EIP-7702)
         │
         ▼
 PayGrid Dashboard
         │
  ┌────────────┬─────────────┬──────────────┬─────────────┐
- │            │             │              │             |
- ▼            ▼             ▼              ▼             ▼             
-Pay      Split Bills   Packages      Receive          Contacts
-        
+ │            │             │              │             │
+ ▼            ▼             ▼              ▼             ▼
+Pay      Split Bills   Packages       Receive        Contacts
 ```
 
-Users connect their wallet through **Particle Network Universal Accounts**.
+### Step-by-step flow with technical details
 
-Once authenticated they can:
+1. **Wallet Connection**
+   - `ParticleUniversalAccount.tsx` renders sign-in options. On mainnet the user connects **MetaMask** via `ethers.BrowserProvider(window.ethereum)`; on testnet the user signs in with a **ZeroDev EIP-7702** session key stored locally.
+   - "Sign in with Particle Web3 Login" dynamically imports `@particle-network/auth` (`ParticleNetwork`) and `@particle-network/provider` (`ParticleProvider`). `particle.auth.logout()` is called before `particle.auth.login({ supportAuthTypes: 'email,google,apple,twitter,discord' })` to force the Particle modal to appear, then the Particle EIP-1193 provider is bound to `window.ethereum` so the rest of the app continues to use standard `eth_sendTransaction` calls.
 
-- Pay merchants using **USDC** or **ETH**
-- Split travel expenses
-- Receive crypto payments
-- Book travel experiences
-- View activity
-- Track transaction history
+2. **Universal Account bootstrap**
+   - `@particle-network/universal-account-sdk` (`UniversalAccount`) is instantiated with the connected signer inside `ParticleUniversalAccount.tsx`. This exposes `ua.createExecuteTransaction()`, `ua.createUniversalTransaction()`, `ua.createTransferTransaction()` and balance helpers used across the app.
+   - The ZeroDev **kernel client** is built from `@zerodev/sdk` (`createKernelAccount`, `createKernelAccountClient`) with `@zerodev/ecdsa-validator` (`signerToEcdsaValidator`) using an internally generated EIP-7702 signer for testnet interactions.
 
-Every payment is previewed before confirmation, providing a transparent and user-friendly payment experience.
+3. **Pay & Split (atomic batching)**
+   - `src/lib/split.ts` uses `parseUnits` and the `BigInt` helpers in `src/lib/amounts.ts` (`toBaseUnits`, `formatBaseUnits`) to normalise decimals and eliminate scientific-notation errors from `viem`/`ethers`.
+   - Multi-recipient splits are packed into a single atomic transaction via `ua.createExecuteTransaction({ transactions: [...] })` (Particle 7702 batching). On mainnet the cross-chain sourcing path uses `ua.createUniversalTransaction({ expectTokens: [{ type, amount, chainId }] })`.
+   - Single-recipient testnet payments fall back to raw `eth_sendTransaction` from the 7702 key so the transfer appears in the Arbiscan **Transactions** tab, not just internal calls.
+
+4. **Receive Payments (QR + payer route)**
+   - `src/lib/payment-requests.ts` writes a request row into Supabase (Lovable Cloud) with `recipient`, `token`, `amount`, `chainId`, `requestId`.
+   - `qrcode.react` renders a QR that deep-links to `/pay/:requestId` (routed by `src/routes/pay.$requestId.tsx`). The payer route loads the request via Supabase, encodes ERC-20 `transfer(address,uint256)` calldata manually, and submits it through `window.ethereum.request({ method: 'eth_sendTransaction' })` — bypassing ethers wrappers that previously threw *"could not coalesce error"*.
+
+5. **Tourist Packages (ZeroDev Smart Routing)**
+   - On mainnet, selected packages use `@zerodev/smart-routing-address` (`createSmartRoutingAddress`) with `tokenType: 'ERC20' | 'NATIVE'`, target `chain: arbitrum`, USDC address `0xaf88…5831`, and multiple source tokens (Optimism / Base / Ethereum) plus `allowPartialRoutes: true`.
+   - The generated routing address is shown in a QR dialog; funds sent to it are automatically bridged and delivered as USDC / ETH on Arbitrum One to the Platform Treasury `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb`.
+
+6. **Activity + Treasury balances**
+   - `src/lib/activity-tracker.ts` records interactions on-chain via the `DAppActivityTracker.sol` contract using manually-encoded function selectors and a 40% gas pad through `eth_sendTransaction` (avoids 7702 estimation bugs).
+   - A live polling `useEffect` in `ParticleUniversalAccount.tsx` fetches ETH (`eth_getBalance`) and USDC (`balanceOf` via `eth_call`) balances on Arbitrum, with USD conversion using the CoinGecko price API.
 
 ---
 
@@ -285,7 +297,7 @@ Start the development server:
 http://localhost:3000
 ```
 
-Particle Network project credentials need to be configured before launching the app
+Particle Network project credentials need to be configured before launching the app.
 
 ---
 
@@ -293,42 +305,94 @@ Particle Network project credentials need to be configured before launching the 
 
 ```text
 ├── contracts/
-│   └── DAppActivityTracker.sol
+│   └── DAppActivityTracker.sol          # Solidity contract that logs on-chain user activity events
 │
 ├── src/
 │   ├── components/
-│   │   ├── ui/
-│   │   ├── ParticleUniversalAccount.tsx
-│   │   └── UniversalPayPanel.tsx
+│   │   ├── ui/                          # shadcn/ui primitives (button, dialog, tabs, accordion, etc.)
+│   │   ├── ParticleUniversalAccount.tsx # Wallet gate: MetaMask / Particle / ZeroDev 7702 sign-in, balances, treasury cards
+│   │   └── UniversalPayPanel.tsx        # Main dashboard: Pay & Split, Receive, Tourist packages, Contacts, Activity
 │   │
 │   ├── hooks/
-│   │   └── use-mobile.tsx
+│   │   └── use-mobile.tsx               # Responsive breakpoint hook used for mobile-friendly layouts
 │   │
 │   ├── integrations/
-│   │   └── supabase/
+│   │   └── supabase/                    # Auto-generated Lovable Cloud client, auth middleware and typed schema
 │   │
 │   ├── lib/
-│   │   ├── api/
-│   │   ├── activity-tracker.ts
-│   │   ├── amounts.ts
-│   │   ├── config.server.ts
-│   │   ├── error-capture.ts
-│   │   ├── error-page.ts
-│   │   ├── lovable-error-reporting.ts
-│   │   ├── particle-config.ts
-│   │   ├── payment-requests.ts
-│   │   ├── split.ts
-│   │   └── utils.ts
+│   │   ├── api/                         # createServerFn RPC handlers (TanStack Start server functions)
+│   │   ├── activity-tracker.ts          # Encodes and submits DAppActivityTracker calls with padded gas
+│   │   ├── amounts.ts                   # BigInt-based decimal helpers (toBaseUnits / formatBaseUnits)
+│   │   ├── config.server.ts             # Server-only environment configuration and secrets access
+│   │   ├── error-capture.ts             # Global runtime error interceptor
+│   │   ├── error-page.ts                # Shared error boundary content
+│   │   ├── lovable-error-reporting.ts   # Bridges captured errors to the Lovable preview overlay
+│   │   ├── particle-config.ts           # Particle Network project keys and chain constants
+│   │   ├── payment-requests.ts          # Supabase CRUD for /pay/:requestId payment requests
+│   │   ├── split.ts                     # Atomic batched Pay & Split builder for the Universal Account
+│   │   └── utils.ts                     # Tailwind cn() and misc formatting helpers
 │   │
 │   ├── routes/
-│   │   ├── README.md
-│   │   ├── __root.tsx
-│   │   ├── index.tsx
-│   │   └── pay.$requestId.tsx
+│   │   ├── README.md                    # Notes about TanStack Start file-based routing conventions
+│   │   ├── __root.tsx                   # Root layout, <head> metadata, providers, <Outlet />
+│   │   ├── index.tsx                    # Landing page — mounts ParticleUniversalAccount + UniversalPayPanel
+│   │   └── pay.$requestId.tsx           # Public payer page opened from QR / share link
 │   │
 │   └── types/
-│       └── particle-sdk.d.ts
+│       └── particle-sdk.d.ts            # Ambient TypeScript typings for Particle SDK globals
 ```
+
+---
+
+# Tech Stack
+
+### Core framework
+- **TanStack Start v1 + React 19 + TypeScript** — SSR-capable full-stack framework with file-based routing under `src/routes/`.
+- **Vite 7** — build tool; TanStack Router Vite plugin auto-generates `routeTree.gen.ts`.
+- **Tailwind CSS v4** — configured via `src/styles.css` using native `@theme` variables (no `tailwind.config.js`).
+- **shadcn/ui + Radix UI** — accessible headless components used throughout the dashboard.
+
+### Wallet & Account Abstraction
+- **`@particle-network/universal-account-sdk`** — powers `UniversalAccount`, `createExecuteTransaction` (atomic 7702 batching), `createUniversalTransaction` (cross-chain sourcing with `expectTokens`), `createTransferTransaction` (single-asset fallback), and unified balance queries.
+- **`@particle-network/auth` + `@particle-network/provider`** — Web3 login modal (email / Google / Apple / Twitter / Discord) and the EIP-1193 provider bridged onto `window.ethereum`.
+- **`@zerodev/sdk`** — `createKernelAccount` + `createKernelAccountClient` build the smart account; sponsored gas via ZeroDev paymaster.
+- **`@zerodev/ecdsa-validator`** — `signerToEcdsaValidator` wraps the local EIP-7702 signer for the kernel.
+- **`@zerodev/smart-routing-address`** — `createSmartRoutingAddress` generates one-time deposit addresses that route funds from any supported chain into Arbitrum USDC / ETH.
+- **`permissionless`** — ERC-4337 bundler / user-operation utilities.
+
+### Ethereum tooling
+- **`ethers` v6** — `BrowserProvider`, `Contract`, `parseUnits`, `formatUnits` for signer flows and read-only calls.
+- **`viem`** — used by ZeroDev packages (chain descriptors like `arbitrum`, `arbitrumSepolia`) and for typed hex encoding.
+- **`qrcode.react`** — renders QR codes for Receive Payment and Smart-Routing deposit addresses.
+
+### Backend
+- **Lovable Cloud (Supabase)** — Postgres + Auth + generated typed client; stores payment requests, contacts and activity.
+
+### On-chain
+- **Arbitrum One** (mainnet) and **Arbitrum Sepolia** (testnet). Native USDC address on Arbitrum One: `0xaf88d065e77c8cC2239327C5EDb3A432268e5831`.
+
+---
+
+# ZeroDev Integration Details
+
+### Testnet — creating the 7702 smart account
+- On first testnet sign-in an ECDSA signer is generated in the browser and persisted to `localStorage`.
+- `signerToEcdsaValidator(publicClient, { signer, entryPoint, kernelVersion })` from `@zerodev/ecdsa-validator` produces the validator plugin.
+- `createKernelAccount(publicClient, { plugins: { sudo: validator }, entryPoint, kernelVersion })` builds the EIP-7702 kernel; the account address stays the same as the user's EOA thanks to the 7702 delegation.
+- `createKernelAccountClient({ account, chain: arbitrumSepolia, bundlerTransport: http(BUNDLER_RPC), paymaster: zerodevPaymaster })` wires up sponsored gas so testnet transactions cost the user nothing.
+- User operations built through the kernel client are submitted via the ZeroDev bundler; the payer route and activity tracker fall back to raw `eth_sendTransaction` when we need the transfer to show up in Arbiscan's **Transactions** tab rather than **Internal Transactions**.
+
+### Mainnet — Smart Routing for Tourist packages
+- `createSmartRoutingAddress` from `@zerodev/smart-routing-address` is called with:
+  - `tokenType: 'ERC20'` and the Arbitrum USDC contract for USDC packages, or `tokenType: 'NATIVE'` for ETH packages.
+  - `chain: arbitrum` (chain id `42161`) as the destination.
+  - A list of `sourceTokens` covering Optimism, Base and Ethereum so users can pay from whichever chain they hold funds on.
+  - `allowPartialRoutes: true` so ZeroDev can combine liquidity from multiple sources.
+  - `recipient: 0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` — the PayGrid Platform Treasury.
+- The returned deposit address is rendered as a QR + copy-able string in a dialog. Any deposit into that address is automatically bridged and delivered as the requested token on Arbitrum One.
+- The Universal Account SDK's `createUniversalTransaction({ expectTokens })` provides an analogous smart-sourcing path for the Pay & Split flow, so the user does not need liquidity on Arbitrum specifically.
+
+
 
 ---
 
