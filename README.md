@@ -56,7 +56,7 @@ Everyone pays only their share with a few taps.
 
 ### Receive Crypto
 
-Receive **USDC** or **ETH** instantly by generating a QR code or sharing a payment link.
+Receive **USDC** or **ETH** instantly by generating a QR code (Lovable Account is required to use QR feature ), sharing a payment link.
 
 For collecting money for:
 
