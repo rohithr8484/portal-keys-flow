@@ -380,7 +380,7 @@ Particle Network project credentials need to be configured before launching the 
 
 ## Important Code Snippets
 
-The snippets below are the load-bearing pieces of PayGrid — each maps directly to a feature described above.
+The snippets below are showing how load-bearing pieces of PayGrid — maps directly to a feature described above.
 
 ### 1. Bootstrapping the Universal Account (Particle)
 
