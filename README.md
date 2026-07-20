@@ -33,8 +33,6 @@ Users and Businesses can use Paygrid
 
 Make secure crypto payments in **USDC** or **ETH** to hotels, restaurants, cafés, transport providers, tour operators, local guides, and fellow travelers accepting USDC and ETH
 
-Whether you're paying for transportation, food, shopping, or guided travel experiences, PayGrid keeps every payment simple and secure.
-
 ---
 
 ### Split Travel Expenses
@@ -107,7 +105,7 @@ Review:
 
 ---
 
-### Transactions
+### Transactions showing EIP - 7702 
 
 Manage your crypto transactions from one dashboard.
 
@@ -117,17 +115,16 @@ Current capabilities include:
 - Transaction history
 - Payment confirmation
 
-#### 🌐 Testnet — Arbitrum Sepolia
-| Flow                | Address |  Transaction | 
-| ------------------- | ----------- | ----------- |
-| Universal Account with EIP-7702  | [`Address`](https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | [`Transaction`](https://sepolia.arbiscan.io/tx/0x3a7aa6cd711f625b89d509c3f352406b8a926c4fd22f05f88fa6ab67aa05f9c8)
-
 
 ### 🌐 Mainet - Arbitrium 
 | Flow                | Address     |  Transaction | 
 | ------------------- | ----------- | -----------  |
-| Universal Account with EIP-7702   |  [`Address`](https://arbiscan.io/address/0x582791E0998187bBBe6F3D7fDAc11bCA1F9EC5Bd) | [`Transaction`](https://arbiscan.io/tx/0xf55495fefe6756d87a073e5a93b4fa7a8771d97967691a087739a294079cd523)                       |
+| Universal Account with EIP-7702   |  [`Address`](https://arbiscan.io/address/0x582791E0998187bBBe6F3D7fDAc11bCA1F9EC5Bd) | [`Transaction`](https://arbiscan.io/tx/0xf55495fefe6756d87a073e5a93b4fa7a8771d97967691a087739a294079cd523)         
 
+#### 🌐 Testnet — Arbitrum Sepolia
+| Flow                | Address |  Transaction | 
+| ------------------- | ----------- | ----------- |
+| Universal Account with EIP-7702  | [`Address`](https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | [`Transaction`](https://sepolia.arbiscan.io/tx/0x3a7aa6cd711f625b89d509c3f352406b8a926c4fd22f05f88fa6ab67aa05f9c8)|
 
 ---
 
@@ -149,7 +146,6 @@ PayGrid is designed to leverage smart contract capabilities for recording activi
 | Treasury  Activity            | `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb` |
 | Treasury      | `0x54D222B9465D9F10338C426679835B08bc0bAA9C` |
 | Transaction Activity | `0x25bbdF712ce03D6Aa1090b912A9AF06F6deBBd47` |
-
 
 ---
 
