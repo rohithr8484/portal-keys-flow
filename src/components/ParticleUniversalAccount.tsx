@@ -1095,30 +1095,32 @@ export function ParticleUniversalAccount() {
           // (not just an internal call under a UserOp bundle). Keeps the
           // same ETH / native-USDC currency semantics as before. ----
           if (isTestnet) {
+            const { sendTestnet7702Tx } = await import("@/lib/eip7702");
             const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
             const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
             if (!isStoredPrivateKey(pk)) {
               throw new Error("Testnet smart account key missing. Sign in again.");
             }
-            const rpcProvider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
-            const wallet = new ethers.Wallet(pk, rpcProvider);
-            const to = ethers.getAddress(recipient);
-            let tx;
+            const to = ethers.getAddress(recipient) as `0x${string}`;
+            let hash: `0x${string}`;
             if (token === "ETH") {
-              tx = await wallet.sendTransaction({
+              hash = await sendTestnet7702Tx(pk, {
                 to,
                 value: ethers.parseEther(String(amount)),
               });
             } else {
               const iface = new ethers.Interface(["function transfer(address,uint256)"]);
               const units = ethers.parseUnits(String(amount), 6);
-              const data = iface.encodeFunctionData("transfer", [to, units]);
-              tx = await wallet.sendTransaction({ to: ARB_SEPOLIA_USDC, data });
+              const data = iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
+              hash = await sendTestnet7702Tx(pk, {
+                to: ARB_SEPOLIA_USDC as `0x${string}`,
+                data,
+              });
             }
-            await tx.wait();
             awardXp(25);
-            return { txId: tx.hash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${tx.hash}` };
+            return { txId: hash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${hash}` };
           }
+
 
           // ---- Mainnet: send directly from the connected MetaMask EOA on
           // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
