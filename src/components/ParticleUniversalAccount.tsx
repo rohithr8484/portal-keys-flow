@@ -1247,29 +1247,26 @@ export function ParticleUniversalAccount() {
               throw err;
             }
           }
+          const { sendMainnet7702Tx } = await import("@/lib/eip7702");
           const providerMain = new ethers.BrowserProvider(window.ethereum);
           const signerMain = await providerMain.getSigner();
-          const fromMain = ethers.getAddress(await signerMain.getAddress());
+          const fromMain = ethers.getAddress(await signerMain.getAddress()) as `0x${string}`;
           const erc20 = new ethers.Interface(["function transfer(address,uint256)"]);
           const hashes: string[] = [];
           for (const r of recipients) {
-            const to = ethers.getAddress(r.address);
-            let hash: string;
+            const to = ethers.getAddress(r.address) as `0x${string}`;
+            let hash: `0x${string}`;
             if (token === "ETH") {
               const wei = ethers.parseEther(String(r.amount));
-              hash = await window.ethereum.request({
-                method: "eth_sendTransaction",
-                params: [{ from: fromMain, to, value: ethers.toQuantity(wei) }],
-              });
+              hash = await sendMainnet7702Tx(window.ethereum, fromMain, { to, value: wei });
             } else {
               const units = ethers.parseUnits(String(r.amount), 6);
-              const data = erc20.encodeFunctionData("transfer", [to, units]);
-              hash = await window.ethereum.request({
-                method: "eth_sendTransaction",
-                params: [{ from: fromMain, to: ARB_ONE_USDC, data }],
+              const data = erc20.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
+              hash = await sendMainnet7702Tx(window.ethereum, fromMain, {
+                to: ARB_ONE_USDC as `0x${string}`,
+                data,
               });
             }
-            await providerMain.waitForTransaction(hash);
             hashes.push(hash);
           }
           return {
@@ -1277,6 +1274,7 @@ export function ParticleUniversalAccount() {
             txUrl: hashes[0] ? `${ARBITRUM_MAINNET.explorer}/tx/${hashes[0]}` : undefined,
           };
         }}
+
       />
 
       <section className="mb-8 rounded-2xl border border-panel-border bg-panel/70 backdrop-blur p-5 neon-border">
