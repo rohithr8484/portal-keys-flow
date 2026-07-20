@@ -422,36 +422,10 @@ const kernelClient = createKernelAccountClient({
   bundlerTransport: http(BUNDLER_RPC),
   paymaster: zerodevPaymaster,
 });
+
 ```
 
-### 3. Atomic batched Pay & Split (Testnet)
-
-Multi-recipient splits are batched into a single 7702 transaction so all transfers
-either succeed or revert together. See `src/lib/split.ts`.
-
-```ts
-const tx = await ua.createExecuteTransaction({
-  transactions: recipients.map((r) => ({
-    to: r.address,
-    value: 0n,
-    data: encodeErc20Transfer(r.address, toBaseUnits(r.amount, 6)),
-  })),
-});
-```
-
-### 4. Cross-chain sourcing for Pay & Split (Mainnet)
-
-`expectTokens` lets the Universal Account pull liquidity from any supported chain
-and deliver the exact USDC / ETH amount on Arbitrum One.
-
-```ts
-const tx = await ua.createUniversalTransaction({
-  expectTokens: [{ type: SUPPORTED_TOKEN.USDC, amount, chainId: 42161 }],
-  transactions: [{ to: recipient, value: 0n, data: transferCalldata }],
-});
-```
-
-### 5. Smart Routing deposit address (Mainnet packages)
+### 3. Smart Routing deposit address (Mainnet packages)
 
 Generates a one-time deposit address that auto-bridges USDC / ETH from Optimism,
 Base or Ethereum into the PayGrid Treasury on Arbitrum One.
@@ -466,7 +440,7 @@ const routing = await createSmartRoutingAddress({
 });
 ```
 
-### 6. Payer route — raw `eth_sendTransaction` (both networks)
+### 4. Payer route — raw `eth_sendTransaction` (both networks)
 
 Bypasses ethers v6 gas coercion by submitting the transfer directly through the
 EIP-1193 provider. USDC uses manually-encoded `transfer(address,uint256)` calldata.
@@ -483,34 +457,6 @@ await window.ethereum.request({
       ? encodeErc20Transfer(recipient, toBaseUnits(amount, 6))
       : "0x",
   }],
-});
-```
-
-### 7. BigInt-safe decimal helpers
-
-Prevents `viem` / `ethers` "not a valid decimal number" and "too many decimals"
-errors when handling scientific-notation amounts like `2e-10`.
-
-```ts
-// src/lib/amounts.ts
-export const toBaseUnits = (value: string | number, decimals: number): bigint => {
-  const [int, frac = ""] = String(value).replace(/[eE].*/, "").split(".");
-  const padded = (frac + "0".repeat(decimals)).slice(0, decimals);
-  return BigInt(int + padded);
-};
-```
-
-### 8. Activity Tracker call with padded gas (Testnet)
-
-Manually encodes the selector and pads gas by 40% to work around 7702 estimation
-bugs, so the tx surfaces in Arbiscan's **Transactions** tab. See `src/lib/activity-tracker.ts`.
-
-```ts
-const data = "0x" + selector + encodedArgs;
-const gas = (await provider.estimateGas({ to, data })) * 140n / 100n;
-await window.ethereum.request({
-  method: "eth_sendTransaction",
-  params: [{ from, to, data, gas: toHex(gas) }],
 });
 ```
 
