@@ -242,7 +242,7 @@ Pay      Split Bills       Packages       Receive           Contacts
 4. **Receive Payments (QR + payer route)**
    - Shared: `src/lib/payment-requests.ts` stores `{ recipient, token, amount, chainId, requestId }` in Supabase; `qrcode.react` renders a QR deep-linking to `/pay/:requestId` (`src/routes/pay.$requestId.tsx`).
    - **Testnet:** payer route encodes ERC-20 `transfer(address,uint256)` calldata manually and submits via `window.ethereum.request({ method: 'eth_sendTransaction' })` (bypasses ethers *"could not coalesce error"*).
-   - **Mainnet:** same `eth_sendTransaction` path on Arbitrum One; ETH requests send value directly, USDC requests hit `0xaf88…5831`.
+   - **Mainnet:** same `eth_sendTransaction` path on Arbitrum One; ETH requests send value directly, USDC requests hits address.
 
 5. **Tourist Packages**
    - **Testnet:** package price is charged directly from the 7702 smart account to the Platform Treasury via `eth_sendTransaction` (ETH) or an encoded USDC `transfer`.
