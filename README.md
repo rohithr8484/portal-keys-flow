@@ -1,6 +1,3 @@
-**Paygrid**
-
-
 # PayGrid
 
 ## Explore Travel. Pay with Crypto.
