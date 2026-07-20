@@ -124,9 +124,15 @@ export async function payMainnetPackageWith7702UA(
     transport: viem.http(ARB_ONE_RPC),
   });
 
+  // ---- Check delegation first so we only top up the delegation gas once ----
+  const deployments = await ua.getEIP7702Deployments();
+  const deployment = deployments.find((d: any) => d.chainId === targetChain);
+  const alreadyDelegated = !!deployment?.isDelegated;
+
   // ---- Ensure the burner has enough ETH ----
   const amountWei = viem.parseEther(args.amountEth as `${number}`);
-  const needed = amountWei + GAS_BUFFER_WEI;
+  const needed =
+    amountWei + DUST_BUFFER_WEI + (alreadyDelegated ? 0n : DELEGATION_GAS_BUFFER_WEI);
   const burnerBal = await publicClient.getBalance({ address: burnerAddress });
   if (burnerBal < needed) {
     const shortfall = needed - burnerBal;
