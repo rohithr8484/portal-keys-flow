@@ -31,7 +31,7 @@ export async function sendTestnet7702Tx(
     account,
     chain: arbitrumSepolia,
     transport: http(),
-  }) as any).extend(eip7702Actions() as any);
+  }) as any).extend(eip7702Actions as any);
 
   try {
     const authorization = await walletClient.signAuthorization({
@@ -68,7 +68,7 @@ export async function sendMainnet7702Tx(
     account: from,
     chain: arbitrum,
     transport: custom(ethereum),
-  }) as any).extend(eip7702Actions() as any);
+  }) as any).extend(eip7702Actions as any);
 
   try {
     const authorization = await walletClient.signAuthorization({
