@@ -196,17 +196,6 @@ An integrated FAQ helps users understand:
 
 ---
 
-# Technology Stack
-
-- **Next.js 15**
-- **React 19**
-- **TypeScript**
-- **Tailwind CSS v4**
-- **Particle Network Universal Accounts SDK**
-- **ethers v6**
-
----
-
 # Partner Technologies
 
 ## Particle Network
@@ -347,7 +336,7 @@ Particle Network project credentials need to be configured before launching the 
 ---
 
 # Tech Stack
-
+- 
 ### Core framework
 - **TanStack Start v1 + React 19 + TypeScript** — SSR-capable full-stack framework with file-based routing under `src/routes/`.
 - **Vite 7** — build tool; TanStack Router Vite plugin auto-generates `routeTree.gen.ts`.
