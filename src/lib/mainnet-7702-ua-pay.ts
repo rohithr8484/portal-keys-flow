@@ -181,10 +181,23 @@ export async function payMainnetPackageWith7702UA(
       chainId: auth.chainId,
       executor: "self",
     });
+    // EIP-7702 authorizations add ~25k intrinsic gas per authorization on top of
+    // the base 21k. Estimate first and pad; fall back to a safe constant if the
+    // node refuses to estimate for type-4 txs.
+    let delegationGas: bigint = 200_000n;
+    try {
+      const est = await publicClient.estimateGas({
+        account: burner,
+        to: "0x0000000000000000000000000000000000000000",
+        authorizationList: [signedAuth],
+      } as any);
+      delegationGas = (est * 150n) / 100n;
+    } catch {}
     const delegationHash: `0x${string}` = await walletClient.sendTransaction({
       account: burner,
       to: "0x0000000000000000000000000000000000000000",
       authorizationList: [signedAuth],
+      gas: delegationGas,
     });
     await publicClient.waitForTransactionReceipt({ hash: delegationHash });
   }
