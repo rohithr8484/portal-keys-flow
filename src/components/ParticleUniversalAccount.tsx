@@ -1088,36 +1088,53 @@ export function ParticleUniversalAccount() {
         network={isTestnet ? "testnet" : "mainnet"}
         onNotify={(msg: string) => setStatus(msg)}
         onPay={async ({ recipient, amount, token }) => {
-          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
-
-          // ---- Testnet path: send directly from the local 7702 EOA key so
-          // the transfer appears as a top-level Arbiscan Sepolia transaction
-          // (not just an internal call under a UserOp bundle). Keeps the
-          // same ETH / native-USDC currency semantics as before. ----
+          // ---- Testnet path: send directly from the local 7702 EOA key.
+          // Sends real funds to the entered recipient as a top-level tx on
+          // Arbiscan Sepolia. Avoids silent UserOp reverts where a receipt
+          // arrives but no funds actually move. ----
           if (isTestnet) {
             const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
-            const { kernelClient } = await buildKernelClient();
-            const to = ethers.getAddress(recipient) as `0x${string}`;
-            let callData: `0x${string}`;
-            if (token === "ETH") {
-              callData = await kernelClient.account!.encodeCalls([
-                { to, value: ethers.parseEther(String(amount)), data: "0x" },
-              ]);
-            } else {
-              const iface = new ethers.Interface(["function transfer(address,uint256)"]);
-              const units = ethers.parseUnits(String(amount), 6);
-              const data = iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
-              callData = await kernelClient.account!.encodeCalls([
-                { to: ARB_SEPOLIA_USDC as `0x${string}`, value: BigInt(0), data },
-              ]);
+            const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
+            if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
+              throw new Error("7702 smart-account key not initialized yet — reopen the app and retry.");
             }
-            const userOpHash = await (kernelClient as any).sendUserOperation({ callData });
-            const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
-            const txHash = receipt.receipt.transactionHash;
+            const rpc = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+            const wallet = new ethers.Wallet(pk, rpc);
+            const from = (await wallet.getAddress()) as `0x${string}`;
+            const to = ethers.getAddress(recipient) as `0x${string}`;
+            let tx;
+            if (token === "ETH") {
+              const value = ethers.parseEther(String(amount));
+              const bal = await rpc.getBalance(from);
+              if (bal < value) {
+                throw new Error(
+                  `Smart account ${from} has ${ethers.formatEther(bal)} ETH; needs ${ethers.formatEther(value)} ETH (plus gas). Fund the SA address and retry.`,
+                );
+              }
+              tx = await wallet.sendTransaction({ to, value });
+            } else {
+              const iface = new ethers.Interface([
+                "function transfer(address,uint256) returns (bool)",
+                "function balanceOf(address) view returns (uint256)",
+              ]);
+              const units = ethers.parseUnits(String(amount), 6);
+              const balData = iface.encodeFunctionData("balanceOf", [from]);
+              const balRaw = await rpc.call({ to: ARB_SEPOLIA_USDC, data: balData });
+              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as unknown as [bigint];
+              if (tokenBal < units) {
+                throw new Error(
+                  `Smart account ${from} has ${ethers.formatUnits(tokenBal, 6)} USDC on Arbitrum Sepolia; needs ${amount} USDC.`,
+                );
+              }
+              const data = iface.encodeFunctionData("transfer", [to, units]);
+              tx = await wallet.sendTransaction({ to: ARB_SEPOLIA_USDC, data });
+            }
+            const receipt = await tx.wait();
+            if (!receipt || receipt.status === 0) throw new Error("Transaction reverted on-chain.");
+            const txHash = receipt.hash as string;
             awardXp(25);
             return { txId: txHash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txHash}` };
           }
-
 
           // ---- Mainnet: send directly from the connected MetaMask EOA on
           // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
@@ -1173,33 +1190,71 @@ export function ParticleUniversalAccount() {
           return { txId: txHash, txUrl: `${ARBITRUM_MAINNET.explorer}/tx/${txHash}` };
         }}
         onSplitPay={async ({ recipients, token }) => {
-          const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
-
           // ---- Testnet path: send each leg as a direct EOA transaction from
-          // the local 7702 key. This makes every transfer appear in the
-          // "Transactions" tab of Arbiscan (Sepolia) instead of only showing
-          // up as an internal transaction under a UserOp bundle. ----
+          // the local 7702 key. Ensures funds actually move to each recipient
+          // and each leg is a top-level Arbiscan Sepolia transaction. ----
           if (isTestnet) {
             const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
-            const { kernelClient } = await buildKernelClient();
-            const erc20Iface = new ethers.Interface(["function transfer(address,uint256)"]);
-            const calls = recipients.map((r) => {
-              const to = ethers.getAddress(r.address) as `0x${string}`;
-              if (token === "ETH") {
-                return { to, value: ethers.parseEther(String(r.amount)), data: "0x" as `0x${string}` };
+            const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
+            if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) {
+              throw new Error("7702 smart-account key not initialized yet — reopen the app and retry.");
+            }
+            const rpc = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
+            const wallet = new ethers.Wallet(pk, rpc);
+            const from = (await wallet.getAddress()) as `0x${string}`;
+            const iface = new ethers.Interface([
+              "function transfer(address,uint256) returns (bool)",
+              "function balanceOf(address) view returns (uint256)",
+            ]);
+
+            if (token === "ETH") {
+              const total = recipients.reduce(
+                (acc, r) => acc + ethers.parseEther(String(r.amount)),
+                0n,
+              );
+              const bal = await rpc.getBalance(from);
+              if (bal < total) {
+                throw new Error(
+                  `Smart account ${from} has ${ethers.formatEther(bal)} ETH; split needs ${ethers.formatEther(total)} ETH (plus gas).`,
+                );
               }
-              const units = ethers.parseUnits(String(r.amount), 6);
-              const data = erc20Iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
-              return { to: ARB_SEPOLIA_USDC as `0x${string}`, value: BigInt(0), data };
-            });
-            const callData = await kernelClient.account!.encodeCalls(calls);
-            const userOpHash = await (kernelClient as any).sendUserOperation({ callData });
-            const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
-            const txHash = receipt.receipt.transactionHash;
+            } else {
+              const total = recipients.reduce(
+                (acc, r) => acc + ethers.parseUnits(String(r.amount), 6),
+                0n,
+              );
+              const balData = iface.encodeFunctionData("balanceOf", [from]);
+              const balRaw = await rpc.call({ to: ARB_SEPOLIA_USDC, data: balData });
+              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as unknown as [bigint];
+              if (tokenBal < total) {
+                throw new Error(
+                  `Smart account ${from} has ${ethers.formatUnits(tokenBal, 6)} USDC; split needs ${ethers.formatUnits(total, 6)} USDC.`,
+                );
+              }
+            }
+
+            let lastHash: string | null = null;
+            for (const r of recipients) {
+              const to = ethers.getAddress(r.address) as `0x${string}`;
+              let tx;
+              if (token === "ETH") {
+                tx = await wallet.sendTransaction({
+                  to,
+                  value: ethers.parseEther(String(r.amount)),
+                });
+              } else {
+                const units = ethers.parseUnits(String(r.amount), 6);
+                const data = iface.encodeFunctionData("transfer", [to, units]);
+                tx = await wallet.sendTransaction({ to: ARB_SEPOLIA_USDC, data });
+              }
+              const receipt = await tx.wait();
+              if (!receipt || receipt.status === 0) throw new Error(`Leg to ${to} reverted.`);
+              lastHash = receipt.hash;
+            }
             awardXp(50);
             return {
-              txId: txHash,
-              txUrl: `${ARB_SEPOLIA.explorer}/tx/${txHash}`,
+              txId: lastHash!,
+              txUrl: `${ARB_SEPOLIA.explorer}/tx/${lastHash}`,
             };
           }
 
