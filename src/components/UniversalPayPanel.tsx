@@ -140,7 +140,7 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay }: Props) {
+export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay, onPay7702 }: Props) {
   const address = smartAccount ?? "";
   const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
@@ -469,7 +469,7 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
 
         {/* HOTELS */}
         <TabsContent value="hotels" className="mt-0">
-          <HotelsTab onNotify={onNotify} onPay={onPay} pushActivity={pushActivity} network={activeNetwork} />
+          <HotelsTab onNotify={onNotify} onPay={onPay} onPay7702={onPay7702} pushActivity={pushActivity} network={activeNetwork} />
         </TabsContent>
 
         {/* RECEIVE */}
@@ -1136,16 +1136,22 @@ type RoutingModalState = {
 function HotelsTab({
   onNotify,
   onPay,
+  onPay7702,
   pushActivity,
   network,
 }: {
   onNotify?: (msg: string) => void;
   onPay?: Props["onPay"];
+  onPay7702?: Props["onPay7702"];
   pushActivity: (a: Omit<Activity, "id" | "at">) => void;
   network: "mainnet" | "testnet";
 }) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [routingModal, setRoutingModal] = useState<RoutingModalState>(null);
+
+  // Mainnet-only: these packages settle via Particle UA + EIP-7702 so the
+  // on-chain tx displays the "EIP-7702" TRANSACTION ACTION on Arbiscan.
+  const EIP7702_PACKAGE_IDS = new Set(["north-east", "andaman"]);
 
   const bookHotel = async (hotel: Hotel, token: Token) => {
     if (!onPay) {
