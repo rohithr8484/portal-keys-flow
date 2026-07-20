@@ -124,31 +124,6 @@ export async function payMainnetPackageWith7702UA(
     transport: viem.http(ARB_ONE_RPC),
   });
 
-  // ---- Check delegation first so we only top up the delegation gas once ----
-  const deployments = await ua.getEIP7702Deployments();
-  const deployment = deployments.find((d: any) => d.chainId === targetChain);
-  const alreadyDelegated = !!deployment?.isDelegated;
-
-  // ---- Ensure the burner has enough ETH ----
-  const amountWei = viem.parseEther(args.amountEth as `${number}`);
-  const needed =
-    amountWei + DUST_BUFFER_WEI + (alreadyDelegated ? 0n : DELEGATION_GAS_BUFFER_WEI);
-  const burnerBal = await publicClient.getBalance({ address: burnerAddress });
-  if (burnerBal < needed) {
-    const shortfall = needed - burnerBal;
-    const topupHash: `0x${string}` = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [
-        {
-          from: mmOwner,
-          to: burnerAddress,
-          value: `0x${shortfall.toString(16)}`,
-        },
-      ],
-    });
-    await publicClient.waitForTransactionReceipt({ hash: topupHash });
-  }
-
   // ---- Local wallet client with EIP-7702 actions ----
   const walletClient: any = (viem.createWalletClient({
     account: burner,
@@ -171,10 +146,33 @@ export async function payMainnetPackageWith7702UA(
 
   const targetChain = (CHAIN_ID as any).ARBITRUM_MAINNET_ONE;
 
-  // ---- Step 1: ensure delegation on Arbitrum One ----
+  // ---- Check delegation first so we only add the delegation gas buffer once ----
   const deployments = await ua.getEIP7702Deployments();
   const deployment = deployments.find((d: any) => d.chainId === targetChain);
-  if (!deployment?.isDelegated) {
+  const alreadyDelegated = !!deployment?.isDelegated;
+
+  // ---- Ensure the burner has enough ETH (top-up from MetaMask if needed) ----
+  const amountWei = viem.parseEther(args.amountEth as `${number}`);
+  const needed =
+    amountWei + DUST_BUFFER_WEI + (alreadyDelegated ? 0n : DELEGATION_GAS_BUFFER_WEI);
+  const burnerBal = await publicClient.getBalance({ address: burnerAddress });
+  if (burnerBal < needed) {
+    const shortfall = needed - burnerBal;
+    const topupHash: `0x${string}` = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [
+        {
+          from: mmOwner,
+          to: burnerAddress,
+          value: `0x${shortfall.toString(16)}`,
+        },
+      ],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: topupHash });
+  }
+
+  // ---- Step 1: ensure delegation on Arbitrum One ----
+  if (!alreadyDelegated) {
     const auths = await ua.getEIP7702Auth([targetChain]);
     const auth = auths[0];
     const signedAuth = await walletClient.signAuthorization({
