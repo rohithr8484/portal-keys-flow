@@ -1181,33 +1181,31 @@ export function ParticleUniversalAccount() {
           // "Transactions" tab of Arbiscan (Sepolia) instead of only showing
           // up as an internal transaction under a UserOp bundle. ----
           if (isTestnet) {
+            const { sendTestnet7702Tx } = await import("@/lib/eip7702");
             const ARB_SEPOLIA_USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
             const pk = localStorage.getItem(UA_7702_PRIVATE_KEY);
             if (!isStoredPrivateKey(pk)) {
               throw new Error("Testnet smart account key missing. Sign in again.");
             }
-            const rpcProvider = new ethers.JsonRpcProvider(ARB_SEPOLIA.rpcUrl);
-            const wallet = new ethers.Wallet(pk, rpcProvider);
             const erc20Iface = new ethers.Interface(["function transfer(address,uint256)"]);
             const hashes: string[] = [];
             for (const r of recipients) {
-              const to = ethers.getAddress(r.address);
-              let tx;
+              const to = ethers.getAddress(r.address) as `0x${string}`;
+              let hash: `0x${string}`;
               if (token === "ETH") {
-                tx = await wallet.sendTransaction({
+                hash = await sendTestnet7702Tx(pk, {
                   to,
                   value: ethers.parseEther(String(r.amount)),
                 });
               } else {
                 const units = ethers.parseUnits(String(r.amount), 6);
-                const data = erc20Iface.encodeFunctionData("transfer", [to, units]);
-                tx = await wallet.sendTransaction({
-                  to: ARB_SEPOLIA_USDC,
+                const data = erc20Iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
+                hash = await sendTestnet7702Tx(pk, {
+                  to: ARB_SEPOLIA_USDC as `0x${string}`,
                   data,
                 });
               }
-              await tx.wait();
-              hashes.push(tx.hash);
+              hashes.push(hash);
             }
             awardXp(50);
             const first = hashes[0];
@@ -1216,6 +1214,7 @@ export function ParticleUniversalAccount() {
               txUrl: first ? `${ARB_SEPOLIA.explorer}/tx/${first}` : undefined,
             };
           }
+
 
           // ---- Mainnet: send every recipient directly from the connected
           // MetaMask EOA on Arbitrum One (same approach as /pay/:requestId).
