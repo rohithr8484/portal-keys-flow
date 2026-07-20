@@ -1,19 +1,23 @@
 /**
  * Mainnet-only EIP-7702 + Particle Universal Account payment helper.
  *
- * Used by a small subset of Tourist Packages so that the on-chain
- * transaction shows up on Arbiscan with the "EIP-7702" TRANSACTION ACTION
- * (Delegate + Transfer) instead of a plain EOA transfer.
+ * viem's `signAuthorization` action does not support JSON-RPC accounts
+ * (MetaMask), so we use a persistent local burner account for the 7702
+ * authorization + userOp signing. MetaMask is only used to top the burner
+ * up with the required ETH (amount + a small gas buffer) if its balance is
+ * insufficient on Arbitrum One.
  *
- * Flow (mirrors the Particle UA EIP-7702 reference example):
- *   1. Ensure the connected EOA is delegated to the UA implementation on
- *      the target chain (Arbitrum One). If not, send a Type-4 self-executed
- *      authorization tx via viem.
- *   2. Build a native ETH transfer through `ua.createTransferTransaction`.
- *   3. For every userOp with an unsigned `eip7702Auth`, produce an ECDSA
- *      signature over `hashAuthorization(auth)` — one signature per unique
- *      auth nonce.
- *   4. Sign the transaction rootHash with `personal_sign` and submit via
+ * Flow:
+ *   1. Load/create a persistent burner private key in localStorage.
+ *   2. Ensure the burner has enough ETH on Arbitrum One — otherwise ask
+ *      MetaMask to send the shortfall to the burner.
+ *   3. Build a UA (useEIP7702: true) with the burner as the owner.
+ *   4. If burner is not yet delegated on Arbitrum One, send a self-executed
+ *      Type-4 authorization tx via viem.
+ *   5. Build native ETH transfer via `ua.createTransferTransaction`.
+ *   6. Sign per-userOp EIP-7702 authorizations with the local wallet
+ *      client (one signature per unique nonce).
+ *   7. Sign the tx rootHash with the burner account and submit via
  *      `ua.sendTransaction(tx, rootSig, authorizations)`.
  */
 import { ethers } from "ethers";
@@ -22,6 +26,10 @@ import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib
 const ARB_ONE_HEX = "0xa4b1";
 const ARB_ONE_RPC = "https://arb1.arbitrum.io/rpc";
 const ARB_EXPLORER = "https://arbiscan.io";
+const BURNER_STORAGE_KEY = "paygrid_mainnet_7702_burner_pk";
+// Small buffer to cover the self-executed 7702 authorization tx + the tiny
+// gas the UA sponsored flow may still consume from the burner.
+const GAS_BUFFER_WEI = 200_000_000_000_000n; // 0.0002 ETH
 
 export type Mainnet7702PayArgs = {
   recipient: string;
@@ -42,6 +50,16 @@ function toSerializedSignature(r: `0x${string}`, s: `0x${string}`, yParity: 0 | 
   return `0x${rHex}${sHex}${v}` as `0x${string}`;
 }
 
+async function loadOrCreateBurnerPk(
+  generatePrivateKey: () => `0x${string}`,
+): Promise<`0x${string}`> {
+  const existing = window.localStorage.getItem(BURNER_STORAGE_KEY);
+  if (existing && /^0x[0-9a-fA-F]{64}$/.test(existing)) return existing as `0x${string}`;
+  const pk = generatePrivateKey();
+  window.localStorage.setItem(BURNER_STORAGE_KEY, pk);
+  return pk;
+}
+
 export async function payMainnetPackageWith7702UA(
   args: Mainnet7702PayArgs,
 ): Promise<Mainnet7702PayResult> {
@@ -49,7 +67,7 @@ export async function payMainnetPackageWith7702UA(
     throw new Error("MetaMask not detected");
   }
 
-  // Ensure the wallet is on Arbitrum One.
+  // Ensure MetaMask is on Arbitrum One (needed for the top-up tx).
   try {
     await window.ethereum.request({
       method: "wallet_switchEthereumChain",
@@ -74,23 +92,63 @@ export async function payMainnetPackageWith7702UA(
     }
   }
 
-  const accounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" });
-  const owner = ethers.getAddress(accounts[0]) as `0x${string}`;
+  const mmAccounts: string[] = await window.ethereum.request({ method: "eth_requestAccounts" });
+  const mmOwner = ethers.getAddress(mmAccounts[0]) as `0x${string}`;
 
-  const [{ UniversalAccount, UNIVERSAL_ACCOUNT_VERSION, CHAIN_ID }, viem, viemChains, viemExp] =
-    await Promise.all([
-      import("@particle-network/universal-account-sdk"),
-      import("viem"),
-      import("viem/chains"),
-      import("viem/experimental"),
-    ]);
+  const [
+    { UniversalAccount, UNIVERSAL_ACCOUNT_VERSION, CHAIN_ID },
+    viem,
+    viemChains,
+    viemAccounts,
+    viemExp,
+  ] = await Promise.all([
+    import("@particle-network/universal-account-sdk"),
+    import("viem"),
+    import("viem/chains"),
+    import("viem/accounts"),
+    import("viem/experimental"),
+  ]);
 
-  const walletClient: any = (viem.createWalletClient({
-    account: owner,
+  // ---- Local burner account (needed because viem.signAuthorization does
+  // not support JSON-RPC accounts). ----
+  const burnerPk = await loadOrCreateBurnerPk(
+    (viemAccounts as any).generatePrivateKey as () => `0x${string}`,
+  );
+  const burner = (viemAccounts as any).privateKeyToAccount(burnerPk);
+  const burnerAddress = burner.address as `0x${string}`;
+
+  const publicClient = viem.createPublicClient({
     chain: viemChains.arbitrum,
-    transport: viem.custom(window.ethereum),
+    transport: viem.http(ARB_ONE_RPC),
+  });
+
+  // ---- Ensure the burner has enough ETH ----
+  const amountWei = viem.parseEther(args.amountEth as `${number}`);
+  const needed = amountWei + GAS_BUFFER_WEI;
+  const burnerBal = await publicClient.getBalance({ address: burnerAddress });
+  if (burnerBal < needed) {
+    const shortfall = needed - burnerBal;
+    const topupHash: `0x${string}` = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [
+        {
+          from: mmOwner,
+          to: burnerAddress,
+          value: `0x${shortfall.toString(16)}`,
+        },
+      ],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: topupHash });
+  }
+
+  // ---- Local wallet client with EIP-7702 actions ----
+  const walletClient: any = (viem.createWalletClient({
+    account: burner,
+    chain: viemChains.arbitrum,
+    transport: viem.http(ARB_ONE_RPC),
   }) as any).extend((viemExp as any).eip7702Actions as any);
 
+  // ---- UA with burner as owner ----
   const ua: any = new (UniversalAccount as any)({
     projectId: PARTICLE_PROJECT_ID,
     projectClientKey: PARTICLE_CLIENT_KEY,
@@ -99,7 +157,7 @@ export async function payMainnetPackageWith7702UA(
       useEIP7702: true,
       name: "UNIVERSAL",
       version: UNIVERSAL_ACCOUNT_VERSION,
-      ownerAddress: owner,
+      ownerAddress: burnerAddress,
     },
   });
 
@@ -111,23 +169,16 @@ export async function payMainnetPackageWith7702UA(
   if (!deployment?.isDelegated) {
     const auths = await ua.getEIP7702Auth([targetChain]);
     const auth = auths[0];
-    // Self-executed 7702 authorization tx — viem handles nonce+1 semantics
-    // when executor is "self".
     const signedAuth = await walletClient.signAuthorization({
-      account: owner,
+      account: burner,
       contractAddress: auth.address,
       chainId: auth.chainId,
       executor: "self",
     });
     const delegationHash: `0x${string}` = await walletClient.sendTransaction({
-      account: owner,
+      account: burner,
       to: "0x0000000000000000000000000000000000000000",
       authorizationList: [signedAuth],
-    });
-    // Wait for the delegation tx before building the transfer.
-    const publicClient = viem.createPublicClient({
-      chain: viemChains.arbitrum,
-      transport: viem.http(ARB_ONE_RPC),
     });
     await publicClient.waitForTransactionReceipt({ hash: delegationHash });
   }
@@ -136,7 +187,7 @@ export async function payMainnetPackageWith7702UA(
   const transaction = await ua.createTransferTransaction({
     token: {
       chainId: targetChain,
-      address: "0x0000000000000000000000000000000000000000", // native ETH
+      address: "0x0000000000000000000000000000000000000000",
     },
     amount: args.amountEth,
     receiver: ethers.getAddress(args.recipient),
@@ -150,12 +201,8 @@ export async function payMainnetPackageWith7702UA(
       const nonce: number = userOp.eip7702Auth.nonce;
       let sig = sigByNonce.get(nonce);
       if (!sig) {
-        // Sign the same authorization tuple {chainId, contract, nonce}
-        // that hashAuthorization would produce — viem's signAuthorization
-        // signs the identical hash, so the resulting signature validates
-        // when re-submitted through the UA sponsored userOp.
         const signed = await walletClient.signAuthorization({
-          account: owner,
+          account: burner,
           contractAddress: userOp.eip7702Auth.address,
           chainId: userOp.eip7702Auth.chainId,
           nonce,
@@ -171,10 +218,10 @@ export async function payMainnetPackageWith7702UA(
     }
   }
 
-  // ---- Step 4: sign rootHash and submit ----
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
-  const rootSig = await signer.signMessage(ethers.getBytes(transaction.rootHash));
+  // ---- Step 4: sign rootHash with the local burner and submit ----
+  const rootSig = await burner.signMessage({
+    message: { raw: transaction.rootHash as `0x${string}` },
+  });
 
   const result = await ua.sendTransaction(transaction, rootSig, authorizations);
   const txId: string = result?.transactionId ?? result?.transactionHash ?? "";
