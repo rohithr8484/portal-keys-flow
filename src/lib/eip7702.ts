@@ -78,21 +78,16 @@ export async function sendTestnet7702Tx(
  * yet, falls back to a plain `eth_sendTransaction` so the payment still goes
  * through.
  */
-export async function sendMainnet7702Tx(
+export async function sendInjected7702Tx(
   ethereum: any,
+  chain: any,
   from: `0x${string}`,
   params: SendParams,
 ): Promise<`0x${string}`> {
-  const publicClient = createPublicClient({
-    chain: arbitrum,
-    transport: http("https://arb1.arbitrum.io/rpc"),
-  });
+  const publicClient = createPublicClient({ chain, transport: custom(ethereum) });
 
   try {
-    const walletClient = createWalletClient({
-      chain: arbitrum,
-      transport: custom(ethereum),
-    });
+    const walletClient = createWalletClient({ chain, transport: custom(ethereum) });
 
     const authorization = await walletClient.signAuthorization({
       account: from,
@@ -131,3 +126,13 @@ export async function sendMainnet7702Tx(
     return hash;
   }
 }
+
+/** Mainnet convenience wrapper (Arbitrum One). */
+export async function sendMainnet7702Tx(
+  ethereum: any,
+  from: `0x${string}`,
+  params: SendParams,
+): Promise<`0x${string}`> {
+  return sendInjected7702Tx(ethereum, arbitrum, from, params);
+}
+
