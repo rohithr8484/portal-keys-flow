@@ -1120,7 +1120,7 @@ export function ParticleUniversalAccount() {
               const units = ethers.parseUnits(String(amount), 6);
               const balData = iface.encodeFunctionData("balanceOf", [from]);
               const balRaw = await rpc.call({ to: ARB_SEPOLIA_USDC, data: balData });
-              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as [bigint];
+              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as unknown as [bigint];
               if (tokenBal < units) {
                 throw new Error(
                   `Smart account ${from} has ${ethers.formatUnits(tokenBal, 6)} USDC on Arbitrum Sepolia; needs ${amount} USDC.`,
@@ -1225,7 +1225,7 @@ export function ParticleUniversalAccount() {
               );
               const balData = iface.encodeFunctionData("balanceOf", [from]);
               const balRaw = await rpc.call({ to: ARB_SEPOLIA_USDC, data: balData });
-              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as [bigint];
+              const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as unknown as [bigint];
               if (tokenBal < total) {
                 throw new Error(
                   `Smart account ${from} has ${ethers.formatUnits(tokenBal, 6)} USDC; split needs ${ethers.formatUnits(total, 6)} USDC.`,
