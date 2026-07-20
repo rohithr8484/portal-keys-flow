@@ -126,7 +126,7 @@ Current capabilities include:
 ### 🌐 Mainet - Arbitrium 
 | Flow                | Address     |  Transaction | 
 | ------------------- | ----------- | -----------  |
-| Universal Account with EIP-7702   |  ['Address'] (https://arbiscan.io/address/0x582791E0998187bBBe6F3D7fDAc11bCA1F9EC5Bd) | [`Transaction`]  (https://arbiscan.io/tx/0xf55495fefe6756d87a073e5a93b4fa7a8771d97967691a087739a294079cd523)                       |
+| Universal Account with EIP-7702   |  [`Address`](https://arbiscan.io/address/0x582791E0998187bBBe6F3D7fDAc11bCA1F9EC5Bd) | [`Transaction`](https://arbiscan.io/tx/0xf55495fefe6756d87a073e5a93b4fa7a8771d97967691a087739a294079cd523)                       |
 
 
 ---
