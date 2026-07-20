@@ -27,9 +27,11 @@ const ARB_ONE_HEX = "0xa4b1";
 const ARB_ONE_RPC = "https://arb1.arbitrum.io/rpc";
 const ARB_EXPLORER = "https://arbiscan.io";
 const BURNER_STORAGE_KEY = "paygrid_mainnet_7702_burner_pk";
-// Small buffer to cover the self-executed 7702 authorization tx + the tiny
-// gas the UA sponsored flow may still consume from the burner.
-const GAS_BUFFER_WEI = 200_000_000_000_000n; // 0.0002 ETH
+// One-time gas needed to self-execute the 7702 authorization tx on Arbitrum.
+// Only added on the very first payment (before the burner is delegated).
+const DELEGATION_GAS_BUFFER_WEI = 30_000_000_000_000n; // 0.00003 ETH
+// Tiny dust added on every payment in case the UA relayer charges a token fee.
+const DUST_BUFFER_WEI = 1_000_000_000_000n; // 0.000001 ETH
 
 export type Mainnet7702PayArgs = {
   recipient: string;
