@@ -117,7 +117,11 @@ Current capabilities include:
 - Transaction history
 - Payment confirmation
 
-#### 🌐 Mainnet — Arbitrum One
+#### 🌐 Testnet — Arbitrum Sepolia
+## | Flow                | Address |
+   | Universal Account   | [(https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | 
+
+
 
 | Flow                | Transaction |
 | ------------------- | ----------- |
