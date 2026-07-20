@@ -1087,6 +1087,11 @@ export function ParticleUniversalAccount() {
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         network={isTestnet ? "testnet" : "mainnet"}
         onNotify={(msg: string) => setStatus(msg)}
+        onPay7702={isTestnet ? undefined : async ({ recipient, amountEth, label }) => {
+          const { payMainnetPackageWith7702UA } = await import("@/lib/mainnet-7702-ua-pay");
+          const res = await payMainnetPackageWith7702UA({ recipient, amountEth, label });
+          return { txId: res.txId, txUrl: res.txUrl };
+        }}
         onPay={async ({ recipient, amount, token }) => {
           // ---- Testnet path: send directly from the local 7702 EOA key.
           // Sends real funds to the entered recipient as a top-level tx on
