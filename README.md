@@ -167,6 +167,15 @@ https://sepolia.arbiscan.io/tx/0xd44296554bd622f565ea78767892bb60eeee5aa82465a6d
 
 PayGrid is designed to leverage smart contract capabilities for recording activity of seamless travel payments and automated on-chain interactions.
 
+MAINET
+Treasury
+0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb
+
+TESTNET
+Treasury
+0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb 
+0x54D222B9465D9F10338C426679835B08bc0bAA9C
+
 ---
 
 ### Help Center
