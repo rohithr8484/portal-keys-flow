@@ -265,21 +265,23 @@ Pay      Split Bills   Packages       Receive        Contacts
    - The ZeroDev **kernel client** is built from `@zerodev/sdk` (`createKernelAccount`, `createKernelAccountClient`) with `@zerodev/ecdsa-validator` (`signerToEcdsaValidator`) using an internally generated EIP-7702 signer for testnet interactions.
 
 3. **Pay & Split (atomic batching)**
-   - `src/lib/split.ts` uses `parseUnits` and the `BigInt` helpers in `src/lib/amounts.ts` (`toBaseUnits`, `formatBaseUnits`) to normalise decimals and eliminate scientific-notation errors from `viem`/`ethers`.
-   - Multi-recipient splits are packed into a single atomic transaction via `ua.createExecuteTransaction({ transactions: [...] })` (Particle 7702 batching). On mainnet the cross-chain sourcing path uses `ua.createUniversalTransaction({ expectTokens: [{ type, amount, chainId }] })`.
-   - Single-recipient testnet payments fall back to raw `eth_sendTransaction` from the 7702 key so the transfer appears in the Arbiscan **Transactions** tab, not just internal calls.
+   - Shared: decimals normalised via `toBaseUnits` / `formatBaseUnits` in `src/lib/amounts.ts` (BigInt) to avoid `viem` / `ethers` scientific-notation errors.
+   - **Testnet (Arbitrum Sepolia):** multi-recipient splits batched with `ua.createExecuteTransaction({ transactions: [...] })`; single-recipient sends use raw `eth_sendTransaction` from the 7702 key so they show in Arbiscan's **Transactions** tab.
+   - **Mainnet (Arbitrum One):** cross-chain sourcing via `ua.createUniversalTransaction({ expectTokens: [{ type, amount, chainId }] })`, so the payer needs no Arbitrum liquidity.
 
 4. **Receive Payments (QR + payer route)**
-   - `src/lib/payment-requests.ts` writes a request row into Supabase (Lovable Cloud) with `recipient`, `token`, `amount`, `chainId`, `requestId`.
-   - `qrcode.react` renders a QR that deep-links to `/pay/:requestId` (routed by `src/routes/pay.$requestId.tsx`). The payer route loads the request via Supabase, encodes ERC-20 `transfer(address,uint256)` calldata manually, and submits it through `window.ethereum.request({ method: 'eth_sendTransaction' })` — bypassing ethers wrappers that previously threw *"could not coalesce error"*.
+   - Shared: `src/lib/payment-requests.ts` stores `{ recipient, token, amount, chainId, requestId }` in Supabase; `qrcode.react` renders a QR deep-linking to `/pay/:requestId` (`src/routes/pay.$requestId.tsx`).
+   - **Testnet:** payer route encodes ERC-20 `transfer(address,uint256)` calldata manually and submits via `window.ethereum.request({ method: 'eth_sendTransaction' })` (bypasses ethers *"could not coalesce error"*).
+   - **Mainnet:** same `eth_sendTransaction` path on Arbitrum One; ETH requests send value directly, USDC requests hit `0xaf88…5831`.
 
-5. **Tourist Packages (ZeroDev Smart Routing)**
-   - On mainnet, selected packages use `@zerodev/smart-routing-address` (`createSmartRoutingAddress`) with `tokenType: 'ERC20' | 'NATIVE'`, target `chain: arbitrum`, USDC address `0xaf88…5831`, and multiple source tokens (Optimism / Base / Ethereum) plus `allowPartialRoutes: true`.
-   - The generated routing address is shown in a QR dialog; funds sent to it are automatically bridged and delivered as USDC / ETH on Arbitrum One to the Platform Treasury `0x24A1C7477Bda0BBa179E40Eb9f538fbB719448Fb`.
+5. **Tourist Packages**
+   - **Testnet:** package price is charged directly from the 7702 smart account to the Platform Treasury via `eth_sendTransaction` (ETH) or an encoded USDC `transfer`.
+   - **Mainnet:** uses `@zerodev/smart-routing-address` → `createSmartRoutingAddress({ tokenType: 'ERC20' | 'NATIVE', chain: arbitrum, sourceTokens: [Optimism, Base, Ethereum], allowPartialRoutes: true, recipient: 0x24A1…48Fb })`. The returned address is rendered as a QR; deposits are auto-bridged and delivered on Arbitrum One.
 
 6. **Activity + Treasury balances**
-   - `src/lib/activity-tracker.ts` records interactions on-chain via the `DAppActivityTracker.sol` contract using manually-encoded function selectors and a 40% gas pad through `eth_sendTransaction` (avoids 7702 estimation bugs).
-   - A live polling `useEffect` in `ParticleUniversalAccount.tsx` fetches ETH (`eth_getBalance`) and USDC (`balanceOf` via `eth_call`) balances on Arbitrum, with USD conversion using the CoinGecko price API.
+   - **Testnet:** `src/lib/activity-tracker.ts` writes to `DAppActivityTracker.sol` using manually-encoded selectors + 40% gas pad through `eth_sendTransaction` (avoids 7702 estimation bugs).
+   - **Mainnet:** a polling `useEffect` in `ParticleUniversalAccount.tsx` reads ETH (`eth_getBalance`) and USDC (`balanceOf` via `eth_call`) on Arbitrum One and converts to USD via the CoinGecko price API.
+
 
 ---
 
