@@ -123,6 +123,12 @@ Current capabilities include:
 | Universal Account with EIP-7702  | [`Address`](https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | [`Transaction`](https://sepolia.arbiscan.io/tx/0x3a7aa6cd711f625b89d509c3f352406b8a926c4fd22f05f88fa6ab67aa05f9c8)
 
 
+### 🌐 Mainet - Arbitrium 
+| Flow                | Address     |  Transaction | 
+| ------------------- | ----------- | -----------  |
+| Universal Account with EIP-7702   |  ['Address'] (https://arbiscan.io/address/0x582791E0998187bBBe6F3D7fDAc11bCA1F9EC5Bd) | [`Transaction`]  (https://arbiscan.io/tx/0xf55495fefe6756d87a073e5a93b4fa7a8771d97967691a087739a294079cd523)                       |
+
+
 ---
 
 ### Smart Contracts
