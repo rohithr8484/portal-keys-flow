@@ -1152,29 +1152,27 @@ export function ParticleUniversalAccount() {
               throw err;
             }
           }
+          const { sendMainnet7702Tx } = await import("@/lib/eip7702");
           const provider = new ethers.BrowserProvider(window.ethereum);
           const signer = await provider.getSigner();
-          const from = ethers.getAddress(await signer.getAddress());
-          const to = ethers.getAddress(recipient);
-          let txHash: string;
+          const from = ethers.getAddress(await signer.getAddress()) as `0x${string}`;
+          const to = ethers.getAddress(recipient) as `0x${string}`;
+          let txHash: `0x${string}`;
           if (token === "ETH") {
             const wei = ethers.parseEther(amount.toString());
-            txHash = await window.ethereum.request({
-              method: "eth_sendTransaction",
-              params: [{ from, to, value: ethers.toQuantity(wei) }],
-            });
+            txHash = await sendMainnet7702Tx(window.ethereum, from, { to, value: wei });
           } else {
             const units = ethers.parseUnits(amount.toString(), 6);
             const iface = new ethers.Interface(["function transfer(address,uint256)"]);
-            const data = iface.encodeFunctionData("transfer", [to, units]);
-            txHash = await window.ethereum.request({
-              method: "eth_sendTransaction",
-              params: [{ from, to: ARB_ONE_USDC, data }],
+            const data = iface.encodeFunctionData("transfer", [to, units]) as `0x${string}`;
+            txHash = await sendMainnet7702Tx(window.ethereum, from, {
+              to: ARB_ONE_USDC as `0x${string}`,
+              data,
             });
           }
-          await provider.waitForTransaction(txHash);
           return { txId: txHash, txUrl: `${ARBITRUM_MAINNET.explorer}/tx/${txHash}` };
         }}
+
         onSplitPay={async ({ recipients, token }) => {
           const { buildSplitNativeCalls, buildSplitERC20Calls, EVM_CHAINS } = await import("@/lib/split");
 
