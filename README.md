@@ -118,9 +118,9 @@ Current capabilities include:
 - Payment confirmation
 
 #### 🌐 Testnet — Arbitrum Sepolia
-| Flow                | Address |
-| ------------------- | ----------- |
-| Universal Account with EIP-7702  | [`Address`](https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | 
+| Flow                | Address |  Transaction | 
+| ------------------- | ----------- | ----------- |
+| Universal Account with EIP-7702  | [`Address`](https://sepolia.arbiscan.io/address/0xe5c99a2acb65e6d156229be4426e6dea180a2d19#authlist7702) | [`Transaction`](https://sepolia.arbiscan.io/tx/0x3a7aa6cd711f625b89d509c3f352406b8a926c4fd22f05f88fa6ab67aa05f9c8)
 
 
 
