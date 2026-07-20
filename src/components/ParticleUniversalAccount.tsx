@@ -1135,7 +1135,60 @@ export function ParticleUniversalAccount() {
             awardXp(25);
             return { txId: txHash, txUrl: `${ARB_SEPOLIA.explorer}/tx/${txHash}` };
           }
-...
+
+          // ---- Mainnet: send directly from the connected MetaMask EOA on
+          // Arbitrum One. Mirrors the /pay/:requestId payer flow which reads
+          // funds straight from the user's wallet instead of relying on the
+          // Universal Account to source primary assets. ----
+          const ARB_ONE_HEX = "0xa4b1";
+          const ARB_ONE_USDC = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+          if (!window.ethereum) throw new Error("MetaMask not detected");
+          try {
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: ARB_ONE_HEX }],
+            });
+          } catch (err: any) {
+            if (err?.code === 4902) {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [
+                  {
+                    chainId: ARB_ONE_HEX,
+                    chainName: "Arbitrum One",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+                    blockExplorerUrls: [ARBITRUM_MAINNET.explorer],
+                  },
+                ],
+              });
+            } else {
+              throw err;
+            }
+          }
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const from = ethers.getAddress(await signer.getAddress());
+          const to = ethers.getAddress(recipient);
+          let txHash: string;
+          if (token === "ETH") {
+            const wei = ethers.parseEther(amount.toString());
+            txHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [{ from, to, value: ethers.toQuantity(wei) }],
+            });
+          } else {
+            const units = ethers.parseUnits(amount.toString(), 6);
+            const iface = new ethers.Interface(["function transfer(address,uint256)"]);
+            const data = iface.encodeFunctionData("transfer", [to, units]);
+            txHash = await window.ethereum.request({
+              method: "eth_sendTransaction",
+              params: [{ from, to: ARB_ONE_USDC, data }],
+            });
+          }
+          await provider.waitForTransaction(txHash);
+          return { txId: txHash, txUrl: `${ARBITRUM_MAINNET.explorer}/tx/${txHash}` };
+        }}
         onSplitPay={async ({ recipients, token }) => {
           // ---- Testnet path: send each leg as a direct EOA transaction from
           // the local 7702 key. Ensures funds actually move to each recipient
