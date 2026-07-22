@@ -127,7 +127,7 @@ const FEATURES = [
   {
     key: "token",
     icon: "⭐",
-    title: "Any token",
+    title: "Token",
     desc: "Use your existing assets to seamlessly pay or receive USDC or ETH..",
   },
   {
