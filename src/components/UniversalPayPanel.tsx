@@ -110,31 +110,32 @@ const FEATURES = [
     key: "pay",
     icon: "🚀",
     title: "Send & split expense",
-    desc: "Transfer to a single wallet or share a bill among multiple wallets instantly",
+    desc: "Send to one wallet, or split a shared bill across many wallets in a single tap.",
   },
   {
     key: "receive",
     icon: "🎯",
     title: "Receive",
-    desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia.",
+    desc: "Create a QR code and shareable link to collect payments on Arbitrum One or Sepolia.",
   },
   {
     key: "hotels",
     icon: "🏝️",
     title: "Tourist packages",
-    desc: "Book curated India tours — pay in USDC or ETH from your wallet.",
+    desc: "Discover handpicked India itineraries and settle them straight from your wallet in USDC or ETH.",
   },
   {
     key: "token",
     icon: "💎",
     title: "Token",
-    desc: "Use your existing assets to seamlessly pay or receive USDC or ETH..",
+    desc: "Tap into whatever assets you already hold to send or accept USDC and ETH effortlessly.",
   },
   {
     key: "contacts",
     icon: "👥",
     title: "Contacts",
-    desc: "Save payees once and send to them by name, not a 0x address.",
+    desc: "Store your payees once, then reach them by name instead of a long 0x address.",
+
   },
 ] as const;
 
