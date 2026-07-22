@@ -108,35 +108,36 @@ function shortHash(hash: string) {
 const FEATURES = [
   {
     key: "pay",
-    icon: "💸",
+    icon: "🚀",
     title: "Send & split expense",
     desc: "Transfer to a single wallet or share a bill among multiple wallets instantly",
   },
   {
     key: "receive",
-    icon: "📥",
+    icon: "🎯",
     title: "Receive",
     desc: "Generate a QR + shareable link to get paid on Arbitrum One or Sepolia.",
   },
   {
     key: "hotels",
-    icon: "🧳",
+    icon: "🏝️",
     title: "Tourist packages",
     desc: "Book curated India tours — pay in USDC or ETH from your wallet.",
   },
   {
     key: "token",
-    icon: "⭐",
+    icon: "💎",
     title: "Token",
     desc: "Use your existing assets to seamlessly pay or receive USDC or ETH..",
   },
   {
     key: "contacts",
-    icon: "⭐",
+    icon: "👥",
     title: "Contacts",
     desc: "Save payees once and send to them by name, not a 0x address.",
   },
 ] as const;
+
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
