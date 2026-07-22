@@ -110,7 +110,7 @@ const FEATURES = [
     key: "pay",
     icon: "🚀",
     title: "Send & split expense",
-    desc: "Send to one wallet, or split a shared bill across many wallets in a single tap.",
+    desc: "Send to one wallet, or split a shared bill across many wallets",
   },
   {
     key: "receive",
@@ -135,10 +135,8 @@ const FEATURES = [
     icon: "👥",
     title: "Contacts",
     desc: "Store your payees once, then reach them by name instead of a long 0x address.",
-
   },
 ] as const;
-
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
@@ -507,7 +505,6 @@ export function UniversalPayPanel({
                   <div className="text-[10px] text-muted-foreground">spend & receive</div>
                 </div>
               ))}
-
             </div>
           </div>
         </TabsContent>
