@@ -109,8 +109,8 @@ const FEATURES = [
   {
     key: "pay",
     icon: "💸",
-    title: "Pay & split",
-    desc: "Send to one wallet or divide a bill across many in a single tap.",
+    title: "Send & split expense",
+    desc: "Transfer to a single wallet or share a bill among multiple wallets instantly",
   },
   {
     key: "receive",
@@ -126,9 +126,9 @@ const FEATURES = [
   },
   {
     key: "token",
-    icon: "🪙",
+    icon: "⭐",
     title: "Any token",
-    desc: "Pay or get paid in USDC or ETH — auto-sourced from your assets.",
+    desc: "Use your existing assets to seamlessly pay or receive USDC or ETH..",
   },
   {
     key: "contacts",
@@ -140,7 +140,15 @@ const FEATURES = [
 
 type FeatureKey = (typeof FEATURES)[number]["key"];
 
-export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify, onPay, onSplitPay, onPay7702 }: Props) {
+export function UniversalPayPanel({
+  smartAccount,
+  unifiedUsd,
+  network,
+  onNotify,
+  onPay,
+  onSplitPay,
+  onPay7702,
+}: Props) {
   const address = smartAccount ?? "";
   const activeNetwork: "mainnet" | "testnet" = network ?? "mainnet";
   const [tab, setTab] = useState<FeatureKey>("pay");
@@ -469,7 +477,13 @@ export function UniversalPayPanel({ smartAccount, unifiedUsd, network, onNotify,
 
         {/* HOTELS */}
         <TabsContent value="hotels" className="mt-0">
-          <HotelsTab onNotify={onNotify} onPay={onPay} onPay7702={onPay7702} pushActivity={pushActivity} network={activeNetwork} />
+          <HotelsTab
+            onNotify={onNotify}
+            onPay={onPay}
+            onPay7702={onPay7702}
+            pushActivity={pushActivity}
+            network={activeNetwork}
+          />
         </TabsContent>
 
         {/* RECEIVE */}
@@ -1309,7 +1323,9 @@ function HotelsTab({
                 <div className="mt-auto pt-2">
                   <Button size="sm" className="w-full" onClick={() => bookHotel(hotel, "ETH")} disabled={anyBusy}>
                     {ethBusy
-                      ? is7702 ? "Delegating & paying…" : "Paying…"
+                      ? is7702
+                        ? "Delegating & paying…"
+                        : "Paying…"
                       : is7702
                         ? `Pay ${hotel.eth} ETH via EIP-7702`
                         : `Pay ${hotel.eth} ETH`}
