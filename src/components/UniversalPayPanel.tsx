@@ -460,14 +460,16 @@ export function UniversalPayPanel({
 
             <div className="rounded-xl border border-panel-border bg-background/40 p-4">
               <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Pay how you like</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {SETTLEMENT_TOKENS.map((t) => (
-                  <div key={t} className="rounded-lg border border-panel-border bg-background/60 p-2 text-center">
-                    <div className="text-lg">🪙</div>
-                    <div className="text-xs font-semibold">{t}</div>
+                  <div key={t} className="rounded-lg border border-panel-border bg-background/60 p-3 text-center">
+                    <div className="text-2xl">{t === "USDC" ? "💵" : "Ξ"}</div>
+                    <div className="text-xs font-semibold mt-1">{t}</div>
+                    <div className="text-[10px] text-muted-foreground">spend & receive</div>
                   </div>
                 ))}
               </div>
+
               <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
                 Your Universal Account sources funds from any asset you hold and settles the recipient in the token you
                 pick above.
