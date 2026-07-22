@@ -3,7 +3,6 @@ import { ethers } from "ethers";
 import { PARTICLE_APP_ID, PARTICLE_CLIENT_KEY, PARTICLE_PROJECT_ID } from "@/lib/particle-config";
 import { UniversalPayPanel } from "@/components/UniversalPayPanel";
 
-
 const PAYGRID_LOGO_URL = "/__l5e/assets-v1/ce5dcd6b-076a-4f95-b873-ffb42fee0c0f/paygrid-logo.png";
 
 // Dynamically loaded to keep the Node-targeted SDK out of the SSR bundle.
@@ -514,8 +513,6 @@ export function ParticleUniversalAccount() {
       window.clearInterval(id);
     };
   }, [isTestnet]);
-
-
 
   // ---------- Mainnet: Particle UA transfer ----------
   const sendMainnetTx = useCallback(async () => {
@@ -1087,11 +1084,15 @@ export function ParticleUniversalAccount() {
         unifiedUsd={balance?.totalAmountInUSD ?? null}
         network={isTestnet ? "testnet" : "mainnet"}
         onNotify={(msg: string) => setStatus(msg)}
-        onPay7702={isTestnet ? undefined : async ({ recipient, amountEth, label }) => {
-          const { payMainnetPackageWith7702UA } = await import("@/lib/mainnet-7702-ua-pay");
-          const res = await payMainnetPackageWith7702UA({ recipient, amountEth, label });
-          return { txId: res.txId, txUrl: res.txUrl };
-        }}
+        onPay7702={
+          isTestnet
+            ? undefined
+            : async ({ recipient, amountEth, label }) => {
+                const { payMainnetPackageWith7702UA } = await import("@/lib/mainnet-7702-ua-pay");
+                const res = await payMainnetPackageWith7702UA({ recipient, amountEth, label });
+                return { txId: res.txId, txUrl: res.txUrl };
+              }
+        }
         onPay={async ({ recipient, amount, token }) => {
           // ---- Testnet path: send directly from the local 7702 EOA key.
           // Sends real funds to the entered recipient as a top-level tx on
@@ -1213,10 +1214,7 @@ export function ParticleUniversalAccount() {
             ]);
 
             if (token === "ETH") {
-              const total = recipients.reduce(
-                (acc, r) => acc + ethers.parseEther(String(r.amount)),
-                0n,
-              );
+              const total = recipients.reduce((acc, r) => acc + ethers.parseEther(String(r.amount)), 0n);
               const bal = await rpc.getBalance(from);
               if (bal < total) {
                 throw new Error(
@@ -1224,10 +1222,7 @@ export function ParticleUniversalAccount() {
                 );
               }
             } else {
-              const total = recipients.reduce(
-                (acc, r) => acc + ethers.parseUnits(String(r.amount), 6),
-                0n,
-              );
+              const total = recipients.reduce((acc, r) => acc + ethers.parseUnits(String(r.amount), 6), 0n);
               const balData = iface.encodeFunctionData("balanceOf", [from]);
               const balRaw = await rpc.call({ to: ARB_SEPOLIA_USDC, data: balData });
               const [tokenBal] = iface.decodeFunctionResult("balanceOf", balRaw) as unknown as [bigint];
@@ -1262,7 +1257,6 @@ export function ParticleUniversalAccount() {
               txUrl: `${ARB_SEPOLIA.explorer}/tx/${lastHash}`,
             };
           }
-
 
           // ---- Mainnet: send every recipient directly from the connected
           // MetaMask EOA on Arbitrum One (same approach as /pay/:requestId).
@@ -1398,7 +1392,6 @@ export function ParticleUniversalAccount() {
             </div>
           </div>
         )}
-
       </section>
 
       {missingAppId && !isTestnet && (
@@ -1746,7 +1739,7 @@ const HOW_STEPS = [
   {
     n: "03",
     title: "Pay, split, receive — even for travellers",
-    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours and group trips in a single tap.",
+    desc: "Send USDC or ETH, split a bill atomically in one signature, or share a QR request and get paid instantly. Travellers can settle tours and group trips.",
     img: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=900&q=70",
     alt: "Travellers exploring a new destination",
   },
@@ -1760,13 +1753,19 @@ function LandingHowItWorks() {
           <span className="size-2 rounded-full bg-accent glow-pulse" />
           How it works
         </div>
-        <h2 className="text-4xl sm:text-5xl font-bold tracking-tight animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "backwards" }}>
+        <h2
+          className="text-4xl sm:text-5xl font-bold tracking-tight animate-fade-in"
+          style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
+        >
           Three steps to a{" "}
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             chain-agnostic wallet
           </span>
         </h2>
-        <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "backwards" }}>
+        <p
+          className="mt-4 text-base text-muted-foreground max-w-xl mx-auto animate-fade-in"
+          style={{ animationDelay: "160ms", animationFillMode: "backwards" }}
+        >
           Paygrid layers Universal Accounts on top of your existing wallet — no new seed phrase, no bridge dance.
         </p>
       </div>
