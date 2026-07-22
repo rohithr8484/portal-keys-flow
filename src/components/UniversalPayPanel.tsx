@@ -502,11 +502,12 @@ export function UniversalPayPanel({
             <div className="grid grid-cols-3 gap-2 mt-4 text-xs">
               {SETTLEMENT_TOKENS.map((t) => (
                 <div key={t} className="rounded-lg border border-panel-border bg-background/60 py-3">
-                  <div className="text-lg">🪙</div>
+                  <div className="text-lg">{t === "USDC" ? "🟢" : "🔷"}</div>
                   <div className="font-semibold">{t}</div>
                   <div className="text-[10px] text-muted-foreground">spend & receive</div>
                 </div>
               ))}
+
             </div>
           </div>
         </TabsContent>
