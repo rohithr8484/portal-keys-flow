@@ -459,7 +459,7 @@ export function UniversalPayPanel({
             </div>
 
             <div className="rounded-xl border border-panel-border bg-background/40 p-4">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Any token, any chain</div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Pay how you like</div>
               <div className="grid grid-cols-3 gap-2">
                 {SETTLEMENT_TOKENS.map((t) => (
                   <div key={t} className="rounded-lg border border-panel-border bg-background/60 p-2 text-center">
