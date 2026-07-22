@@ -401,7 +401,7 @@ export function UniversalPayPanel({
           <div className="grid md:grid-cols-3 gap-4">
             <div className="md:col-span-2 rounded-xl border border-panel-border bg-background/40 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Pay or split</div>
+                <div className="text-sm font-semibold">Send or split expense</div>
                 <div className="flex items-center gap-2 text-xs">
                   <label className="flex items-center gap-1 cursor-pointer">
                     <input type="checkbox" checked={paySplit} onChange={(e) => setPaySplit(e.target.checked)} />
